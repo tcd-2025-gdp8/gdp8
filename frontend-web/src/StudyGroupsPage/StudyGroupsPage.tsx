@@ -1,5 +1,18 @@
 import React, { useState, useEffect } from "react";
-import { Container, Card, CardContent, Typography, Button, Grid } from "@mui/material";
+import {
+  Container,
+  Card,
+  CardContent,
+  Typography,
+  Button,
+  Grid,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Slider
+} from "@mui/material";
 
 // Define a TypeScript interface for Study Groups
 interface StudyGroup {
@@ -10,8 +23,10 @@ interface StudyGroup {
 }
 
 const StudyGroupsPage: React.FC = () => {
-  // Define state with TypeScript
   const [studyGroups, setStudyGroups] = useState<StudyGroup[]>([]);
+  const [openDialog, setOpenDialog] = useState(false);
+  const [groupName, setGroupName] = useState("");
+  const [maxMembers, setMaxMembers] = useState(5); // Default value
 
   useEffect(() => {
     // Simulated API call (Replace with actual fetch request)
@@ -27,7 +42,7 @@ const StudyGroupsPage: React.FC = () => {
     }, 500);
   }, []);
 
-  // Handle join group
+  // Handle joining a group
   const handleJoinGroup = (id: number) => {
     setStudyGroups((prevGroups) =>
       prevGroups.map((group) =>
@@ -38,8 +53,30 @@ const StudyGroupsPage: React.FC = () => {
     );
   };
 
+  // Handle opening and closing the create group dialog
+  const handleOpenDialog = () => setOpenDialog(true);
+  const handleCloseDialog = () => {
+    setOpenDialog(false);
+    setGroupName(""); // Reset input fields
+    setMaxMembers(5);
+  };
+
+  // Handle creating a new group
   const handleCreateGroup = () => {
-    alert("Create a new study group!");
+    if (groupName.trim() === "") {
+      alert("Please enter a valid group name.");
+      return;
+    }
+
+    const newGroup: StudyGroup = {
+      id: studyGroups.length + 1,
+      name: groupName,
+      members: 1, // Creator starts as the first member
+      maximumMembers: maxMembers,
+    };
+
+    setStudyGroups([...studyGroups, newGroup]);
+    handleCloseDialog();
   };
 
   return (
@@ -74,11 +111,39 @@ const StudyGroupsPage: React.FC = () => {
       <Button
         variant="contained"
         color="success"
-        onClick={handleCreateGroup}
+        onClick={handleOpenDialog}
         style={{ marginTop: "20px", display: "block", width: "100%" }}
       >
         Create a Study Group
       </Button>
+
+      {/* Dialog for Creating a New Study Group */}
+      <Dialog open={openDialog} onClose={handleCloseDialog}>
+        <DialogTitle>Create a new Study Group</DialogTitle>
+        <DialogContent>
+          <TextField
+            label="Group Name"
+            fullWidth
+            value={groupName}
+            onChange={(e) => setGroupName(e.target.value)}
+            margin="dense"
+          />
+          <Typography gutterBottom>Max Members: {maxMembers}</Typography>
+          <Slider
+            value={maxMembers}
+            onChange={(_, value) => setMaxMembers(value as number)}
+            min={2}
+            max={10}
+            step={1}
+            marks
+            valueLabelDisplay="auto"
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDialog} color="error" variant="contained">Cancel</Button>
+          <Button onClick={handleCreateGroup} color="success" variant="contained">Create</Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };
