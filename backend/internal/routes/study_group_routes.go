@@ -1,10 +1,11 @@
 package routes
 
 import (
+	"net/http"
+
 	"gdp8-backend/internal/handlers"
 	"gdp8-backend/internal/repositories"
 	"gdp8-backend/internal/services"
-	"net/http"
 )
 
 func RegisterStudyGroupRoutes() {

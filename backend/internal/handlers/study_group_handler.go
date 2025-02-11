@@ -2,10 +2,11 @@ package handlers
 
 import (
 	"errors"
+	"net/http"
+
 	"gdp8-backend/internal/models"
 	"gdp8-backend/internal/services"
 	"gdp8-backend/internal/utils"
-	"net/http"
 )
 
 type StudyGroupHandler struct {
@@ -53,7 +54,7 @@ func (h *StudyGroupHandler) GetStudyGroup(w http.ResponseWriter, r *http.Request
 	sendJSONResponse(w, MapStudyGroupToDTO(*studyGroup))
 }
 
-func (h *StudyGroupHandler) GetAllStudyGroups(w http.ResponseWriter, r *http.Request) {
+func (h *StudyGroupHandler) GetAllStudyGroups(w http.ResponseWriter, _ *http.Request) {
 	studyGroups, err := h.service.GetAllStudyGroups()
 	if err != nil {
 		http.Error(w, "Error fetching study groups", http.StatusInternalServerError)

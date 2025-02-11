@@ -3,14 +3,15 @@ package handlers
 import (
 	"bytes"
 	"errors"
-	"gdp8-backend/internal/models"
-	"gdp8-backend/internal/services"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+
+	"gdp8-backend/internal/models"
+	"gdp8-backend/internal/services"
 )
 
 type MockStudyGroupService struct {
@@ -28,6 +29,8 @@ func (m *MockStudyGroupService) GetAllStudyGroups() ([]models.StudyGroup, error)
 }
 
 func TestStudyGroupHandler_GetStudyGroup(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name         string
 		url          string
@@ -56,7 +59,7 @@ func TestStudyGroupHandler_GetStudyGroup(t *testing.T) {
 		{
 			name:         "Invalid ID format",
 			url:          "/study-groups/invalid",
-			mockSetup:    func(service *MockStudyGroupService) {},
+			mockSetup:    func(_ *MockStudyGroupService) {},
 			expectedCode: http.StatusBadRequest,
 			expectedBody: "Invalid study group ID\n",
 		},
@@ -86,6 +89,8 @@ func TestStudyGroupHandler_GetStudyGroup(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			mockService := &MockStudyGroupService{}
 			tt.mockSetup(mockService)
 
@@ -108,6 +113,8 @@ func TestStudyGroupHandler_GetStudyGroup(t *testing.T) {
 }
 
 func TestStudyGroupHandler_GetAllStudyGroups(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name         string
 		mockSetup    func(service *MockStudyGroupService)
@@ -125,12 +132,16 @@ func TestStudyGroupHandler_GetAllStudyGroups(t *testing.T) {
 							Name:        "Group 1",
 							Description: "Description 1",
 							Type:        models.TypePublic,
+							ModuleID:    42,
+							Members:     []models.UserID{3, 4},
 						},
 						{
 							ID:          2,
 							Name:        "Group 2",
 							Description: "Description 2",
 							Type:        models.TypeClosed,
+							ModuleID:    1,
+							Members:     []models.UserID{1},
 						},
 					}, nil)
 			},
@@ -161,6 +172,8 @@ func TestStudyGroupHandler_GetAllStudyGroups(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			mockService := &MockStudyGroupService{}
 			tt.mockSetup(mockService)
 

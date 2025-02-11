@@ -2,6 +2,8 @@ package services
 
 import (
 	"errors"
+	"fmt"
+
 	"gdp8-backend/internal/models"
 	"gdp8-backend/internal/repositories"
 )
@@ -27,12 +29,16 @@ func (s StudyGroupServiceImpl) GetStudyGroupByID(id models.StudyGroupID) (*model
 		if errors.Is(err, repositories.ErrStudyGroupNotFound) {
 			return nil, ErrStudyGroupNotFound
 		}
-		return nil, err
+		return nil, fmt.Errorf("error fetching study group: %w", err)
 	}
 
 	return studyGroup, nil
 }
 
 func (s StudyGroupServiceImpl) GetAllStudyGroups() ([]models.StudyGroup, error) {
-	return s.studyGroupRepo.GetAllStudyGroups()
+	studyGroups, err := s.studyGroupRepo.GetAllStudyGroups()
+	if err != nil {
+		return nil, fmt.Errorf("error fetching study groups: %w", err)
+	}
+	return studyGroups, nil
 }

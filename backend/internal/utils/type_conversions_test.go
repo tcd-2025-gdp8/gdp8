@@ -5,6 +5,8 @@ import (
 )
 
 func TestConvertToType(t *testing.T) {
+	t.Parallel()
+
 	type AliasType int64
 
 	type testCase struct {
@@ -29,6 +31,7 @@ func TestConvertToType(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
+			t.Parallel()
 			result, err := ConvertToType[AliasType](tt.input)
 			if (err != nil) != tt.hasError {
 				t.Errorf("expected error: %v, got: %v", tt.hasError, err)

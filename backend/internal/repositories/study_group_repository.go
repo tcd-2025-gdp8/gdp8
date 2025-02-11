@@ -2,8 +2,9 @@ package repositories
 
 import (
 	"errors"
-	"gdp8-backend/internal/models"
 	"sync"
+
+	"gdp8-backend/internal/models"
 )
 
 type StudyGroupRepository interface {
@@ -66,7 +67,7 @@ func (r *MockStudyGroupRepository) GetAllStudyGroups() ([]models.StudyGroup, err
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	var studyGroupsList []models.StudyGroup
+	studyGroupsList := make([]models.StudyGroup, 0, len(r.studyGroups))
 	for _, studyGroup := range r.studyGroups {
 		studyGroupsList = append(studyGroupsList, studyGroup)
 	}

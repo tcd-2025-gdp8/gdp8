@@ -1,17 +1,24 @@
 package main
 
 import (
-	"gdp8-backend/internal/routes"
 	"log"
 	"net/http"
+	"time"
+
+	"gdp8-backend/internal/routes"
 )
 
 func main() {
 	routes.RegisterAllRoutes()
 
-	port := ":8080"
-	log.Println("Server running on http://localhost" + port)
-	err := http.ListenAndServe(port, nil)
+	server := http.Server{
+		Addr:              ":8080",
+		ReadHeaderTimeout: 3 * time.Second,
+	}
+
+	log.Println("Server running on http://localhost" + server.Addr)
+
+	err := server.ListenAndServe()
 	if err != nil {
 		log.Fatal(err)
 	}
