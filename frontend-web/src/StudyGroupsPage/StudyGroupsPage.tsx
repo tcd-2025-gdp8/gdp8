@@ -11,36 +11,65 @@ import {
   DialogContent,
   DialogActions,
   TextField,
-  Slider
+  Slider,
+  MenuItem,
+  Select,
+  FormControl,
+  InputLabel
 } from "@mui/material";
 
-// Define a TypeScript interface for Study Groups
+// Define TypeScript interfaces
 interface StudyGroup {
   id: number;
   name: string;
   members: number;
   maximumMembers: number;
+  module: string;
 }
+
+const modulesList = ["CSU44052: Computer Graphics",
+                     "CSU44061: Machine Learning",
+                     "CSU44051: Human Factors",
+                     "CSU44000: Internet Applications",
+                     "CSU44012: Topics in Functional Programming",
+                     "CSU44099: Final Year Project",
+                     "CSU44098: Group Design Project",
+                     "CSU44081: Entrepreneurship & High Tech Venture Creation"];
+
+const initialGroups: StudyGroup[] = [
+  { id: 1, name: "Tech Nerds", members: 5, maximumMembers: 6, module: "CSU44052: Computer Graphics" },
+  { id: 2, name: "CS Wizards", members: 3, maximumMembers: 5, module: "CSU44051: Human Factors" },
+  { id: 3, name: "The Elites", members: 3, maximumMembers: 3, module: "CSU44052: Computer Graphics" },
+  { id: 4, name: "The Fun Group", members: 6, maximumMembers: 6, module: "CSU44061: Machine Learning" },
+  { id: 5, name: "The Prefects", members: 8, maximumMembers: 10, module: "CSU44051: Human Factors" },
+  { id: 6, name: "Trinners for Winners", members: 7, maximumMembers: 8, module: "CSU44099: Final Year Project" },
+];
 
 const StudyGroupsPage: React.FC = () => {
   const [studyGroups, setStudyGroups] = useState<StudyGroup[]>([]);
+  const [filteredGroups, setFilteredGroups] = useState<StudyGroup[]>([]);
+  const [selectedModule, setSelectedModule] = useState<string>("");
   const [openDialog, setOpenDialog] = useState(false);
   const [groupName, setGroupName] = useState("");
-  const [maxMembers, setMaxMembers] = useState(5); // Default value
+  const [maxMembers, setMaxMembers] = useState(5);
+  const [selectedGroupModule, setSelectedGroupModule] = useState("");
 
   useEffect(() => {
     // Simulated API call (Replace with actual fetch request)
     setTimeout(() => {
-      setStudyGroups([
-        { id: 1, name: "Tech Nerds", members: 5, maximumMembers: 6 },
-        { id: 2, name: "CS Wizards", members: 3, maximumMembers: 5 },
-        { id: 3, name: "The Elites", members: 3, maximumMembers: 3 },
-        { id: 4, name: "The Fun Group", members: 6, maximumMembers: 6 },
-        { id: 5, name: "The Prefects", members: 8, maximumMembers: 10 },
-        { id: 6, name: "Trinners for Winners", members: 7, maximumMembers: 8 },
-      ]);
+      setStudyGroups(initialGroups);
+      setFilteredGroups(initialGroups);
     }, 500);
   }, []);
+
+  // Handle filtering study groups by module
+  useEffect(() => {
+    if (selectedModule === "All" || selectedModule === "") {
+      setFilteredGroups(studyGroups);
+    } else {
+      setFilteredGroups(studyGroups.filter((group) => group.module === selectedModule));
+    }
+  }, [selectedModule, studyGroups]);
 
   // Handle joining a group
   const handleJoinGroup = (id: number) => {
@@ -59,20 +88,22 @@ const StudyGroupsPage: React.FC = () => {
     setOpenDialog(false);
     setGroupName(""); // Reset input fields
     setMaxMembers(5);
+    setSelectedGroupModule("");
   };
 
   // Handle creating a new group
   const handleCreateGroup = () => {
-    if (groupName.trim() === "") {
-      alert("Please enter a valid group name.");
+    if (groupName.trim() === "" || selectedGroupModule === "") {
+      alert("Please enter a valid group name and select a module.");
       return;
     }
 
     const newGroup: StudyGroup = {
       id: studyGroups.length + 1,
       name: groupName,
-      members: 1, // Creator starts as the first member
+      members: 1,
       maximumMembers: maxMembers,
+      module: selectedGroupModule,
     };
 
     setStudyGroups([...studyGroups, newGroup]);
@@ -82,16 +113,37 @@ const StudyGroupsPage: React.FC = () => {
   return (
     <Container maxWidth="md" style={{ marginTop: "20px" }}>
       <Typography variant="h4" gutterBottom>
-        Available Study Groups
+        Study Groups
       </Typography>
+
+      {/* Module Filter Dropdown */}
+      <FormControl fullWidth style={{ marginBottom: "20px" }}>
+        <InputLabel>Filter by Module</InputLabel>
+        <Select
+          value={selectedModule}
+          onChange={(e) => setSelectedModule(e.target.value)}
+        >
+          <MenuItem value="All">All</MenuItem>
+          {modulesList.map((module) => (
+            <MenuItem key={module} value={module}>
+              {module}
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
+
+      {/* Study Groups List */}
       <Grid container spacing={2}>
-        {studyGroups.map((group) => (
-          <Grid item xs={12} sm={6} md={4} key={group.id}>
+        {filteredGroups.map((group) => (
+          <Grid item xs={12} sm={6} md={4} key={group.id} style={{ minWidth: "280px" }}>
             <Card>
               <CardContent>
                 <Typography variant="h6">{group.name}</Typography>
                 <Typography color="textSecondary">
                   Members: {group.members} / {group.maximumMembers}
+                </Typography>
+                <Typography color="textSecondary">
+                  Module: {group.module}
                 </Typography>
                 <Button
                   variant="contained"
@@ -108,6 +160,8 @@ const StudyGroupsPage: React.FC = () => {
           </Grid>
         ))}
       </Grid>
+
+      {/* Create Group Button */}
       <Button
         variant="contained"
         color="success"
@@ -119,7 +173,7 @@ const StudyGroupsPage: React.FC = () => {
 
       {/* Dialog for Creating a New Study Group */}
       <Dialog open={openDialog} onClose={handleCloseDialog}>
-        <DialogTitle>Create a new Study Group</DialogTitle>
+        <DialogTitle>Create a Study Group</DialogTitle>
         <DialogContent>
           <TextField
             label="Group Name"
@@ -128,7 +182,22 @@ const StudyGroupsPage: React.FC = () => {
             onChange={(e) => setGroupName(e.target.value)}
             margin="dense"
           />
-          <Typography gutterBottom>Max Members: {maxMembers}</Typography>
+          <FormControl fullWidth style={{ marginTop: "10px" }}>
+            <InputLabel>Select Module</InputLabel>
+            <Select
+              value={selectedGroupModule}
+              onChange={(e) => setSelectedGroupModule(e.target.value)}
+            >
+              {modulesList.map((module) => (
+                <MenuItem key={module} value={module}>
+                  {module}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <Typography gutterBottom style={{ marginTop: "10px" }}>
+            Max Members: {maxMembers}
+          </Typography>
           <Slider
             value={maxMembers}
             onChange={(_, value) => setMaxMembers(value as number)}
@@ -140,8 +209,12 @@ const StudyGroupsPage: React.FC = () => {
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseDialog} color="error" variant="contained">Cancel</Button>
-          <Button onClick={handleCreateGroup} color="success" variant="contained">Create</Button>
+          <Button onClick={handleCloseDialog} color="error" variant="contained">
+            Cancel
+          </Button>
+          <Button onClick={handleCreateGroup} color="success" variant="contained">
+            Create
+          </Button>
         </DialogActions>
       </Dialog>
     </Container>
