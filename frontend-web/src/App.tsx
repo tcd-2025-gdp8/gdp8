@@ -1,7 +1,7 @@
 // App.tsx
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useAuth } from "./firebase/authContext";
+import { useAuth } from "./firebase/useAuth";
 import Login from "./loginPage/login";
 import StudyGroupsPage from "./StudyGroupsPage/StudyGroupsPage";
 
@@ -11,11 +11,14 @@ const App: React.FC = () => {
   return (
     <BrowserRouter>
       <Routes>
-        {/* If not logged in, redirect to /login, else show StudyGroupsPage */}
-        <Route path="/" element={user ? <StudyGroupsPage /> : <Navigate to="/login" />} />
-        {/* If already authenticated, redirect /login to /study-groups */}
-        <Route path="/login" element={user ? <Navigate to="/study-groups" /> : <Login />} />
-        <Route path="/study-groups" element={<StudyGroupsPage />} />
+        {/* Always show login page on "/" and "/login" */}
+        <Route path="/" element={<Login />} />
+        <Route path="/login" element={<Login />} />
+        {/* Only allow study groups if signed in */}
+        <Route
+          path="/study-groups"
+          element={user ? <StudyGroupsPage /> : <Navigate to="/login" />}
+        />
       </Routes>
     </BrowserRouter>
   );
