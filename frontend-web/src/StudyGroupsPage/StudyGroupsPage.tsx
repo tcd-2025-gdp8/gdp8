@@ -143,7 +143,7 @@ const StudyGroupsPage: React.FC = () => {
 
       <FormControl fullWidth style={{ marginBottom: "20px" }}>
         <InputLabel>Filter by Module</InputLabel>
-        <Select value={selectedModule} onChange={(e: SelectChangeEvent<string>) => setSelectedModule(e.target.value)}>
+        <Select value={selectedModule} onChange={(e: SelectChangeEvent<string>) => setSelectedModule(e.target.value)} >
           <MenuItem value="All">All</MenuItem>
           {modulesList.map((module) => (
             <MenuItem key={module} value={module}>
