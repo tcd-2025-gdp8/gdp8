@@ -20,7 +20,11 @@ import {
   FormControl,
   InputLabel,
   Tooltip,
+  Drawer,
+  IconButton
 } from "@mui/material";
+import NotificationsIcon from '@mui/icons-material/Notifications';
+import CloseIcon from '@mui/icons-material/Close';
 
 interface StudyGroup {
   id: number;
@@ -29,6 +33,11 @@ interface StudyGroup {
   maximumMembers: number;
   module: string;
   membersList?: string[];
+}
+
+interface Notification {
+  id: number;
+  message: string;
 }
 
 const modulesList = [
@@ -105,7 +114,17 @@ const StudyGroupsPage: React.FC = () => {
   const [openInviteDialog, setOpenInviteDialog] = useState(false); // State to manage the invite dialog
   const [inviteName, setInviteName] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
-
+  const [notifications, setNotifications] = useState<Notification[]>([{
+    id: 1,
+    message: 'Your request to join "The Prefects" has been accepted.'
+  }, {
+    id: 2,
+    message: 'New study group "CS Wizards" has been created for CSU44051: Human Factors.'
+  }, {
+    id: 3,
+    message: 'New study group "The Elites" has been created for CSU44052: Computer Graphics.'
+  }]);
+  const [openNotifications, setOpenNotifications] = useState(false);
 
   // When the access token is available, log it and simulate fetching data.
   useEffect(() => {
@@ -134,6 +153,7 @@ const StudyGroupsPage: React.FC = () => {
       prevGroups.map((group) => {
         if (group.id === id && group.members < group.maximumMembers) {
           if (!group.membersList?.includes("Alessandro")) {
+            setNotifications((prev) => [...prev, { id: Date.now(), message: `You joined '${group.name}'.` }]);
             return {
               ...group,
               members: group.members + 1,
@@ -145,6 +165,12 @@ const StudyGroupsPage: React.FC = () => {
       })
     );
   };
+
+  const handleDeleteNotification = (notificationId: number) => {
+    setNotifications((prevNotifications) =>
+      prevNotifications.filter((notification) => notification.id !== notificationId)
+    );
+  };  
 
   const handleOpenDialog = () => setOpenDialog(true);
   const handleCloseDialog = () => {
@@ -166,10 +192,11 @@ const StudyGroupsPage: React.FC = () => {
       members: 1,
       maximumMembers: maxMembers,
       module: selectedGroupModule,
-      membersList: ["Alessandro"], // Alessandro is always the creator
+      membersList: ["Alessandro"],
     };
 
     setStudyGroups([...studyGroups, newGroup]);
+    setNotifications((prev) => [...prev, { id: Date.now(), message: `Group '${groupName}' created.` }]);
     handleCloseDialog();
   };
 
@@ -191,7 +218,39 @@ const StudyGroupsPage: React.FC = () => {
     <Container maxWidth="md" style={{ marginTop: "20px" }}>
       <Typography variant="h4" gutterBottom>
         Study Groups
+        <IconButton onClick={() => setOpenNotifications(true)}>
+          <NotificationsIcon />
+        </IconButton>
       </Typography>
+
+      <Drawer anchor="right" open={openNotifications} onClose={() => setOpenNotifications(false)}>
+        <div style={{ width: 300, padding: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="h6">Notifications</Typography>
+            <IconButton onClick={() => setOpenNotifications(false)}>
+              <CloseIcon />
+            </IconButton>
+          </div>
+          {notifications.length === 0 ? (
+            <Typography variant="body2" color="textSecondary" style={{ textAlign: 'center', marginTop: '20px' }}>
+              No notifications
+            </Typography>
+          ) : (
+            notifications.map((notification) => (
+              <Card key={notification.id} style={{ marginBottom: '10px' }}>
+                <CardContent>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography>{notification.message}</Typography>
+                    <IconButton onClick={() => handleDeleteNotification(notification.id)} size="small">
+                      <CloseIcon />
+                    </IconButton>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </div>
+      </Drawer>
 
       <FormControl fullWidth style={{ marginBottom: "20px" }}>
         <InputLabel>Filter by Module</InputLabel>
