@@ -1,35 +1,48 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useState, useEffect } from "react";
+import "./App.css";
 
-function App() {
-  const [count, setCount] = useState(0)
-
-  return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank" rel="noreferrer">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank" rel="noreferrer">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+interface StudyGroup {
+  id: string;
+  name: string;
+  module: string;
 }
 
-export default App
+function App() {
+  const [studyGroups, setStudyGroups] = useState<StudyGroup[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchStudyGroups = async () => {
+      try {
+        const response = await fetch("http://localhost:8080/api/study-groups");
+        if (!response.ok) throw new Error("Failed to fetch study groups");
+        const data = await response.json();
+        setStudyGroups(data);
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStudyGroups();
+  }, []);
+
+  return (
+    <div className="container">
+      <h1>Study Groups</h1>
+      {loading && <p>Loading...</p>}
+      {error && <p className="error">{error}</p>}
+      <ul>
+        {studyGroups.map((group) => (
+          <li key={group.id}>
+            <strong>{group.name}</strong> - {group.module}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+export default App;
