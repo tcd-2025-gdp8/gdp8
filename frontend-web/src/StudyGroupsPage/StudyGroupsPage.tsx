@@ -56,6 +56,10 @@ const StudyGroupsPage: React.FC = () => {
   const [groupName, setGroupName] = useState("");
   const [maxMembers, setMaxMembers] = useState(5);
   const [selectedGroupModule, setSelectedGroupModule] = useState("");
+  const [openInviteDialog, setOpenInviteDialog] = useState(false); // State to manage the invite dialog
+  const [inviteName, setInviteName] = useState("");
+  const [inviteEmail, setInviteEmail] = useState("");
+
 
   useEffect(() => {
     setTimeout(() => {
@@ -114,6 +118,20 @@ const StudyGroupsPage: React.FC = () => {
 
     setStudyGroups([...studyGroups, newGroup]);
     handleCloseDialog();
+  };
+
+  const handleOpenInviteDialog = () => setOpenInviteDialog(true); // Open invite dialog
+  const handleCloseInviteDialog = () => setOpenInviteDialog(false); // Close invite dialog
+
+  const handleInvite = () => {
+    if (inviteName.trim() === "" || inviteEmail.trim() === "") {
+      alert("Please enter a valid name and email.");
+      return;
+    }
+    alert(`Invite sent to ${inviteName} at ${inviteEmail}`);
+    setInviteName(""); // Clear fields after invite
+    setInviteEmail("");
+    handleCloseInviteDialog(); // Close the invite dialog after sending invite
   };
 
   return (
@@ -214,11 +232,43 @@ const StudyGroupsPage: React.FC = () => {
           <Button onClick={handleCloseDialog} color="error" variant="contained">
             Cancel
           </Button>
+          <Button onClick={handleOpenInviteDialog} color="primary" variant="contained">
+            Invite Members
+          </Button>
           <Button onClick={handleCreateGroup} color="success" variant="contained">
             Create
           </Button>
         </DialogActions>
       </Dialog>
+
+      <Dialog open={openInviteDialog} onClose={handleCloseInviteDialog}>
+        <DialogTitle>Invite a User</DialogTitle>
+        <DialogContent>
+          <TextField
+            label="Invite Name"
+            fullWidth
+            value={inviteName}
+            onChange={(e) => setInviteName(e.target.value)}
+            margin="dense"
+          />
+          <TextField
+            label="Invite Email"
+            fullWidth
+            value={inviteEmail}
+            onChange={(e) => setInviteEmail(e.target.value)}
+            margin="dense"
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseInviteDialog} color="error" variant="contained">
+            Cancel
+          </Button>
+          <Button onClick={handleInvite} color="primary" variant="contained">
+            Invite
+          </Button>
+        </DialogActions>
+      </Dialog>
+
     </Container>
   );
 };
