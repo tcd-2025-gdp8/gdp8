@@ -7,6 +7,7 @@ import {
     signInWithEmailAndPassword,
     signOut,
     onAuthStateChanged,
+    getIdToken,
     User,
 } from "firebase/auth";
 
@@ -16,13 +17,30 @@ interface AuthProviderProps {
 
 export function AuthProvider({ children }: AuthProviderProps) {
     const [user, setUser] = useState<User | null>(null);
+    const [token, setToken] = useState<string | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-            setUser(currentUser);
-            setLoading(false);
+            const handleAuthChange = async () => {
+                setUser(currentUser);
+                if (currentUser) {
+                    try {
+                        const idToken = await getIdToken(currentUser); // Await the promise
+                        setToken(idToken);
+                    } catch (error) {
+                        console.error("Failed to get ID token:", error);
+                        setToken(null);
+                    }
+                } else {
+                    setToken(null);
+                }
+                setLoading(false);
+            };
+
+            void handleAuthChange(); // Explicitly mark the promise as ignored
         });
+
         return unsubscribe;
     }, []);
 
@@ -39,7 +57,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     };
 
     return (
-        <AuthContext.Provider value={{ user, signup, login, logout }}>
+        <AuthContext.Provider value={{ user, token, signup, login, logout }}>
             {!loading && children}
         </AuthContext.Provider>
     );

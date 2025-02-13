@@ -1,4 +1,6 @@
+// src/StudyGroupsPage/StudyGroupsPage.tsx
 import React, { useState, useEffect } from "react";
+import { useAuth } from "../firebase/useAuth";
 import {
   Container,
   Card,
@@ -16,7 +18,7 @@ import {
   Select,
   FormControl,
   InputLabel,
-  Tooltip
+  Tooltip,
 } from "@mui/material";
 
 interface StudyGroup {
@@ -40,15 +42,58 @@ const modulesList = [
 ];
 
 const initialGroups: StudyGroup[] = [
-  { id: 1, name: "Tech Nerds", members: 5, maximumMembers: 6, module: "CSU44052: Computer Graphics", membersList: ["Alice", "Bob", "Charlie", "Maria", "Catriona"] },
-  { id: 2, name: "CS Wizards", members: 3, maximumMembers: 5, module: "CSU44051: Human Factors", membersList: ["David", "Eve", "Frank"] },
-  { id: 3, name: "The Elites", members: 3, maximumMembers: 3, module: "CSU44052: Computer Graphics", membersList: ["Grace", "Hannah", "Ian"] },
-  { id: 4, name: "The Fun Group", members: 6, maximumMembers: 6, module: "CSU44061: Machine Learning", membersList: ["Jack", "Kate", "Leo", "Blake", "Robert", "Marco"] },
-  { id: 5, name: "The Prefects", members: 8, maximumMembers: 10, module: "CSU44051: Human Factors", membersList: ["Mike", "Nina", "Oscar", "Alessandro", "Alice", "David", "Grace", "Ava"] },
-  { id: 6, name: "Trinners for Winners", members: 7, maximumMembers: 8, module: "CSU44099: Final Year Project", membersList: ["Paul", "Quinn", "Rachel", "Jade", "Robert", "Bob", "Hannah"] },
+  {
+    id: 1,
+    name: "Tech Nerds",
+    members: 5,
+    maximumMembers: 6,
+    module: "CSU44052: Computer Graphics",
+    membersList: ["Alice", "Bob", "Charlie", "Maria", "Catriona"],
+  },
+  {
+    id: 2,
+    name: "CS Wizards",
+    members: 3,
+    maximumMembers: 5,
+    module: "CSU44051: Human Factors",
+    membersList: ["David", "Eve", "Frank"],
+  },
+  {
+    id: 3,
+    name: "The Elites",
+    members: 3,
+    maximumMembers: 3,
+    module: "CSU44052: Computer Graphics",
+    membersList: ["Grace", "Hannah", "Ian"],
+  },
+  {
+    id: 4,
+    name: "The Fun Group",
+    members: 6,
+    maximumMembers: 6,
+    module: "CSU44061: Machine Learning",
+    membersList: ["Jack", "Kate", "Leo", "Blake", "Robert", "Marco"],
+  },
+  {
+    id: 5,
+    name: "The Prefects",
+    members: 8,
+    maximumMembers: 10,
+    module: "CSU44051: Human Factors",
+    membersList: ["Mike", "Nina", "Oscar", "Alessandro", "Alice", "David", "Grace", "Ava"],
+  },
+  {
+    id: 6,
+    name: "Trinners for Winners",
+    members: 7,
+    maximumMembers: 8,
+    module: "CSU44099: Final Year Project",
+    membersList: ["Paul", "Quinn", "Rachel", "Jade", "Robert", "Bob", "Hannah"],
+  },
 ];
 
 const StudyGroupsPage: React.FC = () => {
+  const { token } = useAuth();
   const [studyGroups, setStudyGroups] = useState<StudyGroup[]>([]);
   const [filteredGroups, setFilteredGroups] = useState<StudyGroup[]>([]);
   const [selectedModule, setSelectedModule] = useState<string>("");
@@ -57,18 +102,25 @@ const StudyGroupsPage: React.FC = () => {
   const [maxMembers, setMaxMembers] = useState(5);
   const [selectedGroupModule, setSelectedGroupModule] = useState("");
 
+  // When the access token is available, log it and simulate fetching data.
   useEffect(() => {
-    setTimeout(() => {
-      setStudyGroups(initialGroups);
-      setFilteredGroups(initialGroups);
-    }, 500);
-  }, []);
+    if (token) {
+      console.log("Access token available:", token);
+      // Simulate an API call with a slight delay
+      setTimeout(() => {
+        setStudyGroups(initialGroups);
+        setFilteredGroups(initialGroups);
+      }, 500);
+    }
+  }, [token]);
 
   useEffect(() => {
     if (selectedModule === "All" || selectedModule === "") {
       setFilteredGroups(studyGroups);
     } else {
-      setFilteredGroups(studyGroups.filter((group) => group.module === selectedModule));
+      setFilteredGroups(
+        studyGroups.filter((group) => group.module === selectedModule)
+      );
     }
   }, [selectedModule, studyGroups]);
 
@@ -124,7 +176,10 @@ const StudyGroupsPage: React.FC = () => {
 
       <FormControl fullWidth style={{ marginBottom: "20px" }}>
         <InputLabel>Filter by Module</InputLabel>
-        <Select value={selectedModule} onChange={(e) => setSelectedModule(e.target.value)}>
+        <Select
+          value={selectedModule}
+          onChange={(e) => setSelectedModule(e.target.value)}
+        >
           <MenuItem value="All">All</MenuItem>
           {modulesList.map((module) => (
             <MenuItem key={module} value={module}>
@@ -136,28 +191,48 @@ const StudyGroupsPage: React.FC = () => {
 
       <Grid container spacing={2}>
         {filteredGroups.map((group) => (
-          <Grid item xs={12} sm={6} md={4} key={group.id} style={{ minWidth: "280px" }}>
+          <Grid
+            item
+            xs={12}
+            sm={6}
+            md={4}
+            key={group.id}
+            style={{ minWidth: "280px" }}
+          >
             <Card>
               <CardContent>
                 <Typography variant="h6">{group.name}</Typography>
                 <Tooltip
-                  title={group.membersList ? group.membersList.join(", ") : "No members yet"}
+                  title={
+                    group.membersList
+                      ? group.membersList.join(", ")
+                      : "No members yet"
+                  }
                   arrow
                 >
                   <Typography color="textSecondary" style={{ cursor: "pointer" }}>
                     Members: {group.members} / {group.maximumMembers}
                   </Typography>
                 </Tooltip>
-                <Typography color="textSecondary">Module: {group.module}</Typography>
+                <Typography color="textSecondary">
+                  Module: {group.module}
+                </Typography>
                 <Button
                   variant="contained"
                   color="primary"
                   fullWidth
                   onClick={() => handleJoinGroup(group.id)}
                   style={{ marginTop: "10px" }}
-                  disabled={group.members >= group.maximumMembers || group.membersList?.includes("Alessandro")}
+                  disabled={
+                    group.members >= group.maximumMembers ||
+                    group.membersList?.includes("Alessandro")
+                  }
                 >
-                  {group.membersList?.includes("Alessandro") ? "Joined" : group.members >= group.maximumMembers ? "Full" : "Request to Join"}
+                  {group.membersList?.includes("Alessandro")
+                    ? "Joined"
+                    : group.members >= group.maximumMembers
+                      ? "Full"
+                      : "Request to Join"}
                 </Button>
               </CardContent>
             </Card>
