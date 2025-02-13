@@ -14,6 +14,7 @@ import {
   Slider,
   MenuItem,
   Select,
+  SelectChangeEvent,
   FormControl,
   InputLabel,
   Tooltip
@@ -129,9 +130,9 @@ const StudyGroupsPage: React.FC = () => {
       return;
     }
     alert(`Invite sent to ${inviteName} at ${inviteEmail}`);
-    setInviteName(""); // Clear fields after invite
+    setInviteName(""); 
     setInviteEmail("");
-    handleCloseInviteDialog(); // Close the invite dialog after sending invite
+    handleCloseInviteDialog(); 
   };
 
   return (
@@ -142,7 +143,7 @@ const StudyGroupsPage: React.FC = () => {
 
       <FormControl fullWidth style={{ marginBottom: "20px" }}>
         <InputLabel>Filter by Module</InputLabel>
-        <Select value={selectedModule} onChange={(e) => setSelectedModule(e.target.value)}>
+        <Select value={selectedModule} onChange={(e: SelectChangeEvent<string>) => setSelectedModule(e.target.value)}>
           <MenuItem value="All">All</MenuItem>
           {modulesList.map((module) => (
             <MenuItem key={module} value={module}>
@@ -199,14 +200,14 @@ const StudyGroupsPage: React.FC = () => {
             label="Group Name"
             fullWidth
             value={groupName}
-            onChange={(e) => setGroupName(e.target.value)}
+            onChange={(e: React.ChangeEvent<{ value: unknown }>) => setSelectedGroupModule(e.target.value as string)}
             margin="dense"
           />
           <FormControl fullWidth style={{ marginTop: "10px" }}>
             <InputLabel>Select Module</InputLabel>
             <Select
               value={selectedGroupModule}
-              onChange={(e) => setSelectedGroupModule(e.target.value)}
+              onChange={(e:SelectChangeEvent<string>) => setSelectedGroupModule(e.target.value)}
             >
               {modulesList.map((module) => (
                 <MenuItem key={module} value={module}>
@@ -248,14 +249,14 @@ const StudyGroupsPage: React.FC = () => {
             label="Invite Name"
             fullWidth
             value={inviteName}
-            onChange={(e) => setInviteName(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setGroupName(e.target.value)}
             margin="dense"
           />
           <TextField
             label="Invite Email"
             fullWidth
             value={inviteEmail}
-            onChange={(e) => setInviteEmail(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInviteName(e.target.value)}
             margin="dense"
           />
         </DialogContent>
