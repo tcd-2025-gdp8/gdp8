@@ -14,6 +14,7 @@ import {
   Slider,
   MenuItem,
   Select,
+  SelectChangeEvent,
   FormControl,
   InputLabel,
   Tooltip
@@ -56,6 +57,10 @@ const StudyGroupsPage: React.FC = () => {
   const [groupName, setGroupName] = useState("");
   const [maxMembers, setMaxMembers] = useState(5);
   const [selectedGroupModule, setSelectedGroupModule] = useState("");
+  const [openInviteDialog, setOpenInviteDialog] = useState(false); // State to manage the invite dialog
+  const [inviteName, setInviteName] = useState("");
+  const [inviteEmail, setInviteEmail] = useState("");
+
 
   useEffect(() => {
     setTimeout(() => {
@@ -116,6 +121,20 @@ const StudyGroupsPage: React.FC = () => {
     handleCloseDialog();
   };
 
+  const handleOpenInviteDialog = () => setOpenInviteDialog(true); // Open invite dialog
+  const handleCloseInviteDialog = () => setOpenInviteDialog(false); // Close invite dialog
+
+  const handleInvite = () => {
+    if (inviteName.trim() === "" || inviteEmail.trim() === "") {
+      alert("Please enter a valid name and email.");
+      return;
+    }
+    alert(`Invite sent to ${inviteName} at ${inviteEmail}`);
+    setInviteName(""); 
+    setInviteEmail("");
+    handleCloseInviteDialog(); 
+  };
+
   return (
     <Container maxWidth="md" style={{ marginTop: "20px" }}>
       <Typography variant="h4" gutterBottom>
@@ -124,7 +143,7 @@ const StudyGroupsPage: React.FC = () => {
 
       <FormControl fullWidth style={{ marginBottom: "20px" }}>
         <InputLabel>Filter by Module</InputLabel>
-        <Select value={selectedModule} onChange={(e) => setSelectedModule(e.target.value)}>
+        <Select value={selectedModule} onChange={(e: SelectChangeEvent<string>) => setSelectedModule(e.target.value)} >
           <MenuItem value="All">All</MenuItem>
           {modulesList.map((module) => (
             <MenuItem key={module} value={module}>
@@ -181,14 +200,14 @@ const StudyGroupsPage: React.FC = () => {
             label="Group Name"
             fullWidth
             value={groupName}
-            onChange={(e) => setGroupName(e.target.value)}
+            onChange={(e: React.ChangeEvent<{ value: unknown }>) => setSelectedGroupModule(e.target.value as string)}
             margin="dense"
           />
           <FormControl fullWidth style={{ marginTop: "10px" }}>
             <InputLabel>Select Module</InputLabel>
             <Select
               value={selectedGroupModule}
-              onChange={(e) => setSelectedGroupModule(e.target.value)}
+              onChange={(e:SelectChangeEvent<string>) => setSelectedGroupModule(e.target.value)}
             >
               {modulesList.map((module) => (
                 <MenuItem key={module} value={module}>
@@ -214,11 +233,43 @@ const StudyGroupsPage: React.FC = () => {
           <Button onClick={handleCloseDialog} color="error" variant="contained">
             Cancel
           </Button>
+          <Button onClick={handleOpenInviteDialog} color="primary" variant="contained">
+            Invite Members
+          </Button>
           <Button onClick={handleCreateGroup} color="success" variant="contained">
             Create
           </Button>
         </DialogActions>
       </Dialog>
+
+      <Dialog open={openInviteDialog} onClose={handleCloseInviteDialog}>
+        <DialogTitle>Invite a User</DialogTitle>
+        <DialogContent>
+          <TextField
+            label="Invite Name"
+            fullWidth
+            value={inviteName}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setGroupName(e.target.value)}
+            margin="dense"
+          />
+          <TextField
+            label="Invite Email"
+            fullWidth
+            value={inviteEmail}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInviteName(e.target.value)}
+            margin="dense"
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseInviteDialog} color="error" variant="contained">
+            Cancel
+          </Button>
+          <Button onClick={handleInvite} color="primary" variant="contained">
+            Invite
+          </Button>
+        </DialogActions>
+      </Dialog>
+
     </Container>
   );
 };
