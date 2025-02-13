@@ -1,7 +1,12 @@
 // src/firebase/firebase.ts
 import { initializeApp, FirebaseApp, FirebaseOptions } from "firebase/app";
 import { getAnalytics, Analytics } from "firebase/analytics";
-import { getAuth, Auth } from "firebase/auth";
+import {
+    getAuth,
+    setPersistence,
+    browserSessionPersistence,
+    Auth,
+} from "firebase/auth";
 
 const firebaseConfig: FirebaseOptions = {
     apiKey: "AIzaSyCIbysnKfrvwt8gCHi2jydh6iYftPsGYEA",
@@ -17,5 +22,14 @@ const firebaseConfig: FirebaseOptions = {
 const app: FirebaseApp = initializeApp(firebaseConfig);
 const analytics: Analytics = getAnalytics(app);
 const auth: Auth = getAuth(app);
+
+// Set persistence to session so the user is signed out when the browser or tab is closed.
+setPersistence(auth, browserSessionPersistence)
+    .then(() => {
+        console.log("Session persistence set successfully.");
+    })
+    .catch((error) => {
+        console.error("Error setting session persistence:", error);
+    });
 
 export { app, analytics, auth };
