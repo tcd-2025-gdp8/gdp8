@@ -12,21 +12,26 @@ function App() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchStudyGroups = async () => {
-      try {
-        const response = await fetch("http://localhost:8080/api/study-groups");
-        if (!response.ok) throw new Error("Failed to fetch study groups");
-        const data = await response.json();
-        setStudyGroups(data);
-      } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchStudyGroups = async (): Promise<void> => {
+    try {
+      const response = await fetch("http://localhost:8080/api/study-groups");
+      if (!response.ok) throw new Error("Failed to fetch study groups");
 
-    fetchStudyGroups();
+      const data: StudyGroup[] = await response.json(); // ✅ Explicitly typed
+      setStudyGroups(data);
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message); // ✅ Safe error handling
+      } else {
+        setError("An unknown error occurred");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void fetchStudyGroups(); // ✅ Ensures no floating promises
   }, []);
 
   return (
