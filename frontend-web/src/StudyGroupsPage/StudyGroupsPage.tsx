@@ -149,22 +149,30 @@ const StudyGroupsPage: React.FC = () => {
   }, [selectedModule, studyGroups]);
 
   const handleJoinGroup = (id: number) => {
-    setStudyGroups((prevGroups) =>
-      prevGroups.map((group) => {
-        if (group.id === id && group.members < group.maximumMembers) {
-          if (!group.membersList?.includes("Alessandro")) {
-            setNotifications((prev) => [...prev, { id: Date.now(), message: `You joined '${group.name}'.` }]);
-            return {
-              ...group,
-              members: group.members + 1,
-              membersList: [...(group.membersList ?? []), "Alessandro"],
-            };
-          }
+    let joinedGroupName = "";
+  
+    const updatedGroups = studyGroups.map((group) => {
+      if (group.id === id && group.members < group.maximumMembers) {
+        if (!group.membersList?.includes("Alessandro")) {
+          joinedGroupName = group.name; // Capture the name of the group joined
+          return {
+            ...group,
+            members: group.members + 1,
+            membersList: [...(group.membersList ?? []), "Alessandro"],
+          };
         }
-        return group;
-      })
-    );
-  };
+      }
+      return group;
+    });
+  
+    if (joinedGroupName) {
+      setStudyGroups(updatedGroups);
+      setNotifications((prev) => [
+        ...prev,
+        { id: Date.now(), message: `You joined '${joinedGroupName}'.` },
+      ]);
+    }
+  };  
 
   const handleDeleteNotification = (notificationId: number) => {
     setNotifications((prevNotifications) =>
