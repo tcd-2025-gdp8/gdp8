@@ -1,4 +1,4 @@
-// src/firebase/firebase.ts
+// src/firebase/firebase.tsx
 import { initializeApp, FirebaseApp, FirebaseOptions } from "firebase/app";
 import { getAnalytics, Analytics } from "firebase/analytics";
 import {
@@ -9,13 +9,13 @@ import {
 } from "firebase/auth";
 
 const firebaseConfig: FirebaseOptions = {
-    apiKey: "AIzaSyCIbysnKfrvwt8gCHi2jydh6iYftPsGYEA",
-    authDomain: "studygroups-3380d.firebaseapp.com",
-    projectId: "studygroups-3380d",
-    storageBucket: "studygroups-3380d.firebasestorage.app",
-    messagingSenderId: "247573450343",
-    appId: "1:247573450343:web:653066a5bb355c8acb0ec2",
-    measurementId: "G-Z6KLPYPV46",
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY as string,
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN as string,
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID as string,
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET as string,
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID as string,
+    appId: import.meta.env.VITE_FIREBASE_APP_ID as string,
+    measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID as string,
 };
 
 // Initialize Firebase

@@ -1,4 +1,4 @@
-// src/firebase/AuthContext.ts
+// src/firebase/authContext.ts
 import { createContext } from "react";
 import { User, UserCredential } from "firebase/auth";
 
