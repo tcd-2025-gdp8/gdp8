@@ -17,11 +17,11 @@ function App() {
       const response = await fetch("http://localhost:8080/api/study-groups");
       if (!response.ok) throw new Error("Failed to fetch study groups");
 
-      const data: StudyGroup[] = await response.json(); // ✅ Explicitly typed
+      const data: StudyGroup[] = await response.json(); 
       setStudyGroups(data);
     } catch (err) {
       if (err instanceof Error) {
-        setError(err.message); // ✅ Safe error handling
+        setError(err.message); 
       } else {
         setError("An unknown error occurred");
       }
@@ -31,7 +31,7 @@ function App() {
   };
 
   useEffect(() => {
-    void fetchStudyGroups(); // ✅ Ensures no floating promises
+    void fetchStudyGroups(); 
   }, []);
 
   return (
