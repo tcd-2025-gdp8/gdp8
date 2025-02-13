@@ -80,7 +80,7 @@ const StudyGroupsPage: React.FC = () => {
             return {
               ...group,
               members: group.members + 1,
-              membersList: [...(group.membersList || []), "Alessandro"],
+              membersList: [...(group.membersList ?? []), "Alessandro"],
             };
           }
         }
