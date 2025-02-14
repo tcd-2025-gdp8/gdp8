@@ -169,7 +169,7 @@ const StudyGroupsPage: React.FC = () => {
       setStudyGroups(updatedGroups);
       setNotifications((prev) => [
         ...prev,
-        { id: Date.now(), message: `You joined '${joinedGroupName}'.` },
+        { id: Date.now(), message: `You joined Study Group: '${joinedGroupName}'.` },
       ]);
     }
   };  
@@ -204,7 +204,7 @@ const StudyGroupsPage: React.FC = () => {
     };
 
     setStudyGroups([...studyGroups, newGroup]);
-    setNotifications((prev) => [...prev, { id: Date.now(), message: `Group '${groupName}' created.` }]);
+    setNotifications((prev) => [...prev, { id: Date.now(), message: `New study group "${groupName}" has been created for ${selectedGroupModule}.` }]);
     handleCloseDialog();
   };
 
@@ -335,13 +335,14 @@ const StudyGroupsPage: React.FC = () => {
       <Dialog open={openDialog} onClose={handleCloseDialog}>
         <DialogTitle>Create a Study Group</DialogTitle>
         <DialogContent>
-          <TextField
-            label="Group Name"
-            fullWidth
-            value={groupName}
-            onChange={(e: React.ChangeEvent<{ value: unknown }>) => setSelectedGroupModule(e.target.value as string)}
-            margin="dense"
-          />
+        <TextField
+          label="Group Name"
+          fullWidth
+          value={groupName}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setGroupName(e.target.value)}
+          margin="dense"
+        />
+
           <FormControl fullWidth style={{ marginTop: "10px" }}>
             <InputLabel>Select Module</InputLabel>
             <Select
