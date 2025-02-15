@@ -29,7 +29,16 @@ func NewMockStudyGroupRepository() StudyGroupRepository {
 				Description: "A group for studying mathematics.",
 				Type:        models.TypePublic,
 				ModuleID:    1,
-				Members:     []models.UserID{1, 2},
+				Members: []models.StudyGroupMember{
+					{
+						UserID: 1,
+						Role:   models.RoleAdmin,
+					},
+					{
+						UserID: 2,
+						Role:   models.RoleMember,
+					},
+				},
 			},
 			2: {
 				ID:          2,
@@ -37,7 +46,12 @@ func NewMockStudyGroupRepository() StudyGroupRepository {
 				Description: "A group for studying agile methods.",
 				Type:        models.TypeClosed,
 				ModuleID:    2,
-				Members:     []models.UserID{2},
+				Members: []models.StudyGroupMember{
+					{
+						UserID: 2,
+						Role:   models.RoleAdmin,
+					},
+				},
 			},
 			3: {
 				ID:          3,
@@ -45,7 +59,12 @@ func NewMockStudyGroupRepository() StudyGroupRepository {
 				Description: "Very elite invite-only study group.",
 				Type:        models.TypeInviteOnly,
 				ModuleID:    1,
-				Members:     []models.UserID{1},
+				Members: []models.StudyGroupMember{
+					{
+						UserID: 1,
+						Role:   models.RoleAdmin,
+					},
+				},
 			},
 		},
 		counter: 4,

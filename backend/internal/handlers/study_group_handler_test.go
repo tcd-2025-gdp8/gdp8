@@ -50,7 +50,16 @@ func TestStudyGroupHandler_GetStudyGroup(t *testing.T) {
 						Description: "Test Description",
 						Type:        models.TypePublic,
 						ModuleID:    42,
-						Members:     []models.UserID{3, 4},
+						Members: []models.StudyGroupMember{
+							{
+								UserID: 3,
+								Role:   models.RoleAdmin,
+							},
+							{
+								UserID: 4,
+								Role:   models.RoleMember,
+							},
+						},
 					}, nil)
 			},
 			expectedCode: http.StatusOK,
@@ -133,7 +142,16 @@ func TestStudyGroupHandler_GetAllStudyGroups(t *testing.T) {
 							Description: "Description 1",
 							Type:        models.TypePublic,
 							ModuleID:    42,
-							Members:     []models.UserID{3, 4},
+							Members: []models.StudyGroupMember{
+								{
+									UserID: 3,
+									Role:   models.RoleAdmin,
+								},
+								{
+									UserID: 4,
+									Role:   models.RoleMember,
+								},
+							},
 						},
 						{
 							ID:          2,
@@ -141,7 +159,12 @@ func TestStudyGroupHandler_GetAllStudyGroups(t *testing.T) {
 							Description: "Description 2",
 							Type:        models.TypeClosed,
 							ModuleID:    1,
-							Members:     []models.UserID{1},
+							Members: []models.StudyGroupMember{
+								{
+									UserID: 1,
+									Role:   models.RoleAdmin,
+								},
+							},
 						},
 					}, nil)
 			},
