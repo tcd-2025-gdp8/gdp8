@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"gdp8-backend/internal/models"
+	"gdp8-backend/internal/persistence"
 	"gdp8-backend/internal/repositories"
 )
 
@@ -15,16 +16,26 @@ type StudyGroupService interface {
 
 var ErrStudyGroupNotFound = errors.New("study group not found")
 
-type StudyGroupServiceImpl struct {
+type studyGroupServiceImpl struct {
+	txMgr          persistence.TransactionManager
 	studyGroupRepo repositories.StudyGroupRepository
 }
 
-func NewStudyGroupService(studyGroupRepo repositories.StudyGroupRepository) StudyGroupService {
-	return &StudyGroupServiceImpl{studyGroupRepo: studyGroupRepo}
+func NewStudyGroupService(
+	txMgr persistence.TransactionManager,
+	studyGroupRepo repositories.StudyGroupRepository) StudyGroupService {
+
+	return &studyGroupServiceImpl{
+		txMgr:          txMgr,
+		studyGroupRepo: studyGroupRepo,
+	}
 }
 
-func (s StudyGroupServiceImpl) GetStudyGroupByID(id models.StudyGroupID) (*models.StudyGroup, error) {
-	studyGroup, err := s.studyGroupRepo.GetStudyGroupByID(id)
+func (s *studyGroupServiceImpl) GetStudyGroupByID(id models.StudyGroupID) (*models.StudyGroup, error) {
+	studyGroup, err := persistence.WithTransaction(s.txMgr, func(tx persistence.Transaction) (*models.StudyGroup, error) {
+		return s.studyGroupRepo.GetStudyGroupByID(tx, id)
+	})
+
 	if err != nil {
 		if errors.Is(err, repositories.ErrStudyGroupNotFound) {
 			return nil, ErrStudyGroupNotFound
@@ -35,10 +46,14 @@ func (s StudyGroupServiceImpl) GetStudyGroupByID(id models.StudyGroupID) (*model
 	return studyGroup, nil
 }
 
-func (s StudyGroupServiceImpl) GetAllStudyGroups() ([]models.StudyGroup, error) {
-	studyGroups, err := s.studyGroupRepo.GetAllStudyGroups()
+func (s *studyGroupServiceImpl) GetAllStudyGroups() ([]models.StudyGroup, error) {
+	studyGroups, err := persistence.WithTransaction(s.txMgr, func(tx persistence.Transaction) ([]models.StudyGroup, error) {
+		return s.studyGroupRepo.GetAllStudyGroups(tx)
+	})
+
 	if err != nil {
 		return nil, fmt.Errorf("error fetching study groups: %w", err)
 	}
+
 	return studyGroups, nil
 }

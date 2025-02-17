@@ -5,11 +5,12 @@ import (
 	"sync"
 
 	"gdp8-backend/internal/models"
+	"gdp8-backend/internal/persistence"
 )
 
 type StudyGroupRepository interface {
-	GetStudyGroupByID(id models.StudyGroupID) (*models.StudyGroup, error)
-	GetAllStudyGroups() ([]models.StudyGroup, error)
+	GetStudyGroupByID(tx persistence.Transaction, id models.StudyGroupID) (*models.StudyGroup, error)
+	GetAllStudyGroups(tx persistence.Transaction) ([]models.StudyGroup, error)
 }
 
 var ErrStudyGroupNotFound = errors.New("study group not found")
@@ -77,7 +78,7 @@ func NewMockStudyGroupRepository() StudyGroupRepository {
 	}
 }
 
-func (r *MockStudyGroupRepository) GetStudyGroupByID(id models.StudyGroupID) (*models.StudyGroup, error) {
+func (r *MockStudyGroupRepository) GetStudyGroupByID(_ persistence.Transaction, id models.StudyGroupID) (*models.StudyGroup, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -88,7 +89,7 @@ func (r *MockStudyGroupRepository) GetStudyGroupByID(id models.StudyGroupID) (*m
 	return &studyGroup, nil
 }
 
-func (r *MockStudyGroupRepository) GetAllStudyGroups() ([]models.StudyGroup, error) {
+func (r *MockStudyGroupRepository) GetAllStudyGroups(_ persistence.Transaction) ([]models.StudyGroup, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 

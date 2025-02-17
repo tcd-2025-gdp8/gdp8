@@ -7,14 +7,15 @@ import (
 
 	"gdp8-backend/internal/handlers"
 	"gdp8-backend/internal/middleware"
+	"gdp8-backend/internal/persistence"
 	"gdp8-backend/internal/repositories"
 	"gdp8-backend/internal/services"
 )
 
 func RegisterStudyGroupRoutes(firebaseAuth *auth.Client) {
-	// Create your study group handler as usual
+	txManager := persistence.MockTransactionManager{}
 	studyGroupRepo := repositories.NewMockStudyGroupRepository()
-	studyGroupService := services.NewStudyGroupService(studyGroupRepo)
+	studyGroupService := services.NewStudyGroupService(&txManager, studyGroupRepo)
 	handler := handlers.NewStudyGroupHandler(studyGroupService)
 
 	// Wrap protected endpoints with WithFirebaseAuth
