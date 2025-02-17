@@ -24,11 +24,13 @@ func NewMockStudyGroupRepository() StudyGroupRepository {
 	return &MockStudyGroupRepository{
 		studyGroups: map[models.StudyGroupID]models.StudyGroup{
 			1: {
-				ID:          1,
-				Name:        "Math Study Group",
-				Description: "A group for studying mathematics.",
-				Type:        models.TypePublic,
-				ModuleID:    1,
+				ID: 1,
+				StudyGroupDetails: models.StudyGroupDetails{
+					Name:        "Math Study Group",
+					Description: "A group for studying mathematics.",
+					Type:        models.TypePublic,
+					ModuleID:    1,
+				},
 				Members: []models.StudyGroupMember{
 					{
 						UserID: 1,
@@ -41,11 +43,13 @@ func NewMockStudyGroupRepository() StudyGroupRepository {
 				},
 			},
 			2: {
-				ID:          2,
-				Name:        "Agile Study Group",
-				Description: "A group for studying agile methods.",
-				Type:        models.TypeClosed,
-				ModuleID:    2,
+				ID: 2,
+				StudyGroupDetails: models.StudyGroupDetails{
+					Name:        "Agile Study Group",
+					Description: "A group for studying agile methods.",
+					Type:        models.TypeClosed,
+					ModuleID:    2,
+				},
 				Members: []models.StudyGroupMember{
 					{
 						UserID: 2,
@@ -54,11 +58,13 @@ func NewMockStudyGroupRepository() StudyGroupRepository {
 				},
 			},
 			3: {
-				ID:          3,
-				Name:        "Elite Study Group",
-				Description: "Very elite invite-only study group.",
-				Type:        models.TypeInviteOnly,
-				ModuleID:    1,
+				ID: 3,
+				StudyGroupDetails: models.StudyGroupDetails{
+					Name:        "Elite Study Group",
+					Description: "Very elite invite-only study group.",
+					Type:        models.TypeInviteOnly,
+					ModuleID:    1,
+				},
 				Members: []models.StudyGroupMember{
 					{
 						UserID: 1,

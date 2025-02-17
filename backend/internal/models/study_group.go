@@ -19,11 +19,15 @@ type StudyGroupMember struct {
 	Role   StudyGroupRole
 }
 
-type StudyGroup struct {
-	ID          StudyGroupID
+type StudyGroupDetails struct {
 	Name        string
 	Description string
 	Type        StudyGroupType
 	ModuleID    ModuleID
-	Members     []StudyGroupMember
+}
+
+type StudyGroup struct {
+	ID StudyGroupID
+	StudyGroupDetails
+	Members []StudyGroupMember
 }

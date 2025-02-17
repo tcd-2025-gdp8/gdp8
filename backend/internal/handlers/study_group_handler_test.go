@@ -45,11 +45,13 @@ func TestStudyGroupHandler_GetStudyGroup(t *testing.T) {
 				service.
 					On("GetStudyGroupByID", models.StudyGroupID(123)).
 					Return(&models.StudyGroup{
-						ID:          123,
-						Name:        "Test Group",
-						Description: "Test Description",
-						Type:        models.TypePublic,
-						ModuleID:    42,
+						ID: 123,
+						StudyGroupDetails: models.StudyGroupDetails{
+							Name:        "Test Group",
+							Description: "Test Description",
+							Type:        models.TypePublic,
+							ModuleID:    42,
+						},
 						Members: []models.StudyGroupMember{
 							{
 								UserID: 3,
@@ -137,11 +139,13 @@ func TestStudyGroupHandler_GetAllStudyGroups(t *testing.T) {
 					On("GetAllStudyGroups").
 					Return([]models.StudyGroup{
 						{
-							ID:          1,
-							Name:        "Group 1",
-							Description: "Description 1",
-							Type:        models.TypePublic,
-							ModuleID:    42,
+							ID: 1,
+							StudyGroupDetails: models.StudyGroupDetails{
+								Name:        "Group 1",
+								Description: "Description 1",
+								Type:        models.TypePublic,
+								ModuleID:    42,
+							},
 							Members: []models.StudyGroupMember{
 								{
 									UserID: 3,
@@ -154,11 +158,13 @@ func TestStudyGroupHandler_GetAllStudyGroups(t *testing.T) {
 							},
 						},
 						{
-							ID:          2,
-							Name:        "Group 2",
-							Description: "Description 2",
-							Type:        models.TypeClosed,
-							ModuleID:    1,
+							ID: 2,
+							StudyGroupDetails: models.StudyGroupDetails{
+								Name:        "Group 2",
+								Description: "Description 2",
+								Type:        models.TypeClosed,
+								ModuleID:    1,
+							},
 							Members: []models.StudyGroupMember{
 								{
 									UserID: 1,
