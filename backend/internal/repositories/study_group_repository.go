@@ -37,11 +37,11 @@ func NewMockStudyGroupRepository() StudyGroupRepository {
 				},
 				Members: []models.StudyGroupMember{
 					{
-						UserID: 1,
+						UserID: "1",
 						Role:   models.RoleAdmin,
 					},
 					{
-						UserID: 2,
+						UserID: "2",
 						Role:   models.RoleMember,
 					},
 				},
@@ -56,7 +56,7 @@ func NewMockStudyGroupRepository() StudyGroupRepository {
 				},
 				Members: []models.StudyGroupMember{
 					{
-						UserID: 2,
+						UserID: "2",
 						Role:   models.RoleAdmin,
 					},
 				},
@@ -71,7 +71,7 @@ func NewMockStudyGroupRepository() StudyGroupRepository {
 				},
 				Members: []models.StudyGroupMember{
 					{
-						UserID: 1,
+						UserID: "1",
 						Role:   models.RoleAdmin,
 					},
 				},

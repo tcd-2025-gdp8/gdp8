@@ -79,11 +79,11 @@ func TestStudyGroupHandler_GetStudyGroup(t *testing.T) {
 						},
 						Members: []models.StudyGroupMember{
 							{
-								UserID: 3,
+								UserID: "3",
 								Role:   models.RoleAdmin,
 							},
 							{
-								UserID: 4,
+								UserID: "4",
 								Role:   models.RoleMember,
 							},
 						},
@@ -173,11 +173,11 @@ func TestStudyGroupHandler_GetAllStudyGroups(t *testing.T) {
 							},
 							Members: []models.StudyGroupMember{
 								{
-									UserID: 3,
+									UserID: "3",
 									Role:   models.RoleAdmin,
 								},
 								{
-									UserID: 4,
+									UserID: "4",
 									Role:   models.RoleMember,
 								},
 							},
@@ -192,7 +192,7 @@ func TestStudyGroupHandler_GetAllStudyGroups(t *testing.T) {
 							},
 							Members: []models.StudyGroupMember{
 								{
-									UserID: 1,
+									UserID: "1",
 									Role:   models.RoleAdmin,
 								},
 							},
