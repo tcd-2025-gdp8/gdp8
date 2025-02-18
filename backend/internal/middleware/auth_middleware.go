@@ -1,13 +1,15 @@
 package middleware
 
 import (
+	"context"
 	"net/http"
 	"strings"
 
 	"firebase.google.com/go/v4/auth"
 )
 
-// WithFirebaseAuth is a middleware that ensures requests have a valid Firebase ID token.
+// WithFirebaseAuth is a middleware that ensures requests have a valid Firebase access token.
+// The middleware also updates the context with the user ID (UID) retrieved from the verified token.
 func WithFirebaseAuth(firebaseAuth *auth.Client, next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		authHeader := r.Header.Get("Authorization")
@@ -17,13 +19,16 @@ func WithFirebaseAuth(firebaseAuth *auth.Client, next http.HandlerFunc) http.Han
 		}
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 
-		_, err := firebaseAuth.VerifyIDToken(r.Context(), tokenString)
+		ctx := r.Context()
+
+		token, err := firebaseAuth.VerifyIDToken(ctx, tokenString)
 		if err != nil {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
 
-		// If token is valid, proceed with the original handler
-		next.ServeHTTP(w, r)
+		ctx = context.WithValue(ctx, "uid", token.UID)
+
+		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 }
