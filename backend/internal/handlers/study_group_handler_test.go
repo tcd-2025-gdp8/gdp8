@@ -28,6 +28,61 @@ func (m *MockStudyGroupService) GetAllStudyGroups() ([]models.StudyGroup, error)
 	return args.Get(0).([]models.StudyGroup), args.Error(1)
 }
 
+func (m *MockStudyGroupService) CreateStudyGroup(studyGroupDetails models.StudyGroupDetails, creatorID models.UserID) (*models.StudyGroup, error) {
+	args := m.Called(studyGroupDetails, creatorID)
+	return args.Get(0).(*models.StudyGroup), args.Error(1)
+}
+
+func (m *MockStudyGroupService) UpdateStudyGroupDetails(id models.StudyGroupID, details models.StudyGroupDetails, requesterID models.UserID) (*models.StudyGroup, error) {
+	args := m.Called(id, details, requesterID)
+	return args.Get(0).(*models.StudyGroup), args.Error(1)
+}
+
+func (m *MockStudyGroupService) DeleteStudyGroup(id models.StudyGroupID, requesterID models.UserID) error {
+	args := m.Called(id, requesterID)
+	return args.Error(0)
+}
+
+func (m *MockStudyGroupService) InviteMemberToStudyGroup(studyGroupID models.StudyGroupID, memberID models.UserID, requesterID models.UserID) error {
+	args := m.Called(studyGroupID, memberID, requesterID)
+	return args.Error(0)
+}
+
+func (m *MockStudyGroupService) AcceptInviteToStudyGroup(studyGroupID models.StudyGroupID, memberID models.UserID) error {
+	args := m.Called(studyGroupID, memberID)
+	return args.Error(0)
+}
+
+func (m *MockStudyGroupService) RejectInviteToStudyGroup(studyGroupID models.StudyGroupID, memberID models.UserID) error {
+	args := m.Called(studyGroupID, memberID)
+	return args.Error(0)
+}
+
+func (m *MockStudyGroupService) RequestToJoinStudyGroup(studyGroupID models.StudyGroupID, memberID models.UserID) error {
+	args := m.Called(studyGroupID, memberID)
+	return args.Error(0)
+}
+
+func (m *MockStudyGroupService) AcceptRequestToJoinStudyGroup(studyGroupID models.StudyGroupID, memberID models.UserID, adminID models.UserID) error {
+	args := m.Called(studyGroupID, memberID, adminID)
+	return args.Error(0)
+}
+
+func (m *MockStudyGroupService) RejectRequestToJoinStudyGroup(studyGroupID models.StudyGroupID, memberID models.UserID, adminID models.UserID) error {
+	args := m.Called(studyGroupID, memberID, adminID)
+	return args.Error(0)
+}
+
+func (m *MockStudyGroupService) RemoveMemberFromStudyGroup(studyGroupID models.StudyGroupID, memberID models.UserID, requesterID models.UserID) error {
+	args := m.Called(studyGroupID, memberID, requesterID)
+	return args.Error(0)
+}
+
+func (m *MockStudyGroupService) LeaveStudyGroup(studyGroupID models.StudyGroupID, memberID models.UserID) error {
+	args := m.Called(studyGroupID, memberID)
+	return args.Error(0)
+}
+
 func TestStudyGroupHandler_GetStudyGroup(t *testing.T) {
 	t.Parallel()
 
