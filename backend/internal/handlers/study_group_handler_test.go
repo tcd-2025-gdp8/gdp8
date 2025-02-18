@@ -43,43 +43,13 @@ func (m *MockStudyGroupService) DeleteStudyGroup(id models.StudyGroupID, request
 	return args.Error(0)
 }
 
-func (m *MockStudyGroupService) InviteMemberToStudyGroup(studyGroupID models.StudyGroupID, memberID models.UserID, requesterID models.UserID) error {
-	args := m.Called(studyGroupID, memberID, requesterID)
+func (m *MockStudyGroupService) HandleAdminMemberOperation(command services.AdminMemberOperationCommand, studyGroupID models.StudyGroupID, memberID models.UserID, adminID models.UserID) error {
+	args := m.Called(command, studyGroupID, memberID, adminID)
 	return args.Error(0)
 }
 
-func (m *MockStudyGroupService) AcceptInviteToStudyGroup(studyGroupID models.StudyGroupID, memberID models.UserID) error {
-	args := m.Called(studyGroupID, memberID)
-	return args.Error(0)
-}
-
-func (m *MockStudyGroupService) RejectInviteToStudyGroup(studyGroupID models.StudyGroupID, memberID models.UserID) error {
-	args := m.Called(studyGroupID, memberID)
-	return args.Error(0)
-}
-
-func (m *MockStudyGroupService) RequestToJoinStudyGroup(studyGroupID models.StudyGroupID, memberID models.UserID) error {
-	args := m.Called(studyGroupID, memberID)
-	return args.Error(0)
-}
-
-func (m *MockStudyGroupService) AcceptRequestToJoinStudyGroup(studyGroupID models.StudyGroupID, memberID models.UserID, adminID models.UserID) error {
-	args := m.Called(studyGroupID, memberID, adminID)
-	return args.Error(0)
-}
-
-func (m *MockStudyGroupService) RejectRequestToJoinStudyGroup(studyGroupID models.StudyGroupID, memberID models.UserID, adminID models.UserID) error {
-	args := m.Called(studyGroupID, memberID, adminID)
-	return args.Error(0)
-}
-
-func (m *MockStudyGroupService) RemoveMemberFromStudyGroup(studyGroupID models.StudyGroupID, memberID models.UserID, requesterID models.UserID) error {
-	args := m.Called(studyGroupID, memberID, requesterID)
-	return args.Error(0)
-}
-
-func (m *MockStudyGroupService) LeaveStudyGroup(studyGroupID models.StudyGroupID, memberID models.UserID) error {
-	args := m.Called(studyGroupID, memberID)
+func (m *MockStudyGroupService) HandleSelfMemberOperation(command services.SelfMemberOperationCommand, studyGroupID models.StudyGroupID, memberID models.UserID) error {
+	args := m.Called(command, studyGroupID, memberID)
 	return args.Error(0)
 }
 
