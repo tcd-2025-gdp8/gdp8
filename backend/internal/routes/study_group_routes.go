@@ -3,17 +3,22 @@ package routes
 import (
 	"net/http"
 
+	"firebase.google.com/go/v4/auth"
+
 	"gdp8-backend/internal/handlers"
+	"gdp8-backend/internal/middleware"
 	"gdp8-backend/internal/repositories"
 	"gdp8-backend/internal/services"
 )
 
-func RegisterStudyGroupRoutes() {
+func RegisterStudyGroupRoutes(firebaseAuth *auth.Client) {
+	// Create your study group handler as usual
 	studyGroupRepo := repositories.NewMockStudyGroupRepository()
 	studyGroupService := services.NewStudyGroupService(studyGroupRepo)
 	handler := handlers.NewStudyGroupHandler(studyGroupService)
 
-	http.HandleFunc("GET /api/study-groups/{id}", handler.GetStudyGroup)
-	http.HandleFunc("GET /api/study-groups", handler.GetAllStudyGroups)
-	http.HandleFunc("GET /api/study-groups/", handler.GetAllStudyGroups)
+	// Wrap protected endpoints with WithFirebaseAuth
+	http.HandleFunc("/api/study-groups", middleware.WithFirebaseAuth(firebaseAuth, handler.GetAllStudyGroups))
+	http.HandleFunc("/api/study-groups/", middleware.WithFirebaseAuth(firebaseAuth, handler.GetAllStudyGroups))
+	http.HandleFunc("/api/study-groups/{id}", middleware.WithFirebaseAuth(firebaseAuth, handler.GetStudyGroup))
 }

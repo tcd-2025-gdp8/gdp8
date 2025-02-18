@@ -150,7 +150,7 @@ const StudyGroupsPage: React.FC = () => {
 
   const handleJoinGroup = (id: number) => {
     let joinedGroupName = "";
-  
+
     const updatedGroups = studyGroups.map((group) => {
       if (group.id === id && group.members < group.maximumMembers) {
         if (!group.membersList?.includes("Alessandro")) {
@@ -164,7 +164,7 @@ const StudyGroupsPage: React.FC = () => {
       }
       return group;
     });
-  
+
     if (joinedGroupName) {
       setStudyGroups(updatedGroups);
       setNotifications((prev) => [
@@ -172,13 +172,13 @@ const StudyGroupsPage: React.FC = () => {
         { id: Date.now(), message: `You joined Study Group: '${joinedGroupName}'.` },
       ]);
     }
-  };  
+  };
 
   const handleDeleteNotification = (notificationId: number) => {
     setNotifications((prevNotifications) =>
       prevNotifications.filter((notification) => notification.id !== notificationId)
     );
-  };  
+  };
 
   const handleOpenDialog = () => setOpenDialog(true);
   const handleCloseDialog = () => {
@@ -217,9 +217,9 @@ const StudyGroupsPage: React.FC = () => {
       return;
     }
     alert(`Invite sent to ${inviteName} at ${inviteEmail}`);
-    setInviteName(""); 
+    setInviteName("");
     setInviteEmail("");
-    handleCloseInviteDialog(); 
+    handleCloseInviteDialog();
   };
 
   return (
@@ -335,19 +335,19 @@ const StudyGroupsPage: React.FC = () => {
       <Dialog open={openDialog} onClose={handleCloseDialog}>
         <DialogTitle>Create a Study Group</DialogTitle>
         <DialogContent>
-        <TextField
-          label="Group Name"
-          fullWidth
-          value={groupName}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setGroupName(e.target.value)}
-          margin="dense"
-        />
+          <TextField
+            label="Group Name"
+            fullWidth
+            value={groupName}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setGroupName(e.target.value)}
+            margin="dense"
+          />
 
           <FormControl fullWidth style={{ marginTop: "10px" }}>
             <InputLabel>Select Module</InputLabel>
             <Select
               value={selectedGroupModule}
-              onChange={(e:SelectChangeEvent<string>) => setSelectedGroupModule(e.target.value)}
+              onChange={(e: SelectChangeEvent<string>) => setSelectedGroupModule(e.target.value)}
             >
               {modulesList.map((module) => (
                 <MenuItem key={module} value={module}>
