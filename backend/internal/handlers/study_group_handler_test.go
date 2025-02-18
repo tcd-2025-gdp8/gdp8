@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -245,6 +246,100 @@ func TestStudyGroupHandler_GetAllStudyGroups(t *testing.T) {
 			assert.Equal(t, tt.expectedBody, w.Body.String())
 
 			mockService.AssertExpectations(t)
+		})
+	}
+}
+
+func TestStudyGroupHandler_CreateStudyGroup(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name         string
+		body         string
+		mockSetup    func(service *MockStudyGroupService)
+		ctxSetup     func(r *http.Request) *http.Request
+		expectedCode int
+		expectedBody string
+	}{
+		{
+			name: "Valid creation",
+			body: `{"name":"Group A","description":"Desc A","type":"public"}`,
+			mockSetup: func(service *MockStudyGroupService) {
+				service.
+					On("CreateStudyGroup", models.StudyGroupDetails{
+						Name:        "Group A",
+						Description: "Desc A",
+						Type:        models.TypePublic,
+					}, models.UserID("123")).
+					Return(&models.StudyGroup{
+						ID: 1,
+						StudyGroupDetails: models.StudyGroupDetails{
+							Name:        "Group A",
+							Description: "Desc A",
+							Type:        models.TypePublic,
+						},
+					}, nil)
+			},
+			ctxSetup: func(r *http.Request) *http.Request {
+				return r.WithContext(context.WithValue(r.Context(), "uid", "123"))
+			},
+			expectedCode: http.StatusOK,
+			expectedBody: `{"id":1,"name":"Group A","description":"Desc A","type":"public"}` + "\n",
+		},
+		{
+			name:         "Missing user context",
+			body:         `{"name":"Group B","description":"Desc B","type":"closed"}`,
+			mockSetup:    func(_ *MockStudyGroupService) {},
+			ctxSetup:     func(r *http.Request) *http.Request { return r },
+			expectedCode: http.StatusUnauthorized,
+			expectedBody: "Unauthorized\n",
+		},
+		{
+			name:      "Invalid input payload",
+			body:      `invalid-json`,
+			mockSetup: func(_ *MockStudyGroupService) {},
+			ctxSetup: func(r *http.Request) *http.Request {
+				return r.WithContext(context.WithValue(r.Context(), "uid", "123"))
+			},
+			expectedCode: http.StatusBadRequest,
+			expectedBody: "Invalid request payload\n",
+		},
+		{
+			name: "Service error during creation",
+			body: `{"name":"Group C","description":"Desc C","type":"closed"}`,
+			mockSetup: func(service *MockStudyGroupService) {
+				service.
+					On("CreateStudyGroup", models.StudyGroupDetails{
+						Name:        "Group C",
+						Description: "Desc C",
+						Type:        models.TypeClosed,
+					}, models.UserID("123")).
+					Return(nil, errors.New("service error"))
+			},
+			ctxSetup: func(r *http.Request) *http.Request {
+				return r.WithContext(context.WithValue(r.Context(), "uid", "123"))
+			},
+			expectedCode: http.StatusInternalServerError,
+			expectedBody: "Error creating study group\n",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			mockService := &MockStudyGroupService{}
+			tt.mockSetup(mockService)
+
+			handler := NewStudyGroupHandler(mockService)
+
+			mux := http.NewServeMux()
+			mux.HandleFunc("POST /study-groups", handler.CreateStudyGroup)
+
+			req := httptest.NewRequest(http.MethodPost, "/study-groups", bytes.NewReader([]byte(tt.body)))
+			if tt.ctxSetup != nil {
+				req = tt.ctxSetup(req)
+			}
 		})
 	}
 }

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 
@@ -18,6 +19,12 @@ type StudyGroupDTO struct {
 	Name        string              `json:"name"`
 	Description string              `json:"description"`
 	Type        string              `json:"type"`
+}
+
+type StudyGroupCreateDTO struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Type        string `json:"type"`
 }
 
 func MapStudyGroupToDTO(studyGroup models.StudyGroup) StudyGroupDTO {
@@ -67,4 +74,34 @@ func (h *StudyGroupHandler) GetAllStudyGroups(w http.ResponseWriter, _ *http.Req
 	}
 
 	sendJSONResponse(w, dtoList)
+}
+
+func (h *StudyGroupHandler) CreateStudyGroup(w http.ResponseWriter, r *http.Request) {
+	var createDTO StudyGroupCreateDTO
+	if err := json.NewDecoder(r.Body).Decode(&createDTO); err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	ctx := r.Context()
+	uid, ok := ctx.Value("uid").(string)
+	if !ok || uid == "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// TODO implement validation (group type in particular)
+	studyGroupDetails := models.StudyGroupDetails{
+		Name:        createDTO.Name,
+		Description: createDTO.Description,
+		Type:        models.StudyGroupType(createDTO.Type),
+	}
+
+	createdStudyGroup, err := h.service.CreateStudyGroup(studyGroupDetails, models.UserID(uid))
+	if err != nil {
+		http.Error(w, "Error creating study group", http.StatusInternalServerError)
+		return
+	}
+
+	sendJSONResponse(w, MapStudyGroupToDTO(*createdStudyGroup))
 }
