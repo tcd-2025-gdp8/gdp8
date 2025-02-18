@@ -11,6 +11,9 @@ import (
 type StudyGroupRepository interface {
 	GetStudyGroupByID(tx persistence.Transaction, id models.StudyGroupID) (*models.StudyGroup, error)
 	GetAllStudyGroups(tx persistence.Transaction) ([]models.StudyGroup, error)
+	CreateStudyGroup(tx persistence.Transaction, studyGroupDetails models.StudyGroupDetails, adminUserID models.UserID) (*models.StudyGroup, error)
+	UpdateStudyGroup(tx persistence.Transaction, studyGroup *models.StudyGroup) (*models.StudyGroup, error)
+	DeleteStudyGroup(tx persistence.Transaction, id models.StudyGroupID) error
 }
 
 var ErrStudyGroupNotFound = errors.New("study group not found")
@@ -98,4 +101,56 @@ func (r *MockStudyGroupRepository) GetAllStudyGroups(_ persistence.Transaction) 
 		studyGroupsList = append(studyGroupsList, studyGroup)
 	}
 	return studyGroupsList, nil
+}
+
+func (r *MockStudyGroupRepository) CreateStudyGroup(tx persistence.Transaction, studyGroupDetails models.StudyGroupDetails, adminUserID models.UserID) (*models.StudyGroup, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	id := models.StudyGroupID(r.counter)
+	r.counter++
+
+	studyGroup := models.StudyGroup{
+		ID:                id,
+		StudyGroupDetails: studyGroupDetails,
+		Members: []models.StudyGroupMember{
+			{
+				UserID: adminUserID,
+				Role:   models.RoleAdmin,
+			},
+		},
+	}
+	r.studyGroups[id] = studyGroup
+
+	return &studyGroup, nil
+}
+
+func (r *MockStudyGroupRepository) UpdateStudyGroup(tx persistence.Transaction, studyGroup *models.StudyGroup) (*models.StudyGroup, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	id := studyGroup.ID
+
+	_, exists := r.studyGroups[id]
+	if !exists {
+		return nil, ErrStudyGroupNotFound
+	}
+
+	r.studyGroups[id] = *studyGroup
+
+	return studyGroup, nil
+}
+
+func (r *MockStudyGroupRepository) DeleteStudyGroup(tx persistence.Transaction, id models.StudyGroupID) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	_, exists := r.studyGroups[id]
+	if !exists {
+		return ErrStudyGroupNotFound
+	}
+
+	delete(r.studyGroups, id)
+
+	return nil
 }
