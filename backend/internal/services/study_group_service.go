@@ -33,7 +33,7 @@ type StudyGroupService interface {
 	UpdateStudyGroupDetails(id models.StudyGroupID, details models.StudyGroupDetails, requesterID models.UserID) (*models.StudyGroup, error)
 	DeleteStudyGroup(id models.StudyGroupID, requesterID models.UserID) error
 
-	HandleAdminMemberOperation(command AdminMemberOperationCommand, studyGroupID models.StudyGroupID, memberID models.UserID, adminID models.UserID) error
+	HandleAdminMemberOperation(command AdminMemberOperationCommand, studyGroupID models.StudyGroupID, targetUserID models.UserID, adminID models.UserID) error
 	HandleSelfMemberOperation(command SelfMemberOperationCommand, studyGroupID models.StudyGroupID, memberID models.UserID) error
 }
 
@@ -139,7 +139,7 @@ func (s *studyGroupServiceImpl) DeleteStudyGroup(id models.StudyGroupID, request
 	return err
 }
 
-func (s *studyGroupServiceImpl) HandleAdminMemberOperation(command AdminMemberOperationCommand, studyGroupID models.StudyGroupID, memberID models.UserID, adminID models.UserID) error {
+func (s *studyGroupServiceImpl) HandleAdminMemberOperation(command AdminMemberOperationCommand, studyGroupID models.StudyGroupID, targetUserID models.UserID, adminID models.UserID) error {
 	err := persistence.WithTransactionNoReturnVal(s.txMgr, func(tx persistence.Transaction) error {
 		studyGroup, err := s.studyGroupRepo.GetStudyGroupByID(tx, studyGroupID)
 		if err != nil {
@@ -152,13 +152,13 @@ func (s *studyGroupServiceImpl) HandleAdminMemberOperation(command AdminMemberOp
 
 		switch command {
 		case InviteMemberToStudyGroupCommand:
-			studyGroup, err = inviteMember(studyGroup, memberID)
+			studyGroup, err = inviteMember(studyGroup, targetUserID)
 		case AcceptRequestToJoinStudyGroupCommand:
-			studyGroup, err = acceptRequestToJoin(studyGroup, memberID)
+			studyGroup, err = acceptRequestToJoin(studyGroup, targetUserID)
 		case RejectRequestToJoinStudyGroupCommand:
-			studyGroup, err = rejectRequestToJoin(studyGroup, memberID)
+			studyGroup, err = rejectRequestToJoin(studyGroup, targetUserID)
 		case RemoveMemberFromStudyGroupCommand:
-			studyGroup, err = removeMemberFromStudyGroup(studyGroup, memberID, adminID)
+			studyGroup, err = removeMemberFromStudyGroup(studyGroup, targetUserID, adminID)
 		default:
 			log.Printf("[ERROR] invalid admin member operation command: %s\n", command)
 			return errors.New("invalid admin member operation command")

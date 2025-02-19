@@ -18,10 +18,12 @@ func RegisterStudyGroupRoutes(firebaseAuth *auth.Client) {
 	studyGroupService := services.NewStudyGroupService(&txManager, studyGroupRepo)
 	handler := handlers.NewStudyGroupHandler(studyGroupService)
 
-	// Wrap protected endpoints with WithFirebaseAuth
 	http.HandleFunc("GET /api/study-groups", middleware.WithFirebaseAuth(firebaseAuth, handler.GetAllStudyGroups))
 	http.HandleFunc("GET /api/study-groups/", middleware.WithFirebaseAuth(firebaseAuth, handler.GetAllStudyGroups))
 	http.HandleFunc("GET /api/study-groups/{id}", middleware.WithFirebaseAuth(firebaseAuth, handler.GetStudyGroup))
 	http.HandleFunc("POST /api/study-groups", middleware.WithFirebaseAuth(firebaseAuth, handler.CreateStudyGroup))
 	http.HandleFunc("POST /api/study-groups/", middleware.WithFirebaseAuth(firebaseAuth, handler.CreateStudyGroup))
+	// TODO endpoint for deleting and updating study groups
+	http.HandleFunc("POST /api/study-groups/{id}/{command}", middleware.WithFirebaseAuth(firebaseAuth, handler.HandleStudyMemberOperation))
+	http.HandleFunc("POST /api/study-groups/{id}/{command}", middleware.WithFirebaseAuth(firebaseAuth, handler.HandleStudyMemberOperation))
 }

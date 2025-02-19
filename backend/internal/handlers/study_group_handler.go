@@ -27,6 +27,10 @@ type StudyGroupCreateDTO struct {
 	Type        string `json:"type"`
 }
 
+type MemberAdminOperationDTO struct {
+	TargetUserID string `json:"targetUserId"`
+}
+
 func MapStudyGroupToDTO(studyGroup models.StudyGroup) StudyGroupDTO {
 	return StudyGroupDTO{
 		ID:          studyGroup.ID,
@@ -104,4 +108,77 @@ func (h *StudyGroupHandler) CreateStudyGroup(w http.ResponseWriter, r *http.Requ
 	}
 
 	sendJSONResponse(w, MapStudyGroupToDTO(*createdStudyGroup))
+}
+
+func (h *StudyGroupHandler) HandleStudyMemberOperation(w http.ResponseWriter, r *http.Request) {
+	idString := r.PathValue("id")
+	studyGroupID, err := utils.ConvertToType[models.StudyGroupID](idString)
+	if err != nil {
+		http.Error(w, "Invalid study group ID", http.StatusBadRequest)
+		return
+	}
+
+	ctx := r.Context()
+	uid, ok := ctx.Value("uid").(string)
+	if !ok || uid == "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+	userID := models.UserID(uid)
+
+	var memberOperationDetails MemberAdminOperationDTO
+	_ = json.NewDecoder(r.Body).Decode(&memberOperationDetails)
+	targetUserID := models.UserID(memberOperationDetails.TargetUserID)
+
+	command := r.PathValue("command")
+	switch command {
+	case "accept-invite":
+		err = h.service.HandleSelfMemberOperation(services.AcceptStudyGroupInviteCommand, studyGroupID, userID)
+	case "reject-invite":
+		err = h.service.HandleSelfMemberOperation(services.RejectStudyGroupInviteCommand, studyGroupID, userID)
+	case "request-to-join":
+		err = h.service.HandleSelfMemberOperation(services.RequestToJoinStudyGroupCommand, studyGroupID, userID)
+	case "leave":
+		err = h.service.HandleSelfMemberOperation(services.LeaveStudyGroupCommand, studyGroupID, userID)
+	case "invite":
+		if targetUserID == "" {
+			http.Error(w, "Invalid request payload", http.StatusBadRequest)
+			return
+		}
+		err = h.service.HandleAdminMemberOperation(services.InviteMemberToStudyGroupCommand, studyGroupID, targetUserID, userID)
+	case "accept-request-to-join":
+		if targetUserID == "" {
+			http.Error(w, "Invalid request payload", http.StatusBadRequest)
+			return
+		}
+		err = h.service.HandleAdminMemberOperation(services.AcceptRequestToJoinStudyGroupCommand, studyGroupID, targetUserID, userID)
+	case "reject-request-to-join":
+		if targetUserID == "" {
+			http.Error(w, "Invalid request payload", http.StatusBadRequest)
+			return
+		}
+		err = h.service.HandleAdminMemberOperation(services.RejectRequestToJoinStudyGroupCommand, studyGroupID, targetUserID, userID)
+	case "remove-member":
+		if targetUserID == "" {
+			http.Error(w, "Invalid request payload", http.StatusBadRequest)
+			return
+		}
+		err = h.service.HandleAdminMemberOperation(services.RemoveMemberFromStudyGroupCommand, studyGroupID, targetUserID, userID)
+	default:
+		http.Error(w, "Not found", http.StatusNotFound)
+		return
+	}
+
+	switch {
+	case err == nil:
+		w.WriteHeader(http.StatusOK)
+	case errors.Is(err, services.ErrStudyGroupNotFound):
+		http.Error(w, "Study group not found", http.StatusNotFound)
+	case errors.Is(err, services.ErrUnauthorizedMemberOperation):
+		http.Error(w, "Unauthorized study group operation", http.StatusForbidden)
+	case errors.Is(err, services.ErrInvalidMemberOperation):
+		http.Error(w, "Invalid study group operation", http.StatusBadRequest)
+	default:
+		http.Error(w, "Error processing study group operation", http.StatusInternalServerError)
+	}
 }
