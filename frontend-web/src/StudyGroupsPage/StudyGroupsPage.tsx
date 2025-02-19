@@ -457,9 +457,9 @@ const StudyGroupsPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchStudyGroups = async () => {
+    const fetchStudyGroups = async (): Promise<void> => {
       if (!token) return;
-
+  
       try {
         const response = await fetch("http://localhost:8080/api/study-groups", {
           method: "GET",
@@ -468,17 +468,18 @@ const StudyGroupsPage: React.FC = () => {
             "Content-Type": "application/json",
           },
         });
-
+  
         if (!response.ok) {
           throw new Error(`Failed to fetch study groups: ${response.statusText}`);
         }
-
-        const data: APIStudyGroup[] = await response.json(); // ✅ Ensure response has a proper type
-
+  
+        // ✅ Explicitly type the response data
+        const data: APIStudyGroup[] = (await response.json()) as APIStudyGroup[];
+  
         console.log("Fetched Study Groups:", data); // Debugging log
-
+  
         // ✅ Safely extract and format data
-        const formattedGroups: StudyGroup[] = data.map((group) => ({
+        const formattedGroups: StudyGroup[] = data.map((group: APIStudyGroup) => ({
           id: group.ID,
           name: group.StudyGroupDetails?.Name ?? "Unknown Group",
           members: group.Members ? group.Members.length : 0,
@@ -488,7 +489,7 @@ const StudyGroupsPage: React.FC = () => {
             : "Unknown Module",
           membersList: group.Members ? group.Members.map((m) => `User ${m.UserID}`) : [],
         }));
-
+  
         setStudyGroups(formattedGroups);
       } catch (err) {
         console.error("Error fetching study groups:", err);
@@ -497,9 +498,10 @@ const StudyGroupsPage: React.FC = () => {
         setLoading(false);
       }
     };
-
+  
     void fetchStudyGroups(); // ✅ Ensures async function is properly handled
   }, [token]);
+  
 
   return (
     <Container maxWidth="md" style={{ marginTop: "20px" }}>
