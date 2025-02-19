@@ -26,6 +26,4 @@ func RegisterStudyGroupRoutes(firebaseAuth *auth.Client) {
 	// TODO endpoint for deleting and updating study groups
 	http.HandleFunc("POST /api/study-groups/{id}/{command}", middleware.WithFirebaseAuth(firebaseAuth,
 		handler.HandleStudyMemberOperation))
-	http.HandleFunc("POST /api/study-groups/{id}/{command}", middleware.WithFirebaseAuth(firebaseAuth,
-		handler.HandleStudyMemberOperation))
 }
