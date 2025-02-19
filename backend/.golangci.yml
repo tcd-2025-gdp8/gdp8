@@ -8,7 +8,7 @@ linters:
     - containedctx
     - contextcheck
     - copyloopvar
-    - cyclop
+    #- cyclop
     - decorder
     #- depguard
     - dogsled
@@ -38,7 +38,7 @@ linters:
     - gocritic
     - gocyclo
     #- godot
-    - godox
+    #- godox
     - gofmt
     #- gofumpt
     #- goheader
@@ -107,7 +107,7 @@ linters:
     #- varnamelen
     - wastedassign
     #- whitespace
-    - wrapcheck
+    #- wrapcheck
     #- wsl
     #- zerologlint
 
