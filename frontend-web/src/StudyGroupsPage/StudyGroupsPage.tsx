@@ -439,6 +439,17 @@ interface StudyGroup {
   membersList?: string[];
 }
 
+// ✅ Define API response type for TypeScript safety
+interface APIStudyGroup {
+  ID: number;
+  StudyGroupDetails?: {
+    Name?: string;
+    ModuleID?: number;
+  };
+  Members?: { UserID: number }[];
+  maximumMembers?: number;
+}
+
 const StudyGroupsPage: React.FC = () => {
   const { token } = useAuth();
   const [studyGroups, setStudyGroups] = useState<StudyGroup[]>([]);
@@ -462,18 +473,20 @@ const StudyGroupsPage: React.FC = () => {
           throw new Error(`Failed to fetch study groups: ${response.statusText}`);
         }
 
-        const data = await response.json();
-        console.log("Fetched Study Groups:", data); 
+        const data: APIStudyGroup[] = await response.json(); // ✅ Ensure response has a proper type
 
-        const formattedGroups: StudyGroup[] = data.map((group: any) => ({
-          id: group.ID || group.id,  
-          name: group.StudyGroupDetails?.Name || group.name || "Unknown Group",
-          members: group.Members?.length || 0,
-          maximumMembers: group.maximumMembers || 10,
+        console.log("Fetched Study Groups:", data); // Debugging log
+
+        // ✅ Safely extract and format data
+        const formattedGroups: StudyGroup[] = data.map((group) => ({
+          id: group.ID,
+          name: group.StudyGroupDetails?.Name ?? "Unknown Group",
+          members: group.Members ? group.Members.length : 0,
+          maximumMembers: group.maximumMembers ?? 10,
           module: group.StudyGroupDetails?.ModuleID
             ? `Module ${group.StudyGroupDetails.ModuleID}`
-            : group.module || "Unknown Module",
-          membersList: group.Members?.map((m: any) => `User ${m.UserID}`) || [],
+            : "Unknown Module",
+          membersList: group.Members ? group.Members.map((m) => `User ${m.UserID}`) : [],
         }));
 
         setStudyGroups(formattedGroups);
@@ -485,7 +498,7 @@ const StudyGroupsPage: React.FC = () => {
       }
     };
 
-    fetchStudyGroups();
+    void fetchStudyGroups(); // ✅ Ensures async function is properly handled
   }, [token]);
 
   return (
@@ -494,6 +507,7 @@ const StudyGroupsPage: React.FC = () => {
         Study Groups
       </Typography>
 
+      {/* ✅ Show loading spinner or error message */}
       {loading && <CircularProgress />}
       {error && <Alert severity="error">{error}</Alert>}
 
