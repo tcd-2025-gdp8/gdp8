@@ -439,7 +439,7 @@ interface StudyGroup {
   membersList?: string[];
 }
 
-// ✅ Define API response type for TypeScript safety
+
 interface APIStudyGroup {
   ID: number;
   StudyGroupDetails?: {
@@ -499,7 +499,7 @@ const StudyGroupsPage: React.FC = () => {
       }
     };
   
-    void fetchStudyGroups(); // ✅ Ensures async function is properly handled
+    void fetchStudyGroups(); 
   }, [token]);
   
 
@@ -509,7 +509,6 @@ const StudyGroupsPage: React.FC = () => {
         Study Groups
       </Typography>
 
-      {/* ✅ Show loading spinner or error message */}
       {loading && <CircularProgress />}
       {error && <Alert severity="error">{error}</Alert>}
 
