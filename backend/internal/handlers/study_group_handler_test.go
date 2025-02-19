@@ -314,7 +314,7 @@ func TestStudyGroupHandler_CreateStudyGroup(t *testing.T) {
 						Description: "Desc C",
 						Type:        models.TypeClosed,
 					}, models.UserID("123")).
-					Return(nil, errors.New("service error"))
+					Return((*models.StudyGroup)(nil), errors.New("service error"))
 			},
 			ctxSetup: func(r *http.Request) *http.Request {
 				return r.WithContext(context.WithValue(r.Context(), "uid", "123"))
@@ -340,6 +340,14 @@ func TestStudyGroupHandler_CreateStudyGroup(t *testing.T) {
 			if tt.ctxSetup != nil {
 				req = tt.ctxSetup(req)
 			}
+			w := httptest.NewRecorder()
+
+			mux.ServeHTTP(w, req)
+
+			assert.Equal(t, tt.expectedCode, w.Code)
+			assert.Equal(t, tt.expectedBody, w.Body.String())
+
+			mockService.AssertExpectations(t)
 		})
 	}
 }
@@ -381,7 +389,7 @@ func TestStudyGroupHandler_HandleStudyMemberOperation(t *testing.T) {
 			ctxSetup: func(r *http.Request) *http.Request {
 				return r
 			},
-			mockSetup:    func(service *MockStudyGroupService) {},
+			mockSetup:    func(_ *MockStudyGroupService) {},
 			expectedCode: http.StatusUnauthorized,
 			expectedBody: "Unauthorized\n",
 		},
@@ -393,7 +401,7 @@ func TestStudyGroupHandler_HandleStudyMemberOperation(t *testing.T) {
 			ctxSetup: func(r *http.Request) *http.Request {
 				return r.WithContext(context.WithValue(r.Context(), "uid", "123"))
 			},
-			mockSetup:    func(service *MockStudyGroupService) {},
+			mockSetup:    func(_ *MockStudyGroupService) {},
 			expectedCode: http.StatusBadRequest,
 			expectedBody: "Invalid request payload\n",
 		},
