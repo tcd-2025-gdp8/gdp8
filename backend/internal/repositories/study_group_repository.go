@@ -11,7 +11,8 @@ import (
 type StudyGroupRepository interface {
 	GetStudyGroupByID(tx persistence.Transaction, id models.StudyGroupID) (*models.StudyGroup, error)
 	GetAllStudyGroups(tx persistence.Transaction) ([]models.StudyGroup, error)
-	CreateStudyGroup(tx persistence.Transaction, studyGroupDetails models.StudyGroupDetails, adminUserID models.UserID) (*models.StudyGroup, error)
+	CreateStudyGroup(tx persistence.Transaction, studyGroupDetails models.StudyGroupDetails,
+		adminUserID models.UserID) (*models.StudyGroup, error)
 	UpdateStudyGroup(tx persistence.Transaction, studyGroup *models.StudyGroup) (*models.StudyGroup, error)
 	DeleteStudyGroup(tx persistence.Transaction, id models.StudyGroupID) error
 }
@@ -81,7 +82,8 @@ func NewMockStudyGroupRepository() StudyGroupRepository {
 	}
 }
 
-func (r *MockStudyGroupRepository) GetStudyGroupByID(_ persistence.Transaction, id models.StudyGroupID) (*models.StudyGroup, error) {
+func (r *MockStudyGroupRepository) GetStudyGroupByID(_ persistence.Transaction,
+	id models.StudyGroupID) (*models.StudyGroup, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -103,7 +105,8 @@ func (r *MockStudyGroupRepository) GetAllStudyGroups(_ persistence.Transaction) 
 	return studyGroupsList, nil
 }
 
-func (r *MockStudyGroupRepository) CreateStudyGroup(tx persistence.Transaction, studyGroupDetails models.StudyGroupDetails, adminUserID models.UserID) (*models.StudyGroup, error) {
+func (r *MockStudyGroupRepository) CreateStudyGroup(_ persistence.Transaction,
+	studyGroupDetails models.StudyGroupDetails, adminUserID models.UserID) (*models.StudyGroup, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -125,7 +128,8 @@ func (r *MockStudyGroupRepository) CreateStudyGroup(tx persistence.Transaction, 
 	return &studyGroup, nil
 }
 
-func (r *MockStudyGroupRepository) UpdateStudyGroup(tx persistence.Transaction, studyGroup *models.StudyGroup) (*models.StudyGroup, error) {
+func (r *MockStudyGroupRepository) UpdateStudyGroup(_ persistence.Transaction,
+	studyGroup *models.StudyGroup) (*models.StudyGroup, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -141,7 +145,7 @@ func (r *MockStudyGroupRepository) UpdateStudyGroup(tx persistence.Transaction, 
 	return studyGroup, nil
 }
 
-func (r *MockStudyGroupRepository) DeleteStudyGroup(tx persistence.Transaction, id models.StudyGroupID) error {
+func (r *MockStudyGroupRepository) DeleteStudyGroup(_ persistence.Transaction, id models.StudyGroupID) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 

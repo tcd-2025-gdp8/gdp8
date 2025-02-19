@@ -29,12 +29,28 @@ const (
 type StudyGroupService interface {
 	GetStudyGroupByID(id models.StudyGroupID) (*models.StudyGroup, error)
 	GetAllStudyGroups() ([]models.StudyGroup, error)
-	CreateStudyGroup(studyGroupDetails models.StudyGroupDetails, creatorID models.UserID) (*models.StudyGroup, error)
-	UpdateStudyGroupDetails(id models.StudyGroupID, details models.StudyGroupDetails, requesterID models.UserID) (*models.StudyGroup, error)
+
+	CreateStudyGroup(
+		studyGroupDetails models.StudyGroupDetails,
+		creatorID models.UserID) (*models.StudyGroup, error)
+
+	UpdateStudyGroupDetails(
+		id models.StudyGroupID,
+		details models.StudyGroupDetails,
+		requesterID models.UserID) (*models.StudyGroup, error)
+
 	DeleteStudyGroup(id models.StudyGroupID, requesterID models.UserID) error
 
-	HandleAdminMemberOperation(command AdminMemberOperationCommand, studyGroupID models.StudyGroupID, targetUserID models.UserID, adminID models.UserID) error
-	HandleSelfMemberOperation(command SelfMemberOperationCommand, studyGroupID models.StudyGroupID, memberID models.UserID) error
+	HandleAdminMemberOperation(
+		command AdminMemberOperationCommand,
+		studyGroupID models.StudyGroupID,
+		targetUserID models.UserID,
+		adminID models.UserID) error
+
+	HandleSelfMemberOperation(
+		command SelfMemberOperationCommand,
+		studyGroupID models.StudyGroupID,
+		memberID models.UserID) error
 }
 
 var ErrStudyGroupNotFound = errors.New("study group not found")
@@ -57,7 +73,7 @@ func NewStudyGroupService(
 }
 
 func (s *studyGroupServiceImpl) GetStudyGroupByID(id models.StudyGroupID) (*models.StudyGroup, error) {
-	studyGroup, err := persistence.WithTransaction(s.txMgr, func(tx persistence.Transaction) (*models.StudyGroup, error) {
+	studyGrp, err := persistence.WithTransaction(s.txMgr, func(tx persistence.Transaction) (*models.StudyGroup, error) {
 		return s.studyGroupRepo.GetStudyGroupByID(tx, id)
 	})
 
@@ -66,11 +82,11 @@ func (s *studyGroupServiceImpl) GetStudyGroupByID(id models.StudyGroupID) (*mode
 		return nil, err
 	}
 
-	return studyGroup, nil
+	return studyGrp, nil
 }
 
 func (s *studyGroupServiceImpl) GetAllStudyGroups() ([]models.StudyGroup, error) {
-	studyGroups, err := persistence.WithTransaction(s.txMgr, func(tx persistence.Transaction) ([]models.StudyGroup, error) {
+	studyGrp, err := persistence.WithTransaction(s.txMgr, func(tx persistence.Transaction) ([]models.StudyGroup, error) {
 		return s.studyGroupRepo.GetAllStudyGroups(tx)
 	})
 
@@ -79,11 +95,12 @@ func (s *studyGroupServiceImpl) GetAllStudyGroups() ([]models.StudyGroup, error)
 		return nil, err
 	}
 
-	return studyGroups, nil
+	return studyGrp, nil
 }
 
-func (s *studyGroupServiceImpl) CreateStudyGroup(studyGroupDetails models.StudyGroupDetails, creatorID models.UserID) (*models.StudyGroup, error) {
-	studyGroup, err := persistence.WithTransaction(s.txMgr, func(tx persistence.Transaction) (*models.StudyGroup, error) {
+func (s *studyGroupServiceImpl) CreateStudyGroup(studyGroupDetails models.StudyGroupDetails,
+	creatorID models.UserID) (*models.StudyGroup, error) {
+	studyGrp, err := persistence.WithTransaction(s.txMgr, func(tx persistence.Transaction) (*models.StudyGroup, error) {
 		// TODO check if creator exists in the users repo
 		return s.studyGroupRepo.CreateStudyGroup(tx, studyGroupDetails, creatorID)
 	})
@@ -93,11 +110,12 @@ func (s *studyGroupServiceImpl) CreateStudyGroup(studyGroupDetails models.StudyG
 		return nil, err
 	}
 
-	return studyGroup, nil
+	return studyGrp, nil
 }
 
-func (s *studyGroupServiceImpl) UpdateStudyGroupDetails(id models.StudyGroupID, details models.StudyGroupDetails, requesterID models.UserID) (*models.StudyGroup, error) {
-	studyGroup, err := persistence.WithTransaction(s.txMgr, func(tx persistence.Transaction) (*models.StudyGroup, error) {
+func (s *studyGroupServiceImpl) UpdateStudyGroupDetails(id models.StudyGroupID,
+	details models.StudyGroupDetails, requesterID models.UserID) (*models.StudyGroup, error) {
+	studyGrp, err := persistence.WithTransaction(s.txMgr, func(tx persistence.Transaction) (*models.StudyGroup, error) {
 		studyGroup, err := s.studyGroupRepo.GetStudyGroupByID(tx, id)
 		if err != nil {
 			return nil, err
@@ -117,7 +135,7 @@ func (s *studyGroupServiceImpl) UpdateStudyGroupDetails(id models.StudyGroupID, 
 		return nil, err
 	}
 
-	return studyGroup, nil
+	return studyGrp, nil
 }
 
 func (s *studyGroupServiceImpl) DeleteStudyGroup(id models.StudyGroupID, requesterID models.UserID) error {
@@ -139,7 +157,8 @@ func (s *studyGroupServiceImpl) DeleteStudyGroup(id models.StudyGroupID, request
 	return err
 }
 
-func (s *studyGroupServiceImpl) HandleAdminMemberOperation(command AdminMemberOperationCommand, studyGroupID models.StudyGroupID, targetUserID models.UserID, adminID models.UserID) error {
+func (s *studyGroupServiceImpl) HandleAdminMemberOperation(command AdminMemberOperationCommand,
+	studyGroupID models.StudyGroupID, targetUserID models.UserID, adminID models.UserID) error {
 	err := persistence.WithTransactionNoReturnVal(s.txMgr, func(tx persistence.Transaction) error {
 		studyGroup, err := s.studyGroupRepo.GetStudyGroupByID(tx, studyGroupID)
 		if err != nil {
@@ -179,7 +198,8 @@ func (s *studyGroupServiceImpl) HandleAdminMemberOperation(command AdminMemberOp
 	return err
 }
 
-func (s *studyGroupServiceImpl) HandleSelfMemberOperation(command SelfMemberOperationCommand, studyGroupID models.StudyGroupID, memberID models.UserID) error {
+func (s *studyGroupServiceImpl) HandleSelfMemberOperation(command SelfMemberOperationCommand,
+	studyGroupID models.StudyGroupID, memberID models.UserID) error {
 	err := persistence.WithTransactionNoReturnVal(s.txMgr, func(tx persistence.Transaction) error {
 		studyGroup, err := s.studyGroupRepo.GetStudyGroupByID(tx, studyGroupID)
 		if err != nil {
@@ -271,7 +291,8 @@ func rejectRequestToJoin(studyGroup *models.StudyGroup, memberID models.UserID) 
 	return studyGroup, nil
 }
 
-func removeMemberFromStudyGroup(studyGroup *models.StudyGroup, memberID models.UserID, adminID models.UserID) (*models.StudyGroup, error) {
+func removeMemberFromStudyGroup(studyGroup *models.StudyGroup,
+	memberID models.UserID, adminID models.UserID) (*models.StudyGroup, error) {
 	if memberID == adminID {
 		return nil, fmt.Errorf("%w: cannot remove self from the study group", ErrInvalidMemberOperation)
 	}
@@ -355,7 +376,8 @@ func hasRole(userID models.UserID, role models.StudyGroupRole, members []models.
 	})
 }
 
-func setRole(userID models.UserID, role models.StudyGroupRole, members []models.StudyGroupMember) []models.StudyGroupMember {
+func setRole(userID models.UserID, role models.StudyGroupRole,
+	members []models.StudyGroupMember) []models.StudyGroupMember {
 	for i, member := range members {
 		if member.UserID == userID {
 			members[i].Role = role

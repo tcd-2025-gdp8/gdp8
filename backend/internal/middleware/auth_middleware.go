@@ -8,6 +8,8 @@ import (
 	"firebase.google.com/go/v4/auth"
 )
 
+type UIDCtxKey struct{}
+
 // WithFirebaseAuth is a middleware that ensures requests have a valid Firebase access token.
 // The middleware also updates the context with the user ID (UID) retrieved from the verified token.
 func WithFirebaseAuth(firebaseAuth *auth.Client, next http.HandlerFunc) http.HandlerFunc {
@@ -27,7 +29,7 @@ func WithFirebaseAuth(firebaseAuth *auth.Client, next http.HandlerFunc) http.Han
 			return
 		}
 
-		ctx = context.WithValue(ctx, "uid", token.UID)
+		ctx = context.WithValue(ctx, UIDCtxKey{}, token.UID)
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	}

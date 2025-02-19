@@ -1,6 +1,9 @@
 package persistence
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
 
 // TransactionManager defines the interface for managing database transactions
 type TransactionManager interface {
@@ -17,10 +20,10 @@ type Transaction interface {
 func WithTransaction[T any](txMgr TransactionManager, fn func(Transaction) (T, error)) (T, error) {
 	var defaultT T
 	if txMgr == nil {
-		return defaultT, fmt.Errorf("transaction manager cannot be nil")
+		return defaultT, errors.New("transaction manager cannot be nil")
 	}
 	if fn == nil {
-		return defaultT, fmt.Errorf("transaction function cannot be nil")
+		return defaultT, errors.New("transaction function cannot be nil")
 	}
 
 	tx, err := txMgr.Begin()
@@ -32,6 +35,7 @@ func WithTransaction[T any](txMgr TransactionManager, fn func(Transaction) (T, e
 	if err != nil {
 		rollbackErr := tx.Rollback()
 		if rollbackErr != nil {
+			//nolint:errorlint // intentionally not wrapping rollbackErr
 			return defaultT, fmt.Errorf("transaction error: %w; rollback error: %v", err, rollbackErr)
 		}
 		return defaultT, err

@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
+	"gdp8-backend/internal/middleware"
 	"gdp8-backend/internal/models"
 	"gdp8-backend/internal/services"
 )
@@ -281,7 +282,7 @@ func TestStudyGroupHandler_CreateStudyGroup(t *testing.T) {
 					}, nil)
 			},
 			ctxSetup: func(r *http.Request) *http.Request {
-				return r.WithContext(context.WithValue(r.Context(), "uid", "123"))
+				return r.WithContext(context.WithValue(r.Context(), middleware.UIDCtxKey{}, "123"))
 			},
 			expectedCode: http.StatusOK,
 			expectedBody: `{"id":1,"name":"Group A","description":"Desc A","type":"public"}` + "\n",
@@ -299,7 +300,7 @@ func TestStudyGroupHandler_CreateStudyGroup(t *testing.T) {
 			body:      `invalid-json`,
 			mockSetup: func(_ *MockStudyGroupService) {},
 			ctxSetup: func(r *http.Request) *http.Request {
-				return r.WithContext(context.WithValue(r.Context(), "uid", "123"))
+				return r.WithContext(context.WithValue(r.Context(), middleware.UIDCtxKey{}, "123"))
 			},
 			expectedCode: http.StatusBadRequest,
 			expectedBody: "Invalid request payload\n",
@@ -317,7 +318,7 @@ func TestStudyGroupHandler_CreateStudyGroup(t *testing.T) {
 					Return((*models.StudyGroup)(nil), errors.New("service error"))
 			},
 			ctxSetup: func(r *http.Request) *http.Request {
-				return r.WithContext(context.WithValue(r.Context(), "uid", "123"))
+				return r.WithContext(context.WithValue(r.Context(), middleware.UIDCtxKey{}, "123"))
 			},
 			expectedCode: http.StatusInternalServerError,
 			expectedBody: "Error creating study group\n",
@@ -371,7 +372,7 @@ func TestStudyGroupHandler_HandleStudyMemberOperation(t *testing.T) {
 			command: "accept-invite",
 			body:    ``,
 			ctxSetup: func(r *http.Request) *http.Request {
-				return r.WithContext(context.WithValue(r.Context(), "uid", "123"))
+				return r.WithContext(context.WithValue(r.Context(), middleware.UIDCtxKey{}, "123"))
 			},
 			mockSetup: func(service *MockStudyGroupService) {
 				service.
@@ -399,7 +400,7 @@ func TestStudyGroupHandler_HandleStudyMemberOperation(t *testing.T) {
 			command: "invite",
 			body:    `{}`,
 			ctxSetup: func(r *http.Request) *http.Request {
-				return r.WithContext(context.WithValue(r.Context(), "uid", "123"))
+				return r.WithContext(context.WithValue(r.Context(), middleware.UIDCtxKey{}, "123"))
 			},
 			mockSetup:    func(_ *MockStudyGroupService) {},
 			expectedCode: http.StatusBadRequest,
@@ -411,7 +412,7 @@ func TestStudyGroupHandler_HandleStudyMemberOperation(t *testing.T) {
 			command: "invite",
 			body:    `{"targetUserId":"456"}`,
 			ctxSetup: func(r *http.Request) *http.Request {
-				return r.WithContext(context.WithValue(r.Context(), "uid", "123"))
+				return r.WithContext(context.WithValue(r.Context(), middleware.UIDCtxKey{}, "123"))
 			},
 			mockSetup: func(service *MockStudyGroupService) {
 				service.
@@ -427,7 +428,7 @@ func TestStudyGroupHandler_HandleStudyMemberOperation(t *testing.T) {
 			command: "remove-member",
 			body:    `{"targetUserId":"456"}`,
 			ctxSetup: func(r *http.Request) *http.Request {
-				return r.WithContext(context.WithValue(r.Context(), "uid", "123"))
+				return r.WithContext(context.WithValue(r.Context(), middleware.UIDCtxKey{}, "123"))
 			},
 			mockSetup: func(service *MockStudyGroupService) {
 				service.
@@ -444,7 +445,7 @@ func TestStudyGroupHandler_HandleStudyMemberOperation(t *testing.T) {
 			command: "reject-request-to-join",
 			body:    `{"targetUserId":"456"}`,
 			ctxSetup: func(r *http.Request) *http.Request {
-				return r.WithContext(context.WithValue(r.Context(), "uid", "123"))
+				return r.WithContext(context.WithValue(r.Context(), middleware.UIDCtxKey{}, "123"))
 			},
 			mockSetup: func(service *MockStudyGroupService) {
 				service.
@@ -460,7 +461,7 @@ func TestStudyGroupHandler_HandleStudyMemberOperation(t *testing.T) {
 			command: "reject-request-to-join",
 			body:    `{"targetUserId":"456"}`,
 			ctxSetup: func(r *http.Request) *http.Request {
-				return r.WithContext(context.WithValue(r.Context(), "uid", "123"))
+				return r.WithContext(context.WithValue(r.Context(), middleware.UIDCtxKey{}, "123"))
 			},
 			mockSetup: func(service *MockStudyGroupService) {
 				service.
@@ -476,7 +477,7 @@ func TestStudyGroupHandler_HandleStudyMemberOperation(t *testing.T) {
 			command: "leave",
 			body:    ``,
 			ctxSetup: func(r *http.Request) *http.Request {
-				return r.WithContext(context.WithValue(r.Context(), "uid", "123"))
+				return r.WithContext(context.WithValue(r.Context(), middleware.UIDCtxKey{}, "123"))
 			},
 			mockSetup: func(service *MockStudyGroupService) {
 				service.

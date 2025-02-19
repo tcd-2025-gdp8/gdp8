@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 
+	"gdp8-backend/internal/middleware"
 	"gdp8-backend/internal/models"
 	"gdp8-backend/internal/services"
 	"gdp8-backend/internal/utils"
@@ -91,7 +92,7 @@ func (h *StudyGroupHandler) CreateStudyGroup(w http.ResponseWriter, r *http.Requ
 	}
 
 	ctx := r.Context()
-	uid, ok := ctx.Value("uid").(string)
+	uid, ok := ctx.Value(middleware.UIDCtxKey{}).(string)
 	if !ok || uid == "" {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
@@ -122,7 +123,7 @@ func (h *StudyGroupHandler) HandleStudyMemberOperation(w http.ResponseWriter, r 
 	}
 
 	ctx := r.Context()
-	uid, ok := ctx.Value("uid").(string)
+	uid, ok := ctx.Value(middleware.UIDCtxKey{}).(string)
 	if !ok || uid == "" {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
