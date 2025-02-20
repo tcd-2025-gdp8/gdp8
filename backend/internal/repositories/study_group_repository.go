@@ -31,54 +31,106 @@ func NewMockStudyGroupRepository() StudyGroupRepository {
 			1: {
 				ID: 1,
 				StudyGroupDetails: models.StudyGroupDetails{
-					Name:        "Math Study Group",
-					Description: "A group for studying mathematics.",
+					Name:        "Tech Nerds",
+					Description: "A group for tech enthusiasts who love to explore new technologies and innovations.",
 					Type:        models.TypePublic,
 					ModuleID:    1,
 				},
 				Members: []models.StudyGroupMember{
-					{
-						UserID: "1",
-						Role:   models.RoleAdmin,
-					},
-					{
-						UserID: "2",
-						Role:   models.RoleMember,
-					},
+					{UserID: "Alice", Role: models.RoleAdmin},
+					{UserID: "Bob", Role: models.RoleMember},
+					{UserID: "Charlie", Role: models.RoleMember},
+					{UserID: "Maria", Role: models.RoleMember},
+					{UserID: "Catriona", Role: models.RoleMember},
 				},
 			},
 			2: {
 				ID: 2,
 				StudyGroupDetails: models.StudyGroupDetails{
-					Name:        "Agile Study Group",
-					Description: "A group for studying agile methods.",
-					Type:        models.TypeClosed,
-					ModuleID:    2,
+					Name:        "CS Wizards",
+					Description: "A group for computer science wizards who excel in coding and problem-solving.",
+					Type:        models.TypePublic,
+					ModuleID:    3,
 				},
 				Members: []models.StudyGroupMember{
-					{
-						UserID: "2",
-						Role:   models.RoleAdmin,
-					},
+					{UserID: "David", Role: models.RoleAdmin},
+					{UserID: "Eve", Role: models.RoleMember},
+					{UserID: "Frank", Role: models.RoleMember},
 				},
 			},
 			3: {
 				ID: 3,
 				StudyGroupDetails: models.StudyGroupDetails{
-					Name:        "Elite Study Group",
-					Description: "Very elite invite-only study group.",
-					Type:        models.TypeInviteOnly,
+					Name:        "The Elites",
+					Description: "A group for elite students who aim for excellence in their academic pursuits.",
+					Type:        models.TypePublic,
 					ModuleID:    1,
 				},
 				Members: []models.StudyGroupMember{
-					{
-						UserID: "1",
-						Role:   models.RoleAdmin,
-					},
+					{UserID: "Grace", Role: models.RoleAdmin},
+					{UserID: "Hannah", Role: models.RoleMember},
+					{UserID: "Ian", Role: models.RoleMember},
+				},
+			},
+			4: {
+				ID: 4,
+				StudyGroupDetails: models.StudyGroupDetails{
+					Name:        "The Fun Group",
+					Description: "A group for students who believe in having fun while learning and collaborating.",
+					Type:        models.TypePublic,
+					ModuleID:    2,
+				},
+				Members: []models.StudyGroupMember{
+					{UserID: "Jack", Role: models.RoleAdmin},
+					{UserID: "Kate", Role: models.RoleMember},
+					{UserID: "Leo", Role: models.RoleMember},
+					{UserID: "Blake", Role: models.RoleMember},
+					{UserID: "Robert", Role: models.RoleMember},
+					{UserID: "Marco", Role: models.RoleMember},
+				},
+			},
+			5: {
+				ID: 5,
+				StudyGroupDetails: models.StudyGroupDetails{
+					Name:        "The Prefects",
+					Description: "A group for prefects who lead by example and strive for academic and personal growth.",
+					Type:        models.TypePublic,
+					ModuleID:    3,
+				},
+				Members: []models.StudyGroupMember{
+					{UserID: "Mike", Role: models.RoleAdmin},
+					{UserID: "Nina", Role: models.RoleMember},
+					{UserID: "Oscar", Role: models.RoleMember},
+					{UserID: "Alessandro", Role: models.RoleMember},
+					{UserID: "Alice", Role: models.RoleMember},
+					{UserID: "David", Role: models.RoleMember},
+					{UserID: "Grace", Role: models.RoleMember},
+					{UserID: "Ava", Role: models.RoleMember},
+				},
+			},
+			6: {
+				ID: 6,
+				StudyGroupDetails: models.StudyGroupDetails{
+					Name:        "Trinners for Winners",
+					Description: "A group for final year project students who are dedicated to achieving outstanding results.",
+					Type:        models.TypePublic,
+					ModuleID:    6,
+				},
+				Members: []models.StudyGroupMember{
+					{UserID: "Paul", Role: models.RoleAdmin},
+					{UserID: "Quinn", Role: models.RoleMember},
+					{UserID: "Rachel", Role: models.RoleMember},
+					{UserID: "Jade", Role: models.RoleMember},
+					{UserID: "Robert", Role: models.RoleMember},
+					{UserID: "Bob", Role: models.RoleMember},
+					{UserID: "Hannah", Role: models.RoleMember},
+					{UserID: "Bianca", Role: models.RoleMember},
+					{UserID: "Oscar", Role: models.RoleMember},
+					{UserID: "Ava", Role: models.RoleMember},
 				},
 			},
 		},
-		counter: 4,
+		counter: 7,
 	}
 }
 
