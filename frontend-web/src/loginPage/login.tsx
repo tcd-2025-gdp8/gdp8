@@ -2,7 +2,17 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../firebase/useAuth";
-import { fetchWithToken } from "../api";  // <-- Import your helper
+import { fetchWithToken } from "../api";
+import {
+    Typography,
+    TextField,
+    Button,
+    Box,
+    Link,
+    Paper,
+    Grid,
+} from "@mui/material";
+import "./login.css"; // Import the CSS file for custom styles
 
 const Login: React.FC = () => {
     const [email, setEmail] = useState<string>("");
@@ -55,30 +65,103 @@ const Login: React.FC = () => {
     };
 
     return (
-        <div>
-            <h2>{isRegister ? "Register" : "Login"}</h2>
-            <form onSubmit={(e) => void handleSubmit(e)}>
-                <input
-                    type="email"
-                    value={email}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
-                    placeholder="Email"
-                />
-                <input
-                    type="password"
-                    value={password}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
-                    placeholder="Password"
-                />
-                <button type="submit">{isRegister ? "Register" : "Login"}</button>
-            </form>
-            <p>
-                {isRegister ? "Already have an account?" : "Don't have an account?"}{" "}
-                <button onClick={() => setIsRegister(!isRegister)}>
-                    {isRegister ? "Login" : "Register"}
-                </button>
-            </p>
-        </div>
+        <Box
+            sx={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                minHeight: "100vh", // Full viewport height
+                width: "100vw", // Full viewport width
+                backgroundColor: "#f0f2f5", // Light grey background
+            }}
+        >
+            <Paper
+                elevation={3}
+                sx={{
+                    padding: "2rem",
+                    width: "100%",
+                    maxWidth: "400px", // Limit the width of the white box
+                    borderRadius: "8px", // Rounded corners
+                    backgroundColor: "#ffffff", // White background
+                }}
+            >
+                {/* Blackboard + StudyWise Header */}
+                <Typography
+                    variant="h4"
+                    component="h1"
+                    sx={{
+                        color: "#0056b3", // Blue color
+                        fontWeight: "bold",
+                        textAlign: "center",
+                        marginBottom: "2rem",
+                    }}
+                >
+                    Blackboard + StudyWise
+                </Typography>
+
+                <Typography component="h2" variant="h6" align="center" sx={{ marginBottom: "1.5rem" }}>
+                    {isRegister ? "Create an Account" : "Sign In"}
+                </Typography>
+                <Box component="form" onSubmit={(e) => void handleSubmit(e)}>
+                    <Grid container spacing={2}>
+                        <Grid item xs={12}>
+                            <TextField
+                                required
+                                fullWidth
+                                id="email"
+                                label="Email Address"
+                                name="email"
+                                autoComplete="email"
+                                value={email}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
+                            />
+                        </Grid>
+                        <Grid item xs={12}>
+                            <TextField
+                                required
+                                fullWidth
+                                name="password"
+                                label="Password"
+                                type="password"
+                                id="password"
+                                autoComplete="current-password"
+                                value={password}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
+                            />
+                        </Grid>
+                    </Grid>
+                    <Button
+                        type="submit"
+                        fullWidth
+                        variant="contained"
+                        sx={{
+                            mt: 3,
+                            mb: 2,
+                            backgroundColor: "#0056b3", // Blue color
+                            "&:hover": {
+                                backgroundColor: "#004494", // Darker blue on hover
+                            },
+                        }}
+                    >
+                        {isRegister ? "Register" : "Login"}
+                    </Button>
+                    <Grid container justifyContent="center">
+                        <Grid item>
+                            <Link
+                                href="#"
+                                variant="body2"
+                                onClick={() => setIsRegister(!isRegister)}
+                                sx={{ color: "#0056b3" }} // Blue color
+                            >
+                                {isRegister
+                                    ? "Already have an account? Sign In"
+                                    : "Don't have an account? Register"}
+                            </Link>
+                        </Grid>
+                    </Grid>
+                </Box>
+            </Paper>
+        </Box>
     );
 };
 
