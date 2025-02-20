@@ -14,6 +14,8 @@ FROM alpine:latest
 
 WORKDIR /app
 
+COPY credentials/mockServiceAccountKey.json credentials/mockServiceAccountKey.json
+
 COPY --from=builder /app/backend-server .
 
 EXPOSE 8080

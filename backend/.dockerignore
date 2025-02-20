@@ -3,6 +3,7 @@
 .dockerignore
 
 credentials
+!credentials/mockServiceAccountKey.json
 
 # Binaries for programs and plugins
 **/*.exe
