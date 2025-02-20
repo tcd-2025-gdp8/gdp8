@@ -43,9 +43,22 @@ interface StudyGroup {
   members: StudyGroupMember[];
 }
 
+interface HardcodedStudyGroup {
+  id: number;
+  moduleID: number
+  members: StudyGroupMember[];
+}
+
 interface Notification {
   id: number;
   message: string;
+}
+
+interface APIStudyGroup {
+  id: number;
+  name: string;
+  description: string;
+  type: "public" | "closed" | "invite-only";
 }
 
 const modulesList = [
@@ -60,15 +73,10 @@ const modulesList = [
   { id: 8, name: "CSU44081: Entrepreneurship & High Tech Venture Creation" },
 ];
 
-const initialGroups: StudyGroup[] = [
+const initialGroups: HardcodedStudyGroup[] = [
   {
     id: 1,
-    studyGroupDetails: {
-      name: "Tech Nerds",
-      description: "A group for tech enthusiasts who love to explore new technologies and innovations.",
-      type: "public",
-      moduleID: 1,
-    },
+    moduleID: 1,
     members: [
       { userID: "Alice", role: "member" },
       { userID: "Bob", role: "member" },
@@ -79,12 +87,7 @@ const initialGroups: StudyGroup[] = [
   },
   {
     id: 2,
-    studyGroupDetails: {
-      name: "CS Wizards",
-      description: "A group for computer science wizards who excel in coding and problem-solving.",
-      type: "closed",
-      moduleID: 3,
-    },
+    moduleID: 3,
     members: [
       { userID: "David", role: "member" },
       { userID: "Eve", role: "member" },
@@ -93,12 +96,7 @@ const initialGroups: StudyGroup[] = [
   },
   {
     id: 3,
-    studyGroupDetails: {
-      name: "The Elites",
-      description: "A group for elite students who aim for excellence in their academic pursuits.",
-      type: "invite-only",
-      moduleID: 1,
-    },
+    moduleID: 1,
     members: [
       { userID: "Grace", role: "member" },
       { userID: "Hannah", role: "member" },
@@ -107,12 +105,7 @@ const initialGroups: StudyGroup[] = [
   },
   {
     id: 4,
-    studyGroupDetails: {
-      name: "The Fun Group",
-      description: "A group for students who believe in having fun while learning and collaborating.",
-      type: "public",
-      moduleID: 2,
-    },
+    moduleID: 2,
     members: [
       { userID: "Jack", role: "member" },
       { userID: "Kate", role: "member" },
@@ -124,12 +117,7 @@ const initialGroups: StudyGroup[] = [
   },
   {
     id: 5,
-    studyGroupDetails: {
-      name: "The Prefects",
-      description: "A group for prefects who lead by example and strive for academic and personal growth.",
-      type: "closed",
-      moduleID: 3,
-    },
+    moduleID: 3,
     members: [
       { userID: "Mike", role: "member" },
       { userID: "Nina", role: "member" },
@@ -143,12 +131,7 @@ const initialGroups: StudyGroup[] = [
   },
   {
     id: 6,
-    studyGroupDetails: {
-      name: "Trinners for Winners",
-      description: "A group for final year project students who are dedicated to achieving outstanding results.",
-      type: "invite-only",
-      moduleID: 6,
-    },
+    moduleID: 6,
     members: [
       { userID: "Paul", role: "member" },
       { userID: "Quinn", role: "member" },
@@ -185,14 +168,46 @@ const StudyGroupsPage: React.FC = () => {
   const [openNotifications, setOpenNotifications] = useState(false);
 
   useEffect(() => {
-    if (token) {
-      console.log("Access token available:", token);
-      setTimeout(() => {
-        setStudyGroups(initialGroups);
-        setFilteredGroups(initialGroups);
-      }, 500);
-    }
-  }, [token]);
+    const fetchStudyGroups = async (): Promise<void> => {
+      if (!token) return;
+  
+      try {
+        const response = await fetch("http://localhost:8080/api/study-groups", {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+  
+        if (!response.ok) {
+          throw new Error(`Failed to fetch study groups: ${response.statusText}`);
+        }
+  
+        const data: APIStudyGroup[] = (await response.json()) as APIStudyGroup[];
+  
+        const formattedGroups: StudyGroup[] = data.map((group: APIStudyGroup) => {
+          const matchedGroup = initialGroups.find((g) => g.id === group.id);
+  
+          return {
+            id: group.id,
+            studyGroupDetails: {
+              name: group.name,
+              description: group.description,
+              type: group.type,
+              moduleID: matchedGroup?.moduleID ?? 0
+            },
+            members: matchedGroup?.members || [],
+          };
+        });
+        setStudyGroups(formattedGroups);
+      } catch (err) {
+        console.error("Error fetching study groups:", err);
+      }
+    };
+  
+    void fetchStudyGroups();
+  }, [token]);  
 
   useEffect(() => {
     if (selectedModule === "" || selectedModule === 0) {
@@ -483,128 +498,3 @@ const StudyGroupsPage: React.FC = () => {
 };
 
 export default StudyGroupsPage;
-
-/*
-
-import React, { useState, useEffect } from "react";
-import { useAuth } from "../firebase/useAuth";
-import {
-  Container,
-  Card,
-  CardContent,
-  Typography,
-  Button,
-  Grid,
-  Tooltip,
-  CircularProgress,
-  Alert
-} from "@mui/material";
-
-interface StudyGroup {
-  id: number;
-  name: string;
-  members: number;
-  maximumMembers: number;
-  module: string;
-  membersList?: string[];
-}
-
-
-interface APIStudyGroup {
-  ID: number;
-  StudyGroupDetails?: {
-    Name?: string;
-    ModuleID?: number;
-  };
-  Members?: { UserID: number }[];
-  maximumMembers?: number;
-}
-
-const StudyGroupsPage: React.FC = () => {
-  const { token } = useAuth();
-  const [studyGroups, setStudyGroups] = useState<StudyGroup[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchStudyGroups = async (): Promise<void> => {
-      if (!token) return;
-  
-      try {
-        const response = await fetch("http://localhost:8080/api/study-groups", {
-          method: "GET",
-          headers: {
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        });
-  
-        if (!response.ok) {
-          throw new Error(`Failed to fetch study groups: ${response.statusText}`);
-        }
-  
-        // ✅ Explicitly type the response data
-        const data: APIStudyGroup[] = (await response.json()) as APIStudyGroup[];
-  
-        console.log("Fetched Study Groups:", data); // Debugging log
-  
-        // ✅ Safely extract and format data
-        const formattedGroups: StudyGroup[] = data.map((group: APIStudyGroup) => ({
-          id: group.ID,
-          name: group.StudyGroupDetails?.Name ?? "Unknown Group",
-          members: group.Members ? group.Members.length : 0,
-          maximumMembers: group.maximumMembers ?? 10,
-          module: group.StudyGroupDetails?.ModuleID
-            ? `Module ${group.StudyGroupDetails.ModuleID}`
-            : "Unknown Module",
-          membersList: group.Members ? group.Members.map((m) => `User ${m.UserID}`) : [],
-        }));
-  
-        setStudyGroups(formattedGroups);
-      } catch (err) {
-        console.error("Error fetching study groups:", err);
-        setError(err instanceof Error ? err.message : "An unknown error occurred");
-      } finally {
-        setLoading(false);
-      }
-    };
-  
-    void fetchStudyGroups(); 
-  }, [token]);
-  
-
-  return (
-    <Container maxWidth="md" style={{ marginTop: "20px" }}>
-      <Typography variant="h4" gutterBottom>
-        Study Groups
-      </Typography>
-
-      {loading && <CircularProgress />}
-      {error && <Alert severity="error">{error}</Alert>}
-
-      <Grid container spacing={2}>
-        {studyGroups.map((group) => (
-          <Grid item xs={12} sm={6} md={4} key={group.id} style={{ minWidth: "280px" }}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6">{group.name}</Typography>
-                <Tooltip title={group.membersList ? group.membersList.join(", ") : "No members yet"} arrow>
-                  <Typography color="textSecondary" style={{ cursor: "pointer" }}>
-                    Members: {group.members} / {group.maximumMembers}
-                  </Typography>
-                </Tooltip>
-                <Typography color="textSecondary">Module: {group.module}</Typography>
-                <Button variant="contained" color="primary" fullWidth style={{ marginTop: "10px" }}>
-                  Join Group
-                </Button>
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
-    </Container>
-  );
-};
-
-export default StudyGroupsPage;
-*/
