@@ -346,6 +346,9 @@ const StudyGroupsPage: React.FC = () => {
             <Card>
               <CardContent>
                 <Typography variant="h6">{group.studyGroupDetails.name}</Typography>
+                <Typography variant="body2" color="textSecondary" style={{ marginBottom: "10px" }}>
+                  {group.studyGroupDetails.description}
+                </Typography>
                 <Tooltip
                   title={
                     group.members.length > 0
