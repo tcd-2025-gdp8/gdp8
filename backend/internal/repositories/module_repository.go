@@ -2,11 +2,11 @@ package repositories
 
 import (
 	"errors"
-	"gdp8-backend/internal/persistence"
 	"sync"
-        "gdp8-backend/internal/models"
-)
 
+	"gdp8-backend/internal/models"
+	"gdp8-backend/internal/persistence"
+)
 
 type ModuleRepository interface {
 	GetAllModules(tx persistence.Transaction) ([]models.Module, error)

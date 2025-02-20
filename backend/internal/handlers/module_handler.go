@@ -16,7 +16,7 @@ func NewModuleHandler(moduleService services.ModuleService) *ModuleHandler {
 	return &ModuleHandler{moduleService: moduleService}
 }
 
-func (h *ModuleHandler) GetAllModules(w http.ResponseWriter, r *http.Request) {
+func (h *ModuleHandler) GetAllModules(w http.ResponseWriter, _ *http.Request) {
 	modules, err := h.moduleService.GetAllModules()
 	if err != nil {
 		http.Error(w, "Failed to fetch modules", http.StatusInternalServerError)
@@ -24,24 +24,26 @@ func (h *ModuleHandler) GetAllModules(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(modules)
+	if err := json.NewEncoder(w).Encode(modules); err != nil {
+		http.Error(w, "Failed to encode modules", http.StatusInternalServerError)
+	}
 }
 
 func (h *ModuleHandler) SaveUserModules(w http.ResponseWriter, r *http.Request) {
-        fmt.Println("YESS")
+	fmt.Println("YESS")
 	var userModules []string
 	if err := json.NewDecoder(r.Body).Decode(&userModules); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
 
-        // TODO: bind module with user
-        // requires the actual DB integration
+	// TODO: bind module with user
+	// requires the actual DB integration
 
-        for _, module := range userModules {
-            fmt.Println(module)
+	for _, module := range userModules {
+		fmt.Println(module)
 
-        }
+	}
 
 	w.WriteHeader(http.StatusOK)
 }

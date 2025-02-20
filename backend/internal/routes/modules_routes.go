@@ -20,8 +20,8 @@ func RegisterModuleRoutes(firebaseAuth *auth.Client) {
 
 	http.HandleFunc("GET /api/modules", middleware.WithFirebaseAuth(firebaseAuth, handler.GetAllModules))
 	http.HandleFunc("POST /api/save-modules", middleware.WithFirebaseAuth(firebaseAuth, handler.SaveUserModules))
-        // Maybe we can rename this to /api/modules/create
-        // like renaming some endpoints to make it harder to enumerate at some point
-        // do not know if that makes sense for you
+	// Maybe we can rename this to /api/modules/create
+	// like renaming some endpoints to make it harder to enumerate at some point
+	// do not know if that makes sense for you
 	http.HandleFunc("POST /api/modules", middleware.WithFirebaseAuth(firebaseAuth, handler.CreateModule))
 }

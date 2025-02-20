@@ -1,9 +1,9 @@
 package services
 
 import (
-	"gdp8-backend/internal/repositories"
-	"gdp8-backend/internal/persistence"
 	"gdp8-backend/internal/models"
+	"gdp8-backend/internal/persistence"
+	"gdp8-backend/internal/repositories"
 )
 
 type ModuleService interface {
@@ -12,11 +12,12 @@ type ModuleService interface {
 }
 
 type moduleServiceImpl struct {
-	txManager   persistence.TransactionManager
-	moduleRepo  repositories.ModuleRepository
+	txManager  persistence.TransactionManager
+	moduleRepo repositories.ModuleRepository
 }
 
-func NewModuleService(txManager persistence.TransactionManager, moduleRepo repositories.ModuleRepository) ModuleService {
+func NewModuleService(txManager persistence.TransactionManager,
+	moduleRepo repositories.ModuleRepository) ModuleService {
 	return &moduleServiceImpl{txManager: txManager, moduleRepo: moduleRepo}
 }
 
