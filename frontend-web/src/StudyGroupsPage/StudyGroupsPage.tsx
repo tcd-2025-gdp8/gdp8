@@ -263,30 +263,69 @@ const StudyGroupsPage: React.FC = () => {
     setSelectedGroupModule("");
   };
 
-  const handleCreateGroup = () => {
+  const handleCreateGroup = async () => {
     if (groupName.trim() === "" || selectedGroupModule === "") {
       alert("Please enter a valid group name and select a module.");
       return;
     }
-
-    const newGroup: StudyGroup = {
-      id: studyGroups.length + 1,
-      studyGroupDetails: {
-        name: groupName,
-        description: groupDescription,
-        type: groupType,
-        moduleID: selectedGroupModule,
-      },
-      members: [{ userID: "Alessandro", role: "admin" }],
+  
+    if (!token) {
+      alert("You are not authorized. Please log in.");
+      return;
+    }
+  
+    const newGroupDetails = {
+      name: groupName,
+      description: groupDescription,
+      type: groupType,
+      userID: "Alessandro",
     };
-
-    setStudyGroups([...studyGroups, newGroup]);
-    setNotifications((prev) => [
-      ...prev,
-      { id: Date.now(), message: `New study group "${groupName}" has been created for ${modulesList.find(module => module.id === selectedGroupModule)?.name}.` }
-    ]);
-    handleCloseDialog();
+  
+    try {
+      const response = await fetch("http://localhost:8080/api/study-groups", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(newGroupDetails),
+      });
+  
+      if (!response.ok) {
+        throw new Error(`Failed to create group: ${response.statusText}`);
+      }
+  
+      const createdGroup: APIStudyGroup = await response.json();
+  
+      const newGroup: StudyGroup = {
+        id: createdGroup.id,
+        studyGroupDetails: {
+          name: createdGroup.name,
+          description: createdGroup.description,
+          type: createdGroup.type,
+          moduleID: selectedGroupModule,
+        },
+        members: [{ userID: "Alessandro", role: "admin" }],
+      };
+  
+      setStudyGroups([...studyGroups, newGroup]);
+      setNotifications((prev) => [
+        ...prev,
+        {
+          id: Date.now(),
+          message: `New study group "${groupName}" has been created for ${
+            modulesList.find((module) => module.id === selectedGroupModule)?.name
+          }.`,
+        },
+      ]);
+  
+      handleCloseDialog();
+    } catch (error) {
+      console.error("Error creating study group:", error);
+      alert(`Error creating study group: ${error}`);
+    }
   };
+  
 
   const handleOpenInviteDialog = () => setOpenInviteDialog(true);
   const handleCloseInviteDialog = () => setOpenInviteDialog(false);
@@ -346,7 +385,6 @@ const StudyGroupsPage: React.FC = () => {
           value={selectedModule}
           onChange={(e: SelectChangeEvent<number | "">) => setSelectedModule(e.target.value as number | "")}
         >
-          <MenuItem value="All">All</MenuItem>
           {modulesList.map((module) => (
             <MenuItem key={module.id} value={module.id}>
               {module.name}
