@@ -10,6 +10,7 @@ import (
 
 func RegisterAllRoutes(firebaseAuth *auth.Client) {
 	RegisterStudyGroupRoutes(firebaseAuth)
+	RegisterModuleRoutes(firebaseAuth)
 
 	authHandler := handlers.NewAuthHandler(firebaseAuth)
 	http.HandleFunc("/api/auth/verify", authHandler.VerifyHandler)

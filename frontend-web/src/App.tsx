@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./firebase/useAuth";
 import Login from "./loginPage/login";
 import StudyGroupsPage from "./StudyGroupsPage/StudyGroupsPage";
+import ModuleSettings from "./moduleSettings/moduleSettings";
 
 const App: React.FC = () => {
   const { user } = useAuth();
@@ -18,6 +19,11 @@ const App: React.FC = () => {
         <Route
           path="/study-groups"
           element={user ? <StudyGroupsPage /> : <Navigate to="/login" />}
+        />
+
+        <Route
+            path="/module"
+            element={<ModuleSettings />}
         />
       </Routes>
     </BrowserRouter>
