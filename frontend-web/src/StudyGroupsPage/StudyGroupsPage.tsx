@@ -21,10 +21,13 @@ import {
   InputLabel,
   Tooltip,
   Drawer,
-  IconButton
+  IconButton,
+  Box
 } from "@mui/material";
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import CloseIcon from '@mui/icons-material/Close';
+import { useNavigate } from "react-router-dom";
+
 
 interface StudyGroup {
   id: number;
@@ -102,8 +105,10 @@ const initialGroups: StudyGroup[] = [
   },
 ];
 
+
 const StudyGroupsPage: React.FC = () => {
   const { token } = useAuth();
+  const navigate = useNavigate();
   const [studyGroups, setStudyGroups] = useState<StudyGroup[]>([]);
   const [filteredGroups, setFilteredGroups] = useState<StudyGroup[]>([]);
   const [selectedModule, setSelectedModule] = useState<string>("");
@@ -147,6 +152,13 @@ const StudyGroupsPage: React.FC = () => {
       );
     }
   }, [selectedModule, studyGroups]);
+
+  const handleOpenChat = (groupId: number) => {
+    const group = studyGroups.find((g) => g.id === groupId);
+    if (group?.membersList?.includes("Alessandro")) {
+      void navigate(`/chat/${groupId}`);
+    }
+  };
 
   const handleJoinGroup = (id: number) => {
     let joinedGroupName = "";
@@ -223,194 +235,211 @@ const StudyGroupsPage: React.FC = () => {
   };
 
   return (
-    <Container maxWidth="md" style={{ marginTop: "20px" }}>
-      <Typography variant="h4" gutterBottom>
-        Study Groups
-        <IconButton onClick={() => setOpenNotifications(true)}>
-          <NotificationsIcon />
-        </IconButton>
-      </Typography>
+    <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh"width="100vw">
+      <Container maxWidth="md" style={{ marginTop: "20px", textAlign: "center" }}>
+        <Typography variant="h4" gutterBottom>
+          Study Groups
+          <IconButton onClick={() => setOpenNotifications(true)}>
+            <NotificationsIcon />
+          </IconButton>
+        </Typography>
 
-      <Drawer anchor="right" open={openNotifications} onClose={() => setOpenNotifications(false)}>
-        <div style={{ width: 300, padding: 16 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="h6">Notifications</Typography>
-            <IconButton onClick={() => setOpenNotifications(false)}>
-              <CloseIcon />
-            </IconButton>
+        <Drawer anchor="right" open={openNotifications} onClose={() => setOpenNotifications(false)}>
+          <div style={{ width: 300, padding: 16 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography variant="h6">Notifications</Typography>
+              <IconButton onClick={() => setOpenNotifications(false)}>
+                <CloseIcon />
+              </IconButton>
+            </div>
+            {notifications.length === 0 ? (
+              <Typography variant="body2" color="textSecondary" style={{ textAlign: 'center', marginTop: '20px' }}>
+                No notifications
+              </Typography>
+            ) : (
+              notifications.map((notification) => (
+                <Card key={notification.id} style={{ marginBottom: '10px' }}>
+                  <CardContent>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Typography>{notification.message}</Typography>
+                      <IconButton onClick={() => handleDeleteNotification(notification.id)} size="small">
+                        <CloseIcon />
+                      </IconButton>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
           </div>
-          {notifications.length === 0 ? (
-            <Typography variant="body2" color="textSecondary" style={{ textAlign: 'center', marginTop: '20px' }}>
-              No notifications
-            </Typography>
-          ) : (
-            notifications.map((notification) => (
-              <Card key={notification.id} style={{ marginBottom: '10px' }}>
+        </Drawer>
+
+        <FormControl fullWidth style={{ marginBottom: "20px" }}>
+          <InputLabel>Filter by Module</InputLabel>
+          <Select value={selectedModule} onChange={(e: SelectChangeEvent<string>) => setSelectedModule(e.target.value)} >
+            <MenuItem value="All">All</MenuItem>
+            {modulesList.map((module) => (
+              <MenuItem key={module} value={module}>
+                {module}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
+        <Grid container spacing={2}>
+          
+          {filteredGroups.map((group) => {
+            const  isMember = group.membersList?.includes("Alessandro");
+            const isFull = group.members >= group.maximumMembers;
+            return (
+            <Grid
+              item
+              xs={12}
+              sm={6}
+              md={4}
+              key={group.id}
+              style={{ minWidth: "280px" }}
+            >
+              <Card>
                 <CardContent>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Typography>{notification.message}</Typography>
-                    <IconButton onClick={() => handleDeleteNotification(notification.id)} size="small">
-                      <CloseIcon />
-                    </IconButton>
-                  </div>
+                  <Typography variant="h6">{group.name}</Typography>
+                  <Tooltip
+                    title={
+                      group.membersList
+                        ? group.membersList.join(", ")
+                        : "No members yet"
+                    }
+                    arrow
+                  >
+                    <Typography color="textSecondary" style={{ cursor: "pointer" }}>
+                      Members: {group.members} / {group.maximumMembers}
+                    </Typography>
+                  </Tooltip>
+                  <Typography color="textSecondary">
+                    Module: {group.module}
+                  </Typography>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    fullWidth
+                    onClick={() => handleJoinGroup(group.id)}
+                    style={{ marginTop: "10px" }}
+                    disabled={
+                      group.members >= group.maximumMembers ||
+                      group.membersList?.includes("Alessandro")
+                    }
+                  >
+                    {group.membersList?.includes("Alessandro")
+                      ? "Joined"
+                      : group.members >= group.maximumMembers
+                        ? "Full"
+                        : "Request to Join"}
+                  </Button>
+                  <Button
+                      variant="contained"
+                      color="primary"
+                      fullWidth
+                      onClick={() => handleOpenChat(group.id)}
+                      disabled={!isMember}
+                      style={{ marginTop: "10px" }}
+                    >
+                      {isFull ? "Cannot Join Chat" : isMember ? "Open Chat" : "Join to Chat!"}
+                    </Button>
                 </CardContent>
               </Card>
-            ))
-          )}
-        </div>
-      </Drawer>
+            </Grid>
+            );
+        })}
+        </Grid>
 
-      <FormControl fullWidth style={{ marginBottom: "20px" }}>
-        <InputLabel>Filter by Module</InputLabel>
-        <Select value={selectedModule} onChange={(e: SelectChangeEvent<string>) => setSelectedModule(e.target.value)} >
-          <MenuItem value="All">All</MenuItem>
-          {modulesList.map((module) => (
-            <MenuItem key={module} value={module}>
-              {module}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
+        <Button
+          variant="contained"
+          color="success"
+          onClick={handleOpenDialog}
+          style={{ marginTop: "20px", display: "block", width: "100%" }}
+        >
+          Create a Study Group
+        </Button>
 
-      <Grid container spacing={2}>
-        {filteredGroups.map((group) => (
-          <Grid
-            item
-            xs={12}
-            sm={6}
-            md={4}
-            key={group.id}
-            style={{ minWidth: "280px" }}
-          >
-            <Card>
-              <CardContent>
-                <Typography variant="h6">{group.name}</Typography>
-                <Tooltip
-                  title={
-                    group.membersList
-                      ? group.membersList.join(", ")
-                      : "No members yet"
-                  }
-                  arrow
-                >
-                  <Typography color="textSecondary" style={{ cursor: "pointer" }}>
-                    Members: {group.members} / {group.maximumMembers}
-                  </Typography>
-                </Tooltip>
-                <Typography color="textSecondary">
-                  Module: {group.module}
-                </Typography>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  fullWidth
-                  onClick={() => handleJoinGroup(group.id)}
-                  style={{ marginTop: "10px" }}
-                  disabled={
-                    group.members >= group.maximumMembers ||
-                    group.membersList?.includes("Alessandro")
-                  }
-                >
-                  {group.membersList?.includes("Alessandro")
-                    ? "Joined"
-                    : group.members >= group.maximumMembers
-                      ? "Full"
-                      : "Request to Join"}
-                </Button>
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
+        <Dialog open={openDialog} onClose={handleCloseDialog}>
+          <DialogTitle>Create a Study Group</DialogTitle>
+          <DialogContent>
+            <TextField
+              label="Group Name"
+              fullWidth
+              value={groupName}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setGroupName(e.target.value)}
+              margin="dense"
+            />
 
-      <Button
-        variant="contained"
-        color="success"
-        onClick={handleOpenDialog}
-        style={{ marginTop: "20px", display: "block", width: "100%" }}
-      >
-        Create a Study Group
-      </Button>
+            <FormControl fullWidth style={{ marginTop: "10px" }}>
+              <InputLabel>Select Module</InputLabel>
+              <Select
+                value={selectedGroupModule}
+                onChange={(e: SelectChangeEvent<string>) => setSelectedGroupModule(e.target.value)}
+              >
+                {modulesList.map((module) => (
+                  <MenuItem key={module} value={module}>
+                    {module}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <Typography gutterBottom style={{ marginTop: "10px" }}>
+              Max Members: {maxMembers}
+            </Typography>
+            <Slider
+              value={maxMembers}
+              onChange={(_, value) => setMaxMembers(value as number)}
+              min={2}
+              max={10}
+              step={1}
+              marks
+              valueLabelDisplay="auto"
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseDialog} color="error" variant="contained">
+              Cancel
+            </Button>
+            <Button onClick={handleOpenInviteDialog} color="primary" variant="contained">
+              Invite Members
+            </Button>
+            <Button onClick={handleCreateGroup} color="success" variant="contained">
+              Create
+            </Button>
+          </DialogActions>
+        </Dialog>
 
-      <Dialog open={openDialog} onClose={handleCloseDialog}>
-        <DialogTitle>Create a Study Group</DialogTitle>
-        <DialogContent>
-          <TextField
-            label="Group Name"
-            fullWidth
-            value={groupName}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setGroupName(e.target.value)}
-            margin="dense"
-          />
+        <Dialog open={openInviteDialog} onClose={handleCloseInviteDialog}>
+          <DialogTitle>Invite a User</DialogTitle>
+          <DialogContent>
+            <TextField
+              label="Invite Name"
+              fullWidth
+              value={inviteName}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setGroupName(e.target.value)}
+              margin="dense"
+            />
+            <TextField
+              label="Invite Email"
+              fullWidth
+              value={inviteEmail}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInviteName(e.target.value)}
+              margin="dense"
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseInviteDialog} color="error" variant="contained">
+              Cancel
+            </Button>
+            <Button onClick={handleInvite} color="primary" variant="contained">
+              Invite
+            </Button>
+          </DialogActions>
+        </Dialog>
 
-          <FormControl fullWidth style={{ marginTop: "10px" }}>
-            <InputLabel>Select Module</InputLabel>
-            <Select
-              value={selectedGroupModule}
-              onChange={(e: SelectChangeEvent<string>) => setSelectedGroupModule(e.target.value)}
-            >
-              {modulesList.map((module) => (
-                <MenuItem key={module} value={module}>
-                  {module}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          <Typography gutterBottom style={{ marginTop: "10px" }}>
-            Max Members: {maxMembers}
-          </Typography>
-          <Slider
-            value={maxMembers}
-            onChange={(_, value) => setMaxMembers(value as number)}
-            min={2}
-            max={10}
-            step={1}
-            marks
-            valueLabelDisplay="auto"
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog} color="error" variant="contained">
-            Cancel
-          </Button>
-          <Button onClick={handleOpenInviteDialog} color="primary" variant="contained">
-            Invite Members
-          </Button>
-          <Button onClick={handleCreateGroup} color="success" variant="contained">
-            Create
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      <Dialog open={openInviteDialog} onClose={handleCloseInviteDialog}>
-        <DialogTitle>Invite a User</DialogTitle>
-        <DialogContent>
-          <TextField
-            label="Invite Name"
-            fullWidth
-            value={inviteName}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setGroupName(e.target.value)}
-            margin="dense"
-          />
-          <TextField
-            label="Invite Email"
-            fullWidth
-            value={inviteEmail}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInviteName(e.target.value)}
-            margin="dense"
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseInviteDialog} color="error" variant="contained">
-            Cancel
-          </Button>
-          <Button onClick={handleInvite} color="primary" variant="contained">
-            Invite
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-    </Container>
+      </Container>
+    </Box>
   );
 };
 
