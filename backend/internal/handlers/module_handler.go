@@ -1,10 +1,13 @@
 package handlers
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 
+	"gdp8-backend/internal/models"
 	"gdp8-backend/internal/services"
 )
 
@@ -29,30 +32,35 @@ func (h *ModuleHandler) GetAllModules(w http.ResponseWriter, _ *http.Request) {
 	}
 }
 
+type ModulePreferences struct {
+	IDs []string `json:"selectedModules"`
+}
+
 func (h *ModuleHandler) SaveUserModules(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("YESS")
-	var userModules []string
-	if err := json.NewDecoder(r.Body).Decode(&userModules); err != nil {
+	bodyBytes, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Failed to read body", http.StatusInternalServerError)
+		return
+	}
+	fmt.Println("Received payload:", string(bodyBytes))
+	r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+
+	var req ModulePreferences
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
 
-	// TODO: bind module with user
-	// requires the actual DB integration
-
-	for _, module := range userModules {
-		fmt.Println(module)
-
+	// TODO: instead of printing we would bind the modules to the user using the id
+	for _, moduleID := range req.IDs {
+		fmt.Println("Module ID:", moduleID)
 	}
 
 	w.WriteHeader(http.StatusOK)
 }
 
 func (h *ModuleHandler) CreateModule(w http.ResponseWriter, r *http.Request) {
-	var newModule struct {
-		ID   string `json:"id"`
-		Name string `json:"name"`
-	}
+	var newModule models.Module
 
 	if err := json.NewDecoder(r.Body).Decode(&newModule); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
