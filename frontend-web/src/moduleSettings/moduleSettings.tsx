@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { 
     Container, 
     Typography, 
@@ -33,7 +33,7 @@ const ModuleSettings: React.FC = () => {
     const [moduleID, setModuleID] = useState("");
     const [moduleName, setModuleName] = useState("");
 
-    const fetchModules = async () => {
+    const fetchModules = useCallback(async () => {
         if (!token) return;
 
         try {
@@ -56,11 +56,11 @@ const ModuleSettings: React.FC = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [token]);
 
     useEffect(() => {
         void fetchModules();
-    }, [token]);
+    }, [token, fetchModules]);
 
 
     const handleCreateModule = async () => {
