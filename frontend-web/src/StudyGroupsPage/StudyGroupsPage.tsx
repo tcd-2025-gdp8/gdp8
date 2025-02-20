@@ -87,50 +87,15 @@ const initialGroups: HardcodedStudyGroup[] = [
   },
   {
     id: 2,
-    moduleID: 3,
-    members: [
-      { userID: "David", role: "member" },
-      { userID: "Eve", role: "member" },
-      { userID: "Frank", role: "member" },
-    ],
-  },
-  {
-    id: 3,
     moduleID: 1,
     members: [
       { userID: "Grace", role: "member" },
-      { userID: "Hannah", role: "member" },
+      { userID: "Alessandro", role: "member" },
       { userID: "Ian", role: "member" },
     ],
   },
   {
-    id: 4,
-    moduleID: 2,
-    members: [
-      { userID: "Jack", role: "member" },
-      { userID: "Kate", role: "member" },
-      { userID: "Leo", role: "member" },
-      { userID: "Blake", role: "member" },
-      { userID: "Robert", role: "member" },
-      { userID: "Marco", role: "member" },
-    ],
-  },
-  {
-    id: 5,
-    moduleID: 3,
-    members: [
-      { userID: "Mike", role: "member" },
-      { userID: "Nina", role: "member" },
-      { userID: "Oscar", role: "member" },
-      { userID: "Alessandro", role: "member" },
-      { userID: "Alice", role: "member" },
-      { userID: "David", role: "member" },
-      { userID: "Grace", role: "member" },
-      { userID: "Ava", role: "member" },
-    ],
-  },
-  {
-    id: 6,
+    id: 3,
     moduleID: 6,
     members: [
       { userID: "Paul", role: "member" },

@@ -47,20 +47,6 @@ func NewMockStudyGroupRepository() StudyGroupRepository {
 			2: {
 				ID: 2,
 				StudyGroupDetails: models.StudyGroupDetails{
-					Name:        "CS Wizards",
-					Description: "A group for computer science wizards who excel in coding and problem-solving.",
-					Type:        models.TypePublic,
-					ModuleID:    3,
-				},
-				Members: []models.StudyGroupMember{
-					{UserID: "David", Role: models.RoleAdmin},
-					{UserID: "Eve", Role: models.RoleMember},
-					{UserID: "Frank", Role: models.RoleMember},
-				},
-			},
-			3: {
-				ID: 3,
-				StudyGroupDetails: models.StudyGroupDetails{
 					Name:        "The Elites",
 					Description: "A group for elite students who aim for excellence in their academic pursuits.",
 					Type:        models.TypePublic,
@@ -68,48 +54,12 @@ func NewMockStudyGroupRepository() StudyGroupRepository {
 				},
 				Members: []models.StudyGroupMember{
 					{UserID: "Grace", Role: models.RoleAdmin},
-					{UserID: "Hannah", Role: models.RoleMember},
+					{UserID: "Alessandro", Role: models.RoleMember},
 					{UserID: "Ian", Role: models.RoleMember},
 				},
 			},
-			4: {
-				ID: 4,
-				StudyGroupDetails: models.StudyGroupDetails{
-					Name:        "The Fun Group",
-					Description: "A group for students who believe in having fun while learning and collaborating.",
-					Type:        models.TypePublic,
-					ModuleID:    2,
-				},
-				Members: []models.StudyGroupMember{
-					{UserID: "Jack", Role: models.RoleAdmin},
-					{UserID: "Kate", Role: models.RoleMember},
-					{UserID: "Leo", Role: models.RoleMember},
-					{UserID: "Blake", Role: models.RoleMember},
-					{UserID: "Robert", Role: models.RoleMember},
-					{UserID: "Marco", Role: models.RoleMember},
-				},
-			},
-			5: {
-				ID: 5,
-				StudyGroupDetails: models.StudyGroupDetails{
-					Name:        "The Prefects",
-					Description: "A group for prefects who lead by example and strive for academic and personal growth.",
-					Type:        models.TypePublic,
-					ModuleID:    3,
-				},
-				Members: []models.StudyGroupMember{
-					{UserID: "Mike", Role: models.RoleAdmin},
-					{UserID: "Nina", Role: models.RoleMember},
-					{UserID: "Oscar", Role: models.RoleMember},
-					{UserID: "Alessandro", Role: models.RoleMember},
-					{UserID: "Alice", Role: models.RoleMember},
-					{UserID: "David", Role: models.RoleMember},
-					{UserID: "Grace", Role: models.RoleMember},
-					{UserID: "Ava", Role: models.RoleMember},
-				},
-			},
-			6: {
-				ID: 6,
+			3: {
+				ID: 3,
 				StudyGroupDetails: models.StudyGroupDetails{
 					Name:        "Trinners for Winners",
 					Description: "A group for final year project students who are dedicated to achieving outstanding results.",
@@ -130,7 +80,7 @@ func NewMockStudyGroupRepository() StudyGroupRepository {
 				},
 			},
 		},
-		counter: 7,
+		counter: 4,
 	}
 }
 
