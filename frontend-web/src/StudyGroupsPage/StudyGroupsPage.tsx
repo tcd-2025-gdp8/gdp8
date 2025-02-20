@@ -197,7 +197,7 @@ const StudyGroupsPage: React.FC = () => {
               type: group.type,
               moduleID: matchedGroup?.moduleID ?? 0
             },
-            members: matchedGroup?.members || [],
+            members: matchedGroup?.members ?? [],
           };
         });
         setStudyGroups(formattedGroups);
@@ -295,7 +295,7 @@ const StudyGroupsPage: React.FC = () => {
         throw new Error(`Failed to create group: ${response.statusText}`);
       }
   
-      const createdGroup: APIStudyGroup = await response.json();
+      const createdGroup = (await response.json()) as APIStudyGroup;
   
       const newGroup: StudyGroup = {
         id: createdGroup.id,
@@ -322,7 +322,7 @@ const StudyGroupsPage: React.FC = () => {
       handleCloseDialog();
     } catch (error) {
       console.error("Error creating study group:", error);
-      alert(`Error creating study group: ${error}`);
+      alert(`Error creating study group: ${error instanceof Error ? error.message : String(error)}`);
     }
   };
   
@@ -498,7 +498,7 @@ const StudyGroupsPage: React.FC = () => {
           <Button onClick={handleOpenInviteDialog} color="primary" variant="contained">
             Invite Members
           </Button>
-          <Button onClick={handleCreateGroup} color="success" variant="contained">
+          <Button onClick={() => { void handleCreateGroup(); }} color="success" variant="contained">
             Create
           </Button>
         </DialogActions>
