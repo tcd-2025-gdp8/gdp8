@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"gdp8-backend/internal/services"
@@ -15,7 +16,6 @@ func NewModuleHandler(moduleService services.ModuleService) *ModuleHandler {
 	return &ModuleHandler{moduleService: moduleService}
 }
 
-// GetAllModules returns a list of all available modules
 func (h *ModuleHandler) GetAllModules(w http.ResponseWriter, r *http.Request) {
 	modules, err := h.moduleService.GetAllModules()
 	if err != nil {
@@ -27,7 +27,25 @@ func (h *ModuleHandler) GetAllModules(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(modules)
 }
 
-// CreateModule handles the creation of a new module
+func (h *ModuleHandler) SaveUserModules(w http.ResponseWriter, r *http.Request) {
+        fmt.Println("YESS")
+	var userModules []string
+	if err := json.NewDecoder(r.Body).Decode(&userModules); err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+        // TODO: bind module with user
+        // requires the actual DB integration
+
+        for _, module := range userModules {
+            fmt.Println(module)
+
+        }
+
+	w.WriteHeader(http.StatusOK)
+}
+
 func (h *ModuleHandler) CreateModule(w http.ResponseWriter, r *http.Request) {
 	var newModule struct {
 		ID   string `json:"id"`

@@ -4,28 +4,25 @@ import (
 	"errors"
 	"gdp8-backend/internal/persistence"
 	"sync"
+        "gdp8-backend/internal/models"
 )
 
-type Module struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-}
 
 type ModuleRepository interface {
-	GetAllModules(tx persistence.Transaction) ([]Module, error)
-	AddModule(tx persistence.Transaction, module Module) error
+	GetAllModules(tx persistence.Transaction) ([]models.Module, error)
+	AddModule(tx persistence.Transaction, module models.Module) error
 }
 
 var ErrModuleAlreadyExists = errors.New("module already exists")
 
 type MockModuleRepository struct {
-	modules map[string]Module
+	modules map[string]models.Module
 	mu      sync.Mutex
 }
 
 func NewMockModuleRepository() ModuleRepository {
 	return &MockModuleRepository{
-		modules: map[string]Module{
+		modules: map[string]models.Module{
 			"CSU44052": {ID: "CSU44052", Name: "Computer Graphics"},
 			"CSU44061": {ID: "CSU44061", Name: "Machine Learning"},
 			"CSU44051": {ID: "CSU44051", Name: "Human Factors"},
@@ -38,18 +35,18 @@ func NewMockModuleRepository() ModuleRepository {
 	}
 }
 
-func (r *MockModuleRepository) GetAllModules(_ persistence.Transaction) ([]Module, error) {
+func (r *MockModuleRepository) GetAllModules(_ persistence.Transaction) ([]models.Module, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	modulesList := make([]Module, 0, len(r.modules))
+	modulesList := make([]models.Module, 0, len(r.modules))
 	for _, module := range r.modules {
 		modulesList = append(modulesList, module)
 	}
 	return modulesList, nil
 }
 
-func (r *MockModuleRepository) AddModule(_ persistence.Transaction, module Module) error {
+func (r *MockModuleRepository) AddModule(_ persistence.Transaction, module models.Module) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
