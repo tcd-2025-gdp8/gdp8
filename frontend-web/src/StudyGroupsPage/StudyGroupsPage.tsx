@@ -65,7 +65,7 @@ const initialGroups: StudyGroup[] = [
     id: 1,
     studyGroupDetails: {
       name: "Tech Nerds",
-      description: "A group for tech enthusiasts",
+      description: "A group for tech enthusiasts who love to explore new technologies and innovations.",
       type: "public",
       moduleID: 1,
     },
@@ -81,7 +81,7 @@ const initialGroups: StudyGroup[] = [
     id: 2,
     studyGroupDetails: {
       name: "CS Wizards",
-      description: "A group for CS wizards",
+      description: "A group for computer science wizards who excel in coding and problem-solving.",
       type: "closed",
       moduleID: 3,
     },
@@ -95,7 +95,7 @@ const initialGroups: StudyGroup[] = [
     id: 3,
     studyGroupDetails: {
       name: "The Elites",
-      description: "A group for elite students",
+      description: "A group for elite students who aim for excellence in their academic pursuits.",
       type: "invite-only",
       moduleID: 1,
     },
@@ -109,7 +109,7 @@ const initialGroups: StudyGroup[] = [
     id: 4,
     studyGroupDetails: {
       name: "The Fun Group",
-      description: "A group for fun and learning",
+      description: "A group for students who believe in having fun while learning and collaborating.",
       type: "public",
       moduleID: 2,
     },
@@ -126,7 +126,7 @@ const initialGroups: StudyGroup[] = [
     id: 5,
     studyGroupDetails: {
       name: "The Prefects",
-      description: "A group for prefects",
+      description: "A group for prefects who lead by example and strive for academic and personal growth.",
       type: "closed",
       moduleID: 3,
     },
@@ -145,7 +145,7 @@ const initialGroups: StudyGroup[] = [
     id: 6,
     studyGroupDetails: {
       name: "Trinners for Winners",
-      description: "A group for final year project",
+      description: "A group for final year project students who are dedicated to achieving outstanding results.",
       type: "invite-only",
       moduleID: 6,
     },
@@ -206,20 +206,23 @@ const StudyGroupsPage: React.FC = () => {
 
   const handleJoinGroup = (id: number) => {
     let joinedGroupName = "";
-
+  
     const updatedGroups = studyGroups.map((group) => {
       if (group.id === id) {
         if (!group.members.some((member) => member.userID === "Alessandro")) {
           joinedGroupName = group.studyGroupDetails.name;
           return {
             ...group,
-            members: [...group.members, { userID: "Alessandro", role: "member" }],
+            members: [
+              ...group.members,
+              { userID: "Alessandro", role: "member" as const },
+            ],
           };
         }
       }
       return group;
     });
-
+  
     if (joinedGroupName) {
       setStudyGroups(updatedGroups);
       setNotifications((prev) => [
@@ -228,6 +231,7 @@ const StudyGroupsPage: React.FC = () => {
       ]);
     }
   };
+  
 
   const handleDeleteNotification = (notificationId: number) => {
     setNotifications((prevNotifications) =>
@@ -325,7 +329,7 @@ const StudyGroupsPage: React.FC = () => {
         <InputLabel>Filter by Module</InputLabel>
         <Select
           value={selectedModule}
-          onChange={(e: SelectChangeEvent<number | "">) => setSelectedModule(e.target.value)}
+          onChange={(e: SelectChangeEvent<number | "">) => setSelectedModule(e.target.value as number | "")}
         >
           <MenuItem value="All">All</MenuItem>
           {modulesList.map((module) => (
@@ -410,7 +414,7 @@ const StudyGroupsPage: React.FC = () => {
             <InputLabel>Group Type</InputLabel>
             <Select
               value={groupType}
-              onChange={(e: SelectChangeEvent<"public" | "closed" | "invite-only">) => setGroupType(e.target.value)}
+              onChange={(e: SelectChangeEvent<string>) => setGroupType(e.target.value as "public" | "closed" | "invite-only")}
             >
               <MenuItem value="public">Public</MenuItem>
               <MenuItem value="closed">Closed</MenuItem>
@@ -421,7 +425,7 @@ const StudyGroupsPage: React.FC = () => {
             <InputLabel>Select Module</InputLabel>
             <Select
               value={selectedGroupModule}
-              onChange={(e: SelectChangeEvent<number | "">) => setSelectedGroupModule(e.target.value)}
+              onChange={(e: SelectChangeEvent<string | number>) => setSelectedGroupModule(e.target.value as number | "")}
             >
               {modulesList.map((module) => (
                 <MenuItem key={module.id} value={module.id}>
