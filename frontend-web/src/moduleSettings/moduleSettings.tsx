@@ -33,32 +33,32 @@ const ModuleSettings: React.FC = () => {
     const [moduleID, setModuleID] = useState("");
     const [moduleName, setModuleName] = useState("");
 
-    useEffect(() => {
-        const fetchModules = async () => {
-            if (!token) return;
+    const fetchModules = async () => {
+        if (!token) return;
 
-            try {
-                const response = await fetch("http://localhost:8080/api/modules", {
-                    method: "GET",
-                    headers: {
-                        "Authorization": `Bearer ${token}`,
-                        "Content-Type": "application/json",
-                    },
-                });
+        try {
+            const response = await fetch("http://localhost:8080/api/modules", {
+                method: "GET",
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+            });
 
-                if (!response.ok) {
-                    throw new Error("Failed to fetch modules");
-                }
-
-                const data = (await response.json()) as Module[];
-                setModulesList(data);
-            } catch (error) {
-                console.error("Error fetching modules:", error);
-            } finally {
-                setLoading(false);
+            if (!response.ok) {
+                throw new Error("Failed to fetch modules");
             }
-        };
 
+            const data = (await response.json()) as Module[];
+            setModulesList(data);
+        } catch (error) {
+            console.error("Error fetching modules:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
         void fetchModules();
     }, [token]);
 
@@ -85,6 +85,7 @@ const ModuleSettings: React.FC = () => {
 
             if (response.ok) {
                 alert("Module created successfully!");
+                void fetchModules();
                 setModuleID("");
                 setModuleName("");
                 setOpenDialog(false);
@@ -187,11 +188,10 @@ const ModuleSettings: React.FC = () => {
                     ))}
                 </Grid2>
 
-                {/* Save Button */}
                 <Button
                 variant="contained"
                 color="primary"
-                onClick={void handleSave}
+                onClick={() => void handleSave()}
                 style={styles.saveButton}
             >
                 Save Preferences
@@ -218,7 +218,7 @@ const ModuleSettings: React.FC = () => {
                         <Button onClick={() => setOpenDialog(false)} color="error">
                         Cancel
                     </Button>
-                        <Button onClick={void handleCreateModule} color="primary">
+                        <Button onClick={() => void handleCreateModule()} color="primary">
                         Create
                     </Button>
                     </DialogActions>
