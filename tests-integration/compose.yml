@@ -1,0 +1,27 @@
+services:
+  tests-runner:
+    build:
+      context: tests-integration
+    environment:
+      - BACKEND_HOST=backend:8080
+      - FIREBASE_AUTH_EMULATOR_HOST=firebase:9099
+    depends_on:
+      - backend
+      - firebase
+
+  backend:
+    build:
+      context: backend
+    environment:
+      - FIREBASE_AUTH_EMULATOR_HOST=firebase:9099
+    #ports:
+    #  - 8080:8080
+    depends_on:
+      - firebase
+
+  firebase:
+    build:
+      context: firebase-emulator
+    #ports:
+    #  - 9099:9099
+    #  - 4000:4000

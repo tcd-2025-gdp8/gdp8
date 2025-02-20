@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"gdp8-backend/internal/firebase"
@@ -11,7 +12,12 @@ import (
 )
 
 func main() {
-	firebaseAuth, err := firebase.InitializeFirebase("credentials/serviceAccountKey.json")
+	credentialsPath := "credentials/serviceAccountKey.json"
+	if os.Getenv("FIREBASE_AUTH_EMULATOR_HOST") != "" {
+		credentialsPath = "credentials/mockServiceAccountKey.json"
+	}
+
+	firebaseAuth, err := firebase.InitializeFirebase(credentialsPath)
 	if err != nil {
 		log.Fatalf("Failed to initialize Firebase Admin SDK: %v", err)
 	}
