@@ -14,7 +14,7 @@ import {
     DialogActions,
     IconButton, 
 } from "@mui/material";
-import { useAuth } from "../firebase/useAuth";
+import { useAuth } from "../auth/useAuth";
 import AddIcon from "@mui/icons-material/Add";
 
 interface Module {
