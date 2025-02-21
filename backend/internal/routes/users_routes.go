@@ -12,7 +12,7 @@ import (
 	"gdp8-backend/internal/services"
 )
 
-func RegisterModuleUsers(firebaseAuth *auth.Client) {
+func RegisterUserRoutes(firebaseAuth *auth.Client) {
 	txManager := persistence.MockTransactionManager{}
 	userRepo := repositories.NewMockModuleRepository()
 	userService := services.NewUserService(&txManager, userRepo)
