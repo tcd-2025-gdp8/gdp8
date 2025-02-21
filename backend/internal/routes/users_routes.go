@@ -14,11 +14,11 @@ import (
 
 func RegisterUserRoutes(firebaseAuth *auth.Client) {
 	txManager := persistence.MockTransactionManager{}
-	userRepo := repositories.NewMockModuleRepository()
+	userRepo := repositories.NewMockUserRepository()
 	userService := services.NewUserService(&txManager, userRepo)
-	handler := handlers.NewUserHandler(userService)
+	handler := handlers.NewUserHandler(userService, ModuleRepo)
 
 	http.HandleFunc("GET /api/user/{id}", middleware.WithFirebaseAuth(firebaseAuth, handler.GetUser))
-	http.HandleFunc("POST /api/user/modules/{id}", middleware.WithFirebaseAuth(firebaseAuth, handler.SetModules))
+	http.HandleFunc("POST /api/user/{id}/modules", middleware.WithFirebaseAuth(firebaseAuth, handler.SetModules))
 	http.HandleFunc("POST /api/user", middleware.WithFirebaseAuth(firebaseAuth, handler.CreateUser))
 }
