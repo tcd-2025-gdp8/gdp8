@@ -23,7 +23,7 @@ func (h *ModuleHandler) GetAllModules(w http.ResponseWriter, _ *http.Request) {
 		return
 	}
 
-        sendJSONResponse(w, modules)
+	sendJSONResponse(w, modules)
 }
 
 func (h *ModuleHandler) CreateModule(w http.ResponseWriter, r *http.Request) {

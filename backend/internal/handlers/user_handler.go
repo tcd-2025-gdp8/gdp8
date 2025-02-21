@@ -33,7 +33,7 @@ func (h *UserHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-        sendJSONResponse(w, user)
+	sendJSONResponse(w, user)
 }
 
 func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
@@ -106,5 +106,5 @@ func (h *UserHandler) GetModules(w http.ResponseWriter, r *http.Request) {
 	}
 	modules := user.Modules
 
-        sendJSONResponse(w, modules)
+	sendJSONResponse(w, modules)
 }
