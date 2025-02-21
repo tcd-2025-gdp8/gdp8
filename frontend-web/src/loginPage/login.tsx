@@ -15,6 +15,8 @@ import "./login.css";
 
 const Login: React.FC = () => {
     const [isRegister, setIsRegister] = useState<boolean>(false);
+    const [firstName, setFirstName] = useState<string>("");
+    const [lastName, setLastName] = useState<string>("");
     const { login, signup } = useAuth();
     const navigate = useNavigate();
 
@@ -28,9 +30,31 @@ const Login: React.FC = () => {
         try {
             if (isRegister) {
                 await signup(email, password);
+                const userCredential = await login(email, password);
+                const newToken = await userCredential.user.getIdToken();
+                const firebaseUID = userCredential.user.uid;
+
+                const createUserResponse = await fetchWithToken<{ id: string }>(
+                    newToken,
+                    "http://localhost:8080/api/user",
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({
+                            id: firebaseUID,
+                            name: firstName + " " + lastName,
+                            modules: []
+                        }),
+                    }
+                );
+                console.log(createUserResponse);
                 alert("Registration successful! Please log in.");
 
                 e.currentTarget.reset();
+                setFirstName("");
+                setLastName("");
                 setIsRegister(false);
 
                 // 3) Navigate to login page
@@ -87,6 +111,32 @@ const Login: React.FC = () => {
                 </Typography>
                 <Box component="form" onSubmit={(e) => void handleSubmit(e)}>
                     <Grid container spacing={2}>
+                            {isRegister && (
+                            <>
+                                <Grid item xs={6}>
+                                    <TextField
+                                        required
+                                        fullWidth
+                                        id="firstName"
+                                        label="First Name"
+                                        name="firstName"
+                                        value={firstName}
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFirstName(e.target.value)}
+                                    />
+                                </Grid>
+                                <Grid item xs={6}>
+                                    <TextField
+                                        required
+                                        fullWidth
+                                        id="lastName"
+                                        label="Last Name"
+                                        name="lastName"
+                                        value={lastName}
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLastName(e.target.value)}
+                                    />
+                                </Grid>
+                            </>
+                        )}
                         <Grid item xs={12}>
                             <TextField
                                 required

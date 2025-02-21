@@ -23,8 +23,9 @@ interface Module {
 }
 
 const ModuleSettings: React.FC = () => {
-    const { token } = useAuth();
     const navigate = useNavigate();
+    const { token, user } = useAuth();
+    const userID = user?.uid;
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedModules, setSelectedModules] = useState<string[]>([]);
     const [modulesList, setModulesList] = useState<Module[]>([]);
@@ -117,10 +118,8 @@ const ModuleSettings: React.FC = () => {
             return;
         }
 
-        let id = "test"
-
         try {
-            const response = await fetch(`http://localhost:8080/api/user/${id}/modules`, {
+            const response = await fetch(`http://localhost:8080/api/user/${userID}/modules`, {
                 method: "POST",
                 headers: {
                     "Authorization": `Bearer ${token}`,
