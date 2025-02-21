@@ -17,6 +17,8 @@ import Grid from "@mui/material/Grid";
 import { useAuth } from "../auth/useAuth";
 import { useNavigate } from "react-router-dom";
 import AddIcon from "@mui/icons-material/Add";
+import "./ModuleSettings.css";
+
 interface Module {
     id: string;
     name: string;
@@ -57,9 +59,31 @@ const ModuleSettings: React.FC = () => {
         }
     }, [token]);
 
+    const fetchUserModules = useCallback(async () => {
+        if (!token || !userID) return;
+        try {
+            const response = await fetch(`http://localhost:8080/api/user/${userID}/modules`, {
+                method: "GET",
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+            });
+            if (!response.ok) {
+                throw new Error("Failed to fetch user modules");
+            }
+            const data = (await response.json()) as Module[];
+            const ids = data.map((mod) => mod.id);
+            setSelectedModules(ids);
+        } catch (error) {
+            console.error("Error fetching user modules:", error);
+        }
+    }, [token, userID]);
+
     useEffect(() => {
         void fetchModules();
-    }, [token, fetchModules]);
+        void fetchUserModules();
+    }, [token, fetchModules, fetchUserModules]);
 
 
     const handleCreateModule = async () => {
@@ -139,8 +163,8 @@ const ModuleSettings: React.FC = () => {
     };
 
     return (
-        <Container style={styles.container}>
-            {/* Back to Landing Button */}
+
+        <Container className="module-container">
             <Button
                 variant="contained"
                 color="primary"
@@ -149,13 +173,13 @@ const ModuleSettings: React.FC = () => {
             >
                 Back to Landing
             </Button>
-
-            {/* Plus Icon to Create Module */}
-            <IconButton onClick={() => setOpenDialog(true)} style={styles.plusButton}>
+            <IconButton 
+            onClick={() => setOpenDialog(true)} 
+            className="plus-button">
                 <AddIcon />
             </IconButton>
-
-            <Typography variant="h4" style={styles.title}>
+                <>
+                <Typography variant="h4" className="module-title">
                 Select Your Modules
             </Typography>
 
@@ -165,46 +189,41 @@ const ModuleSettings: React.FC = () => {
                 fullWidth
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                style={styles.searchBar}
+                className="module-search-bar"
             />
 
             {loading && <Typography variant="body1">Loading modules...</Typography>}
 
-            {!loading && filteredModules.length === 0 && (
-                <Typography variant="body1" style={styles.noModules}>
-                    No modules found.
-                </Typography>
-            )}
+                {!loading && filteredModules.length === 0 && (
+                    <Typography variant="body1" className="module-no-modules">
+                        No modules found.
+                    </Typography>
+                )}
 
             <Grid container spacing={2} justifyContent="center">
                 {filteredModules.map((module) => (
                     <Grid key={module.id}>
                         <Card
                             onClick={() => handleToggleModule(module.id)}
-                            style={{
-                                ...styles.card,
-                                backgroundColor: selectedModules.includes(module.id)
-                                    ? "#d4edda"
-                                    : "#ffffff",
-                            }}
+                            className={`module-card ${selectedModules.includes(module.id) ? "selected" : ""}`}
                         >
-                            <CardActionArea>
-                                <CardContent>
-                                    <Typography variant="h6" style={styles.moduleText}>
-                                        {module.name}
-                                    </Typography>
-                                </CardContent>
-                            </CardActionArea>
-                        </Card>
-                    </Grid>
-                ))}
-            </Grid>
+                                <CardActionArea>
+                                    <CardContent>
+                                        <Typography variant="h6" className="module-text">
+                                            {module.name}
+                                        </Typography>
+                                    </CardContent>
+                                </CardActionArea>
+                            </Card>
+                            </Grid2>
+                    ))}
+                </Grid2>
 
             <Button
                 variant="contained"
                 color="primary"
-                onClick={() => { void handleSave(); }}
-                style={styles.saveButton}
+                onClick={() => void handleSave()}
+                className="module-save-button"
             >
                 Save Preferences
             </Button>
@@ -235,9 +254,10 @@ const ModuleSettings: React.FC = () => {
                     <Button onClick={handleCreateModuleClick} color="primary">
                         Create
                     </Button>
-                </DialogActions>
-            </Dialog>
-        </Container>
+                    </DialogActions>
+                </Dialog>
+                </>
+            </Container>
     );
 };
 
