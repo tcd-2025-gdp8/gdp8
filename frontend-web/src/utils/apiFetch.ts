@@ -16,7 +16,7 @@ export async function fetchApiWithToken<T>(
     });
 
     if (!response.ok) {
-        throw new Error("HTTP error ${response.status}: ${response.statusText}");
+        throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
     }
 
     return response.json() as Promise<T>;
