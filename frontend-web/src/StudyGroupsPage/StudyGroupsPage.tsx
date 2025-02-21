@@ -20,10 +20,12 @@ import {
   InputLabel,
   Tooltip,
   Drawer,
-  IconButton
+  IconButton,
+  Box
 } from "@mui/material";
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import CloseIcon from '@mui/icons-material/Close';
+import { useNavigate } from "react-router-dom";
 
 interface StudyGroupMember {
   userID: string;
@@ -114,6 +116,7 @@ const initialGroups: HardcodedStudyGroup[] = [
 
 const StudyGroupsPage: React.FC = () => {
   const { token } = useAuth();
+  const navigate = useNavigate();
   const [studyGroups, setStudyGroups] = useState<StudyGroup[]>([]);
   const [filteredGroups, setFilteredGroups] = useState<StudyGroup[]>([]);
   const [selectedModule, setSelectedModule] = useState<number | "">("");
@@ -219,6 +222,17 @@ const StudyGroupsPage: React.FC = () => {
     );
   };
 
+  const handleOpenChat = (groupId: number) => {
+    const group = studyGroups.find((g) => g.id === groupId);
+    const isMember = group?.members.some(
+      (member) => member.userID === "Alessandro" && ["member", "admin"].includes(member.role)
+    );
+    if (isMember) {
+      void navigate(`/chat/${groupId}`);
+    }
+  };
+  
+
   const handleOpenDialog = () => setOpenDialog(true);
   const handleCloseDialog = () => {
     setOpenDialog(false);
@@ -307,7 +321,8 @@ const StudyGroupsPage: React.FC = () => {
   };
 
   return (
-    <Container maxWidth="md" style={{ marginTop: "20px" }}>
+    <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh"width="100vw">
+    <Container maxWidth="md" style={{ marginTop: "20px", textAlign: "center" }}>
       <Typography variant="h4" gutterBottom>
         Study Groups
         <IconButton onClick={() => setOpenNotifications(true)}>
@@ -359,51 +374,71 @@ const StudyGroupsPage: React.FC = () => {
       </FormControl>
 
       <Grid container spacing={2}>
-        {filteredGroups.map((group) => (
-          <Grid item xs={12} sm={6} md={4} key={group.id} style={{ minWidth: "280px" }}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6">{group.studyGroupDetails.name}</Typography>
-                <Typography variant="body2" color="textSecondary" style={{ marginBottom: "10px" }}>
-                  {group.studyGroupDetails.description}
-                </Typography>
-                <Tooltip
-                  title={
-                    group.members.length > 0
-                      ? group.members.map((member) => member.userID).join(", ")
-                      : "No members yet"
-                  }
-                  arrow
-                >
-                  <Typography color="textSecondary" style={{ cursor: "pointer" }}>
-                    Members: {group.members.length}
-                  </Typography>
-                </Tooltip>
-                <Typography color="textSecondary">
-                  Module: {modulesList.find((module) => module.id === group.studyGroupDetails.moduleID)?.name}
-                </Typography>
+  {filteredGroups.map((group) => {
+    const isMember = group.members.some((member) => member.userID === "Alessandro");
+    const isFull = group.members.length >= 10; 
+
+
+    return ( // ✅ Added return statement
+      <Grid item xs={12} sm={6} md={4} key={group.id} style={{ minWidth: "280px" }}>
+        <Card>
+          <CardContent>
+            <Typography variant="h6">{group.studyGroupDetails.name}</Typography>
+            <Typography variant="body2" color="textSecondary" style={{ marginBottom: "10px" }}>
+              {group.studyGroupDetails.description}
+            </Typography>
+            <Tooltip
+              title={
+                group.members.length > 0
+                  ? group.members.map((member) => member.userID).join(", ")
+                  : "No members yet"
+              }
+              arrow
+            >
+              <Typography color="textSecondary" style={{ cursor: "pointer" }}>
+                Members: {group.members.length}
+              </Typography>
+            </Tooltip>
+            <Typography color="textSecondary">
+              Module: {modulesList.find((module) => module.id === group.studyGroupDetails.moduleID)?.name}
+            </Typography>
+            <Button
+              variant="contained"
+              color="primary"
+              fullWidth
+              onClick={() => handleJoinGroup(group.id)}
+              style={{ marginTop: "10px" }}
+              disabled={
+                group.members.length >= 10 ||
+                group.members.some((member) => member.userID === "Alessandro")
+              }
+            >
+              {group.members.some((member) => member.userID === "Alessandro")
+                ? "Joined"
+                : group.members.length >= 10
+                  ? "Full"
+                  : "Request to Join"}
+            </Button>
+            {!isFull && (
                 <Button
-                  variant="contained"
-                  color="primary"
-                  fullWidth
-                  onClick={() => handleJoinGroup(group.id)}
-                  style={{ marginTop: "10px" }}
-                  disabled={
-                    group.members.length >= 10 ||
-                    group.members.some((member) => member.userID === "Alessandro")
-                  }
+                    variant="contained"
+                    color="primary"
+                    fullWidth
+                    onClick={() => handleOpenChat(group.id)}
+                    disabled={!isMember}
+                    style={{ marginTop: "10px" }}
                 >
-                  {group.members.some((member) => member.userID === "Alessandro")
-                    ? "Joined"
-                    : group.members.length >= 10
-                    ? "Full"
-                    : "Request to Join"}
+                    {isMember ? "Open Chat" : "Join to Chat!"}
                 </Button>
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
+                )}
+
+          </CardContent>
+        </Card>
       </Grid>
+    );
+  })}
+</Grid>
+
 
       <Button
         variant="contained"
@@ -497,6 +532,7 @@ const StudyGroupsPage: React.FC = () => {
         </DialogActions>
       </Dialog>
     </Container>
+    </Box>
   );
 };
 
