@@ -23,10 +23,7 @@ func (h *ModuleHandler) GetAllModules(w http.ResponseWriter, _ *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(modules); err != nil {
-		http.Error(w, "Failed to encode modules", http.StatusInternalServerError)
-	}
+        sendJSONResponse(w, modules)
 }
 
 func (h *ModuleHandler) CreateModule(w http.ResponseWriter, r *http.Request) {

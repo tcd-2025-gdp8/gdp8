@@ -32,10 +32,8 @@ func (h *UserHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("Error fetching user: %v", err), http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(user); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to encode user: %v", err), http.StatusInternalServerError)
-	}
+
+        sendJSONResponse(w, user)
 }
 
 func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
@@ -90,7 +88,6 @@ func (h *UserHandler) SetModules(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -109,8 +106,5 @@ func (h *UserHandler) GetModules(w http.ResponseWriter, r *http.Request) {
 	}
 	modules := user.Modules
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(modules); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to encode modules: %v", err), http.StatusInternalServerError)
-	}
+        sendJSONResponse(w, modules)
 }
