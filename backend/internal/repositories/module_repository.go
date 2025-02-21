@@ -11,7 +11,7 @@ import (
 type ModuleRepository interface {
 	GetAllModules(tx persistence.Transaction) ([]models.Module, error)
 	AddModule(tx persistence.Transaction, module models.Module) error
-        GetModuleByID(tx persistence.Transaction, id string) (models.Module, error)
+	GetModuleByID(tx persistence.Transaction, id string) (models.Module, error)
 }
 
 var ErrModuleAlreadyExists = errors.New("module already exists")
@@ -60,11 +60,11 @@ func (r *MockModuleRepository) AddModule(_ persistence.Transaction, module model
 }
 
 func (r *MockModuleRepository) GetModuleByID(_ persistence.Transaction, id string) (models.Module, error) {
-    r.mu.Lock()
-    defer r.mu.Unlock()
-    mod, ok := r.modules[id]
-    if !ok {
-        return models.Module{}, errors.New("module not found")
-    }
-    return mod, nil
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	mod, ok := r.modules[id]
+	if !ok {
+		return models.Module{}, errors.New("module not found")
+	}
+	return mod, nil
 }

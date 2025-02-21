@@ -7,17 +7,17 @@ import (
 	"strings"
 
 	"gdp8-backend/internal/models"
-	"gdp8-backend/internal/services"
 	"gdp8-backend/internal/repositories"
+	"gdp8-backend/internal/services"
 )
 
 type UserHandler struct {
-    userService services.UserService
-    moduleRepo  repositories.ModuleRepository
+	userService services.UserService
+	moduleRepo  repositories.ModuleRepository
 }
 
 func NewUserHandler(userService services.UserService, moduleRepo repositories.ModuleRepository) *UserHandler {
-    return &UserHandler{userService: userService, moduleRepo: moduleRepo}
+	return &UserHandler{userService: userService, moduleRepo: moduleRepo}
 }
 
 func (h *UserHandler) GetUser(w http.ResponseWriter, r *http.Request) {
@@ -33,7 +33,9 @@ func (h *UserHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(user)
+	if err := json.NewEncoder(w).Encode(user); err != nil {
+		http.Error(w, fmt.Sprintf("Failed to encode user: %v", err), http.StatusInternalServerError)
+	}
 }
 
 func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
@@ -48,41 +50,46 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(createdUser)
+	if err := json.NewEncoder(w).Encode(createdUser); err != nil {
+		http.Error(w, fmt.Sprintf("Failed to encode user: %v", err), http.StatusInternalServerError)
+	}
+}
+
+type ModulePreferences struct {
+	IDs []string `json:"selectedModules"`
 }
 
 func (h *UserHandler) SetModules(w http.ResponseWriter, r *http.Request) {
-    // Expected URL: /api/user/{id}/modules
-    parts := strings.Split(r.URL.Path, "/")
-    if len(parts) < 5 {
-        http.Error(w, "User id missing in URL", http.StatusBadRequest)
-        return
-    }
-    id := parts[3]
+	parts := strings.Split(r.URL.Path, "/")
+	if len(parts) < 5 {
+		http.Error(w, "User id missing in URL", http.StatusBadRequest)
+		return
+	}
+	id := parts[3]
 
-    var req struct {
-        SelectedModules []string `json:"selectedModules"`
-    }
-    if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-        http.Error(w, "Invalid request payload", http.StatusBadRequest)
-        return
-    }
+	var prefs ModulePreferences
+	if err := json.NewDecoder(r.Body).Decode(&prefs); err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
 
-    modules := make([]models.Module, len(req.SelectedModules))
-    for i, modID := range req.SelectedModules {
-        mod, err := h.moduleRepo.GetModuleByID(nil, modID)
-        if err != nil {
-            http.Error(w, fmt.Sprintf("Module %s not found: %v", modID, err), http.StatusBadRequest)
-            return
-        }
-        modules[i] = mod
-    }
+	fmt.Println("Received module IDs:", prefs.IDs)
 
-    if err := h.userService.SetModules(id, modules); err != nil {
-        http.Error(w, fmt.Sprintf("Error setting modules: %v", err), http.StatusInternalServerError)
-        return
-    }
-    w.Header().Set("Content-Type", "application/json")
-    w.WriteHeader(http.StatusOK)
-    json.NewEncoder(w).Encode(map[string]string{"status": "modules updated"})
+	modules := make([]models.Module, len(prefs.IDs))
+	for i, modID := range prefs.IDs {
+		mod, err := h.moduleRepo.GetModuleByID(nil, modID)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Module %s not found: %v", modID, err), http.StatusBadRequest)
+			return
+		}
+		modules[i] = mod
+	}
+
+	if err := h.userService.SetModules(id, modules); err != nil {
+		http.Error(w, fmt.Sprintf("Error setting modules: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 }

@@ -2,8 +2,8 @@ package services
 
 import (
 	"gdp8-backend/internal/models"
-	"gdp8-backend/internal/repositories"
 	"gdp8-backend/internal/persistence"
+	"gdp8-backend/internal/repositories"
 )
 
 type UserService interface {
