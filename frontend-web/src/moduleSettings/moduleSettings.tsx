@@ -14,7 +14,7 @@ import {
     CardActionArea,
 } from "@mui/material";
 import Grid from "@mui/material/Grid";
-import { useAuth } from "../firebase/useAuth";
+import { useAuth } from "../auth/useAuth";
 import { useNavigate } from "react-router-dom";
 import AddIcon from "@mui/icons-material/Add";
 interface Module {

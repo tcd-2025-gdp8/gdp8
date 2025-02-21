@@ -1,7 +1,7 @@
 // src/LandingPage.tsx
 import React, { useState } from "react";
-import { Link } from "react-router-dom"; // Removed useNavigate since it's unused
-import { useAuth } from "../firebase/useAuth";
+import { Link } from "react-router-dom";
+import { useAuth } from "../auth/useAuth";
 import {
     Box,
     Typography,
@@ -16,7 +16,7 @@ import {
 } from "@mui/material";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import CloseIcon from "@mui/icons-material/Close";
-import styles from "./LandingPage.module.css"; // Ensure TypeScript recognizes this correctly
+import styles from "./LandingPage.module.css";
 
 interface Notification {
     id: number;
@@ -26,7 +26,7 @@ interface Notification {
 const LandingPage: React.FC = () => {
     const { user } = useAuth();
 
-    // Notifications state
+    // Use local state for notifications
     const [notifications, setNotifications] = useState<Notification[]>([
         { id: 1, message: 'Your request to join "The Prefects" has been accepted.' },
         { id: 2, message: 'New study group "CS Wizards" has been created for CSU44051: Human Factors.' },
@@ -34,7 +34,7 @@ const LandingPage: React.FC = () => {
     ]);
     const [openNotifications, setOpenNotifications] = useState(false);
 
-    // Delete a notification
+    // Handler to remove a notification
     const handleDeleteNotification = (notificationId: number) => {
         setNotifications((prev) =>
             prev.filter((notification) => notification.id !== notificationId)
@@ -53,8 +53,8 @@ const LandingPage: React.FC = () => {
                         width: 240,
                         boxSizing: "border-box",
                         backgroundColor: "#f5f5f5",
-                        position: "fixed", // Fix the sidebar position
-                        zIndex: 1200,     // Ensure sidebar is below AppBar
+                        position: "fixed",
+                        zIndex: 1200,
                     },
                 }}
             >
@@ -83,20 +83,17 @@ const LandingPage: React.FC = () => {
                     sx={{
                         backgroundColor: "#ffffff",
                         color: "#000000",
-                        zIndex: 1201, // Ensure AppBar is above sidebar
-                        width: "calc(100% - 240px)", // Adjust width to account for sidebar
-                        marginLeft: "240px", // Shift AppBar to the right
+                        zIndex: 1201,
+                        width: "calc(100% - 240px)",
+                        marginLeft: "240px",
                     }}
                 >
                     <Toolbar sx={{ flexDirection: "row", alignItems: "center" }}>
-                        {/* Left section: Title */}
                         <Box sx={{ flexGrow: 1, display: "flex", alignItems: "center" }}>
                             <Typography variant="h6">
                                 Blackboard + StudyWise
                             </Typography>
                         </Box>
-
-                        {/* Right section: User Email & Notifications */}
                         {user && (
                             <Typography variant="subtitle1" sx={{ mr: 2 }}>
                                 {user.email}
@@ -117,7 +114,7 @@ const LandingPage: React.FC = () => {
                     onClose={() => setOpenNotifications(false)}
                     sx={{
                         "& .MuiDrawer-paper": {
-                            zIndex: 1300, // Ensure notifications drawer is above AppBar
+                            zIndex: 1300,
                         },
                     }}
                 >
@@ -170,7 +167,7 @@ const LandingPage: React.FC = () => {
 
                 {/* Main Content Area (Below the AppBar) */}
                 <Box sx={{ padding: "2rem", marginTop: "64px" }}>
-                    {/* Removed the instructions text */}
+                    {/* Main content goes here */}
                 </Box>
             </Box>
         </Box>

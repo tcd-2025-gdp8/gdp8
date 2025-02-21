@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 
 	"gdp8-backend/internal/middleware"
@@ -15,11 +16,18 @@ type StudyGroupHandler struct {
 	service services.StudyGroupService
 }
 
+type StudyGroupMemberDTO struct {
+	ID   models.UserID `json:"id"`
+	Name string        `json:"name"`
+	Role string        `json:"role"`
+}
+
 type StudyGroupDTO struct {
-	ID          models.StudyGroupID `json:"id"`
-	Name        string              `json:"name"`
-	Description string              `json:"description"`
-	Type        string              `json:"type"`
+	ID          models.StudyGroupID   `json:"id"`
+	Name        string                `json:"name"`
+	Description string                `json:"description"`
+	Type        string                `json:"type"`
+	Members     []StudyGroupMemberDTO `json:"members,omitempty"`
 }
 
 type StudyGroupCreateDTO struct {
@@ -35,12 +43,29 @@ type MemberAdminOperationDTO struct {
 var ErrInvalidRequestPayload = errors.New("invalid request payload")
 var ErrInvalidCommand = errors.New("invalid command")
 
-func MapStudyGroupToDTO(studyGroup models.StudyGroup) StudyGroupDTO {
+func mapStudyGroupMemberToDTO(member models.StudyGroupMember) StudyGroupMemberDTO {
+	return StudyGroupMemberDTO{
+		ID:   member.UserID,
+		Name: fmt.Sprintf("Name %s", member.UserID), // TODO change after the user model is complete
+		Role: string(member.Role),
+	}
+}
+
+func mapStudyGroupToDTO(studyGroup models.StudyGroup) StudyGroupDTO {
+	var members []StudyGroupMemberDTO
+	if studyGroup.Type == models.TypePublic {
+		members = make([]StudyGroupMemberDTO, len(studyGroup.Members))
+		for i, member := range studyGroup.Members {
+			members[i] = mapStudyGroupMemberToDTO(member)
+		}
+	}
+
 	return StudyGroupDTO{
 		ID:          studyGroup.ID,
 		Name:        studyGroup.Name,
 		Description: studyGroup.Description,
 		Type:        string(studyGroup.Type),
+		Members:     members,
 	}
 }
 
@@ -66,7 +91,7 @@ func (h *StudyGroupHandler) GetStudyGroup(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	sendJSONResponse(w, MapStudyGroupToDTO(*studyGroup))
+	sendJSONResponse(w, mapStudyGroupToDTO(*studyGroup))
 }
 
 func (h *StudyGroupHandler) GetAllStudyGroups(w http.ResponseWriter, _ *http.Request) {
@@ -78,7 +103,7 @@ func (h *StudyGroupHandler) GetAllStudyGroups(w http.ResponseWriter, _ *http.Req
 
 	dtoList := make([]StudyGroupDTO, len(studyGroups))
 	for i, studyGroup := range studyGroups {
-		dtoList[i] = MapStudyGroupToDTO(studyGroup)
+		dtoList[i] = mapStudyGroupToDTO(studyGroup)
 	}
 
 	sendJSONResponse(w, dtoList)
@@ -111,7 +136,7 @@ func (h *StudyGroupHandler) CreateStudyGroup(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	sendJSONResponse(w, MapStudyGroupToDTO(*createdStudyGroup))
+	sendJSONResponse(w, mapStudyGroupToDTO(*createdStudyGroup))
 }
 
 func (h *StudyGroupHandler) HandleStudyMemberOperation(w http.ResponseWriter, r *http.Request) {

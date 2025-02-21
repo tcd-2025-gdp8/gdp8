@@ -1,11 +1,12 @@
 // App.tsx
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useAuth } from "./firebase/useAuth";
+import { useAuth } from "./auth/useAuth";
 import Login from "./loginPage/login";
 import StudyGroupsPage from "./StudyGroupsPage/StudyGroupsPage";
 import ModuleSettings from "./moduleSettings/moduleSettings";
 import LandingPage from "./landingPage/landingPage";
+import Chat from "./chat/Chat";
 
 const App: React.FC = () => {
   const { user } = useAuth();
@@ -29,6 +30,7 @@ const App: React.FC = () => {
           path="/module"
           element={<ModuleSettings />}
         />
+        <Route path="/chat/:groupId" element={<Chat />} />
       </Routes>
     </BrowserRouter>
   );
