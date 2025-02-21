@@ -20,5 +20,6 @@ func RegisterUserRoutes(firebaseAuth *auth.Client) {
 
 	http.HandleFunc("GET /api/user/{id}", middleware.WithFirebaseAuth(firebaseAuth, handler.GetUser))
 	http.HandleFunc("POST /api/user/{id}/modules", middleware.WithFirebaseAuth(firebaseAuth, handler.SetModules))
+	http.HandleFunc("GET /api/user/{id}/modules", middleware.WithFirebaseAuth(firebaseAuth, handler.GetModules))
 	http.HandleFunc("POST /api/user", middleware.WithFirebaseAuth(firebaseAuth, handler.CreateUser))
 }

@@ -93,3 +93,24 @@ func (h *UserHandler) SetModules(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 }
+
+func (h *UserHandler) GetModules(w http.ResponseWriter, r *http.Request) {
+    parts := strings.Split(r.URL.Path, "/")
+    if len(parts) < 5 {
+        http.Error(w, "User id missing in URL", http.StatusBadRequest)
+        return
+    }
+    id := parts[3]
+
+    user, err := h.userService.GetUser(id)
+    if err != nil {
+        http.Error(w, fmt.Sprintf("Error fetching user: %v", err), http.StatusInternalServerError)
+        return
+    }
+    modules := user.Modules
+
+    w.Header().Set("Content-Type", "application/json")
+    if err := json.NewEncoder(w).Encode(modules); err != nil {
+        http.Error(w, fmt.Sprintf("Failed to encode modules: %v", err), http.StatusInternalServerError)
+    }
+}
