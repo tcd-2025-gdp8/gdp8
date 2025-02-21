@@ -49,7 +49,7 @@ func NewMockStudyGroupRepository() StudyGroupRepository {
 				StudyGroupDetails: models.StudyGroupDetails{
 					Name:        "The Elites",
 					Description: "A group for elite students who aim for excellence in their academic pursuits.",
-					Type:        models.TypePublic,
+					Type:        models.TypeClosed,
 					ModuleID:    1,
 				},
 				Members: []models.StudyGroupMember{
