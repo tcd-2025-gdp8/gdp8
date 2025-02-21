@@ -116,8 +116,11 @@ const ModuleSettings: React.FC = () => {
             alert("You must be logged in to save preferences.");
             return;
         }
+
+        let id = "test"
+
         try {
-            const response = await fetch("http://localhost:8080/api/save-modules", {
+            const response = await fetch(`http://localhost:8080/api/user/${id}/modules`, {
                 method: "POST",
                 headers: {
                     "Authorization": `Bearer ${token}`,
