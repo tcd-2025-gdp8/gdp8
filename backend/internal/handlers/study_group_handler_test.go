@@ -92,7 +92,7 @@ func TestStudyGroupHandler_GetStudyGroup(t *testing.T) {
 					}, nil)
 			},
 			expectedCode: http.StatusOK,
-			expectedBody: `{"id":123,"name":"Test Group","description":"Test Description","type":"public"}` + "\n",
+			expectedBody: `{"id":123,"name":"Test Group","description":"Test Description","type":"public","members":[{"id":"3","name":"Name 3","role":"admin"},{"id":"4","name":"Name 4","role":"member"}]}` + "\n",
 		},
 		{
 			name:         "Invalid ID format",
@@ -202,7 +202,7 @@ func TestStudyGroupHandler_GetAllStudyGroups(t *testing.T) {
 					}, nil)
 			},
 			expectedCode: http.StatusOK,
-			expectedBody: `[{"id":1,"name":"Group 1","description":"Description 1","type":"public"},{"id":2,"name":"Group 2","description":"Description 2","type":"closed"}]` + "\n",
+			expectedBody: `[{"id":1,"name":"Group 1","description":"Description 1","type":"public","members":[{"id":"3","name":"Name 3","role":"admin"},{"id":"4","name":"Name 4","role":"member"}]},{"id":2,"name":"Group 2","description":"Description 2","type":"closed"}]` + "\n",
 		},
 		{
 			name: "Successfully fetch empty list of study groups",
