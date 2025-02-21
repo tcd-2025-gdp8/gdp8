@@ -1,6 +1,6 @@
 // src/StudyGroupsPage/StudyGroupsPage.tsx
 import React, { useState, useEffect } from "react";
-import { useAuth } from "../firebase/useAuth";
+import { useAuth } from "../auth/useAuth";
 import {
   Container,
   Card,
