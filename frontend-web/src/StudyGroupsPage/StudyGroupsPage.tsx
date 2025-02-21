@@ -56,11 +56,18 @@ interface Notification {
   message: string;
 }
 
+interface APIMember {
+  id: string;
+  name: string;
+  role: "admin" | "member" | "invitee" | "requester";
+}
+
 interface APIStudyGroup {
   id: number;
   name: string;
   description: string;
   type: "public" | "closed" | "invite-only";
+  members: APIMember[];
 }
 
 const modulesList = [
@@ -79,38 +86,17 @@ const initialGroups: HardcodedStudyGroup[] = [
   {
     id: 1,
     moduleID: 1,
-    members: [
-      { userID: "Alice", role: "member" },
-      { userID: "Bob", role: "member" },
-      { userID: "Charlie", role: "member" },
-      { userID: "Maria", role: "member" },
-      { userID: "Catriona", role: "member" },
-    ],
+    members: [],
   },
   {
     id: 2,
     moduleID: 1,
-    members: [
-      { userID: "Grace", role: "member" },
-      { userID: "Alessandro", role: "member" },
-      { userID: "Ian", role: "member" },
-    ],
+    members: [],
   },
   {
     id: 3,
     moduleID: 6,
-    members: [
-      { userID: "Paul", role: "member" },
-      { userID: "Quinn", role: "member" },
-      { userID: "Rachel", role: "member" },
-      { userID: "Jade", role: "member" },
-      { userID: "Robert", role: "member" },
-      { userID: "Bob", role: "member" },
-      { userID: "Hannah", role: "member" },
-      { userID: "Bianca", role: "member" },
-      { userID: "Oscar", role: "member" },
-      { userID: "Ava", role: "member" }
-    ],
+    members: [],
   },
 ];
 
@@ -163,9 +149,12 @@ const StudyGroupsPage: React.FC = () => {
               name: group.name,
               description: group.description,
               type: group.type,
-              moduleID: matchedGroup?.moduleID ?? 0
+              moduleID: matchedGroup?.moduleID ?? 0,
             },
-            members: matchedGroup?.members ?? [],
+            members: group.members ? group.members.map((member) => ({
+              userID: member.id,
+              role: member.role,
+            })) : [],
           };
         });
         setStudyGroups(formattedGroups);
