@@ -1,22 +1,22 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { 
-    Container, 
-    Typography, 
-    TextField, 
-    Grid2, 
-    Card, 
-    CardContent, 
-    CardActionArea, 
+import {
+    Container,
+    Typography,
+    TextField,
     Button,
     Dialog,
     DialogTitle,
     DialogContent,
     DialogActions,
-    IconButton, 
+    IconButton,
+    Card,
+    CardContent,
+    CardActionArea,
 } from "@mui/material";
+import Grid from "@mui/material/Grid";
 import { useAuth } from "../auth/useAuth";
+import { useNavigate } from "react-router-dom";
 import AddIcon from "@mui/icons-material/Add";
-
 interface Module {
     id: string;
     name: string;
@@ -24,6 +24,7 @@ interface Module {
 
 const ModuleSettings: React.FC = () => {
     const { token } = useAuth();
+    const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedModules, setSelectedModules] = useState<string[]>([]);
     const [modulesList, setModulesList] = useState<Module[]>([]);
@@ -35,7 +36,6 @@ const ModuleSettings: React.FC = () => {
 
     const fetchModules = useCallback(async () => {
         if (!token) return;
-
         try {
             const response = await fetch("http://localhost:8080/api/modules", {
                 method: "GET",
@@ -44,11 +44,9 @@ const ModuleSettings: React.FC = () => {
                     "Content-Type": "application/json",
                 },
             });
-
             if (!response.ok) {
                 throw new Error("Failed to fetch modules");
             }
-
             const data = (await response.json()) as Module[];
             setModulesList(data);
         } catch (error) {
@@ -72,7 +70,6 @@ const ModuleSettings: React.FC = () => {
             alert("Both Module ID and Module Name are required.");
             return;
         }
-
         try {
             const response = await fetch("http://localhost:8080/api/modules", {
                 method: "POST",
@@ -82,7 +79,6 @@ const ModuleSettings: React.FC = () => {
                 },
                 body: JSON.stringify({ id: moduleID, name: moduleName }),
             });
-
             if (response.ok) {
                 alert("Module created successfully!");
                 void fetchModules();
@@ -96,6 +92,11 @@ const ModuleSettings: React.FC = () => {
             console.error("Error:", error);
             alert("Failed to create module.");
         }
+    };
+
+    // Create a synchronous wrapper to call the async handleCreateModule.
+    const handleCreateModuleClick = (): void => {
+        void handleCreateModule();
     };
 
     const filteredModules = modulesList.filter((module) =>
@@ -115,7 +116,6 @@ const ModuleSettings: React.FC = () => {
             alert("You must be logged in to save preferences.");
             return;
         }
-
         try {
             const response = await fetch("http://localhost:8080/api/save-modules", {
                 method: "POST",
@@ -125,7 +125,6 @@ const ModuleSettings: React.FC = () => {
                 },
                 body: JSON.stringify({ selectedModules }),
             });
-
             if (response.ok) {
                 alert("Modules saved successfully!");
             } else {
@@ -138,18 +137,27 @@ const ModuleSettings: React.FC = () => {
     };
 
     return (
-
         <Container style={styles.container}>
-            <IconButton 
-            onClick={() => setOpenDialog(true)} 
-            style={styles.plusButton}>
+            {/* Back to Landing Button */}
+            <Button
+                variant="contained"
+                color="primary"
+                onClick={() => { void navigate("/landing"); }}
+                style={styles.backButton}
+            >
+                Back to Landing
+            </Button>
+
+            {/* Plus Icon to Create Module */}
+            <IconButton onClick={() => setOpenDialog(true)} style={styles.plusButton}>
                 <AddIcon />
             </IconButton>
-                <Typography variant="h4" style={styles.title}>
+
+            <Typography variant="h4" style={styles.title}>
                 Select Your Modules
             </Typography>
 
-                <TextField
+            <TextField
                 label="Search Modules"
                 variant="outlined"
                 fullWidth
@@ -158,72 +166,76 @@ const ModuleSettings: React.FC = () => {
                 style={styles.searchBar}
             />
 
-                {loading && <Typography variant="body1">Loading modules...</Typography>}
+            {loading && <Typography variant="body1">Loading modules...</Typography>}
 
-                {!loading && filteredModules.length === 0 && (
-                    <Typography variant="body1" style={styles.noModules}>
-                        No modules found.
-                    </Typography>
-                )}
+            {!loading && filteredModules.length === 0 && (
+                <Typography variant="body1" style={styles.noModules}>
+                    No modules found.
+                </Typography>
+            )}
 
-                <Grid2 container spacing={2} justifyContent="center">
-                    {filteredModules.map((module) => (
-                        <Grid2 key={module.id}>
-                            <Card 
+            <Grid container spacing={2} justifyContent="center">
+                {filteredModules.map((module) => (
+                    <Grid key={module.id}>
+                        <Card
                             onClick={() => handleToggleModule(module.id)}
                             style={{
                                 ...styles.card,
-                                backgroundColor: selectedModules.includes(module.id) ? "#d4edda" : "#ffffff",
+                                backgroundColor: selectedModules.includes(module.id)
+                                    ? "#d4edda"
+                                    : "#ffffff",
                             }}
                         >
-                                <CardActionArea>
-                                    <CardContent>
-                                        <Typography variant="h6" style={styles.moduleText}>
-                                            {module.name}
-                                        </Typography>
-                                    </CardContent>
-                                </CardActionArea>
-                            </Card>
-                            </Grid2>
-                    ))}
-                </Grid2>
+                            <CardActionArea>
+                                <CardContent>
+                                    <Typography variant="h6" style={styles.moduleText}>
+                                        {module.name}
+                                    </Typography>
+                                </CardContent>
+                            </CardActionArea>
+                        </Card>
+                    </Grid>
+                ))}
+            </Grid>
 
-                <Button
+            <Button
                 variant="contained"
                 color="primary"
-                onClick={() => void handleSave()}
+                onClick={() => { void handleSave(); }}
                 style={styles.saveButton}
             >
                 Save Preferences
             </Button>
-                <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
-                    <DialogTitle>Create a New Module</DialogTitle>
-                    <DialogContent>
-                        <TextField
+
+            {/* Dialog for Creating a New Module */}
+            <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
+                <DialogTitle>Create a New Module</DialogTitle>
+                <DialogContent>
+                    <TextField
                         label="Module ID"
                         fullWidth
                         value={moduleID}
                         onChange={(e) => setModuleID(e.target.value)}
                         margin="dense"
                     />
-                        <TextField
+                    <TextField
                         label="Module Name"
                         fullWidth
                         value={moduleName}
                         onChange={(e) => setModuleName(e.target.value)}
                         margin="dense"
                     />
-                    </DialogContent>
-                    <DialogActions>
-                        <Button onClick={() => setOpenDialog(false)} color="error">
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setOpenDialog(false)} color="error">
                         Cancel
                     </Button>
-                        <Button onClick={() => void handleCreateModule()} color="primary">
+                    <Button onClick={handleCreateModuleClick} color="primary">
                         Create
                     </Button>
-                    </DialogActions>
-                </Dialog>
-            </Container>
+                </DialogActions>
+            </Dialog>
+        </Container>
     );
 };
 
@@ -270,6 +282,13 @@ const styles = {
         color: "#555",
         fontStyle: "italic",
         marginBottom: "20px",
+    },
+    backButton: {
+        position: "absolute" as const,
+        top: "10px",
+        left: "10px",
+        backgroundColor: "#1976D2",
+        color: "white",
     },
     plusButton: {
         position: "absolute" as const,

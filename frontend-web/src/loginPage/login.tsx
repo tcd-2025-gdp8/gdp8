@@ -20,7 +20,7 @@ const Login: React.FC = () => {
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        
+
         const formData = new FormData(e.currentTarget);
         const email = formData.get('email') as string;
         const password = formData.get('password') as string;
@@ -33,11 +33,12 @@ const Login: React.FC = () => {
                 e.currentTarget.reset();
                 setIsRegister(false);
 
-                void navigate("/login");
+                // 3) Navigate to login page
+                void navigate("/landing");
             } else {
                 await login(email, password);
-                
-                void navigate("/study-groups");
+
+                void navigate("/landing");
             }
         } catch (error) {
             console.error("Failed to authenticate", error);
