@@ -380,12 +380,13 @@ const StudyGroupsPage: React.FC = () => {
               title={
                 group.members.length > 0
                   ? group.members.map((member) => member.userID).join(", ")
-                  : "No members yet"
+                  : (group.studyGroupDetails.type === "closed" ? "You cannot view the members of this group as it is a closed group."
+                    : "No members yet")
               }
               arrow
             >
               <Typography color="textSecondary" style={{ cursor: "pointer" }}>
-                Members: {group.members.length}
+                Members: {group.studyGroupDetails.type === "closed" ? "confidential" : group.members.length}
               </Typography>
             </Tooltip>
             <Typography color="textSecondary">
