@@ -37,7 +37,7 @@ const Login: React.FC = () => {
                 setIsRegister(false);
 
                 // 3) Navigate to login page
-                void navigate("/login");
+                void navigate("/landing");
             } else {
                 // 1) Log the user in (Firebase side)
                 const userCredential = await login(email, password);
@@ -55,7 +55,7 @@ const Login: React.FC = () => {
                 console.log("Verify response from backend:", verifyResponse);
 
                 // 4) Navigate to your protected page
-                void navigate("/study-groups");
+                void navigate("/landing");
             }
         } catch (error) {
             console.error("Failed to authenticate", error);

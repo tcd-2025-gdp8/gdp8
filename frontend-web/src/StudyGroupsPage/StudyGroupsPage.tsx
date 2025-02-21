@@ -1,5 +1,6 @@
 // src/StudyGroupsPage/StudyGroupsPage.tsx
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../firebase/useAuth";
 import {
   Container,
@@ -14,16 +15,12 @@ import {
   DialogActions,
   TextField,
   MenuItem,
-  Select,
-  SelectChangeEvent,
   FormControl,
   InputLabel,
   Tooltip,
-  Drawer,
-  IconButton
+  Select,
 } from "@mui/material";
-import NotificationsIcon from '@mui/icons-material/Notifications';
-import CloseIcon from '@mui/icons-material/Close';
+import { SelectChangeEvent } from "@mui/material/Select";
 
 interface StudyGroupMember {
   userID: string;
@@ -41,11 +38,6 @@ interface StudyGroup {
   id: number;
   studyGroupDetails: StudyGroupDetails;
   members: StudyGroupMember[];
-}
-
-interface Notification {
-  id: number;
-  message: string;
 }
 
 const modulesList = [
@@ -166,6 +158,7 @@ const initialGroups: StudyGroup[] = [
 
 const StudyGroupsPage: React.FC = () => {
   const { token } = useAuth();
+  const navigate = useNavigate();
   const [studyGroups, setStudyGroups] = useState<StudyGroup[]>([]);
   const [filteredGroups, setFilteredGroups] = useState<StudyGroup[]>([]);
   const [selectedModule, setSelectedModule] = useState<number | "">("");
@@ -174,15 +167,6 @@ const StudyGroupsPage: React.FC = () => {
   const [groupDescription, setGroupDescription] = useState("");
   const [groupType, setGroupType] = useState<"public" | "closed" | "invite-only">("public");
   const [selectedGroupModule, setSelectedGroupModule] = useState<number | "">("");
-  const [openInviteDialog, setOpenInviteDialog] = useState(false);
-  const [inviteName, setInviteName] = useState("");
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [notifications, setNotifications] = useState<Notification[]>([
-    { id: 1, message: 'Your request to join "The Prefects" has been accepted.' },
-    { id: 2, message: 'New study group "CS Wizards" has been created for CSU44051: Human Factors.' },
-    { id: 3, message: 'New study group "The Elites" has been created for CSU44052: Computer Graphics.' }
-  ]);
-  const [openNotifications, setOpenNotifications] = useState(false);
 
   useEffect(() => {
     if (token) {
@@ -206,7 +190,6 @@ const StudyGroupsPage: React.FC = () => {
 
   const handleJoinGroup = (id: number) => {
     let joinedGroupName = "";
-  
     const updatedGroups = studyGroups.map((group) => {
       if (group.id === id) {
         if (!group.members.some((member) => member.userID === "Alessandro")) {
@@ -222,21 +205,9 @@ const StudyGroupsPage: React.FC = () => {
       }
       return group;
     });
-  
     if (joinedGroupName) {
       setStudyGroups(updatedGroups);
-      setNotifications((prev) => [
-        ...prev,
-        { id: Date.now(), message: `You joined Study Group: '${joinedGroupName}'.` },
-      ]);
     }
-  };
-  
-
-  const handleDeleteNotification = (notificationId: number) => {
-    setNotifications((prevNotifications) =>
-      prevNotifications.filter((notification) => notification.id !== notificationId)
-    );
   };
 
   const handleOpenDialog = () => setOpenDialog(true);
@@ -253,7 +224,6 @@ const StudyGroupsPage: React.FC = () => {
       alert("Please enter a valid group name and select a module.");
       return;
     }
-
     const newGroup: StudyGroup = {
       id: studyGroups.length + 1,
       studyGroupDetails: {
@@ -264,137 +234,110 @@ const StudyGroupsPage: React.FC = () => {
       },
       members: [{ userID: "Alessandro", role: "admin" }],
     };
-
     setStudyGroups([...studyGroups, newGroup]);
-    setNotifications((prev) => [
-      ...prev,
-      { id: Date.now(), message: `New study group "${groupName}" has been created for ${modulesList.find(module => module.id === selectedGroupModule)?.name}.` }
-    ]);
     handleCloseDialog();
   };
 
-  const handleOpenInviteDialog = () => setOpenInviteDialog(true);
-  const handleCloseInviteDialog = () => setOpenInviteDialog(false);
-
-  const handleInvite = () => {
-    if (inviteName.trim() === "" || inviteEmail.trim() === "") {
-      alert("Please enter a valid name and email.");
-      return;
-    }
-    alert(`Invite sent to ${inviteName} at ${inviteEmail}`);
-    setInviteName("");
-    setInviteEmail("");
-    handleCloseInviteDialog();
-  };
-
   return (
-    <Container maxWidth="md" style={{ marginTop: "20px" }}>
-      <Typography variant="h4" gutterBottom>
-        Study Groups
-        <IconButton onClick={() => setOpenNotifications(true)}>
-          <NotificationsIcon />
-        </IconButton>
-      </Typography>
-
-      <Drawer anchor="right" open={openNotifications} onClose={() => setOpenNotifications(false)}>
-        <div style={{ width: 300, padding: 16 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="h6">Notifications</Typography>
-            <IconButton onClick={() => setOpenNotifications(false)}>
-              <CloseIcon />
-            </IconButton>
-          </div>
-          {notifications.length === 0 ? (
-            <Typography variant="body2" color="textSecondary" style={{ textAlign: 'center', marginTop: '20px' }}>
-              No notifications
-            </Typography>
-          ) : (
-            notifications.map((notification) => (
-              <Card key={notification.id} style={{ marginBottom: '10px' }}>
-                <CardContent>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Typography>{notification.message}</Typography>
-                    <IconButton onClick={() => handleDeleteNotification(notification.id)} size="small">
-                      <CloseIcon />
-                    </IconButton>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          )}
-         </div>
-      </Drawer>
-
-      <FormControl fullWidth style={{ marginBottom: "20px" }}>
-        <InputLabel>Filter by Module</InputLabel>
-        <Select
-          value={selectedModule}
-          onChange={(e: SelectChangeEvent<number | "">) => setSelectedModule(e.target.value as number | "")}
-        >
-          <MenuItem value="All">All</MenuItem>
-          {modulesList.map((module) => (
-            <MenuItem key={module.id} value={module.id}>
-              {module.name}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
-
-      <Grid container spacing={2}>
-        {filteredGroups.map((group) => (
-          <Grid item xs={12} sm={6} md={4} key={group.id} style={{ minWidth: "280px" }}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6">{group.studyGroupDetails.name}</Typography>
-                <Typography variant="body2" color="textSecondary" style={{ marginBottom: "10px" }}>
-                  {group.studyGroupDetails.description}
-                </Typography>
-                <Tooltip
-                  title={
-                    group.members.length > 0
-                      ? group.members.map((member) => member.userID).join(", ")
-                      : "No members yet"
-                  }
-                  arrow
-                >
-                  <Typography color="textSecondary" style={{ cursor: "pointer" }}>
-                    Members: {group.members.length}
-                  </Typography>
-                </Tooltip>
-                <Typography color="textSecondary">
-                  Module: {modulesList.find((module) => module.id === group.studyGroupDetails.moduleID)?.name}
-                </Typography>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  fullWidth
-                  onClick={() => handleJoinGroup(group.id)}
-                  style={{ marginTop: "10px" }}
-                  disabled={
-                    group.members.length >= 10 ||
-                    group.members.some((member) => member.userID === "Alessandro")
-                  }
-                >
-                  {group.members.some((member) => member.userID === "Alessandro")
-                    ? "Joined"
-                    : group.members.length >= 10
-                    ? "Full"
-                    : "Request to Join"}
-                </Button>
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
-
+    <Container maxWidth="md" style={{ marginTop: "20px", position: "relative" }}>
+      {/* Back to Landing Button */}
       <Button
         variant="contained"
-        color="success"
-        onClick={handleOpenDialog}
-        style={{ marginTop: "20px", display: "block", width: "100%" }}
+        color="primary"
+        onClick={() => { void navigate("/landing"); }}
+        style={{
+          position: "absolute",
+          top: "10px",
+          left: "10px",
+        }}
       >
-        Create a Study Group
+        Back to Landing
       </Button>
+
+      {/* Main Content Wrapper */}
+      <div style={{ textAlign: "center", marginTop: "60px" }}>
+        <Typography variant="h4" gutterBottom>
+          Study Groups
+        </Typography>
+
+        <FormControl fullWidth style={{ marginBottom: "20px" }}>
+          <InputLabel>Filter by Module</InputLabel>
+          <Select
+            value={selectedModule}
+            onChange={(e: SelectChangeEvent<number | "">) =>
+              setSelectedModule(e.target.value as number | "")
+            }
+          >
+            <MenuItem value="All">All</MenuItem>
+            {modulesList.map((module) => (
+              <MenuItem key={module.id} value={module.id}>
+                {module.name}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
+        <Grid container spacing={2}>
+          {filteredGroups.map((group) => (
+            <Grid item xs={12} sm={6} md={4} key={group.id} style={{ minWidth: "280px" }}>
+              <Card>
+                <CardContent>
+                  <Typography variant="h6">{group.studyGroupDetails.name}</Typography>
+                  <Typography variant="body2" color="textSecondary" style={{ marginBottom: "10px" }}>
+                    {group.studyGroupDetails.description}
+                  </Typography>
+                  <Tooltip
+                    title={
+                      group.members.length > 0
+                        ? group.members.map((member) => member.userID).join(", ")
+                        : "No members yet"
+                    }
+                    arrow
+                  >
+                    <Typography color="textSecondary" style={{ cursor: "pointer" }}>
+                      Members: {group.members.length}
+                    </Typography>
+                  </Tooltip>
+                  <Typography color="textSecondary">
+                    Module:{" "}
+                    {modulesList.find(
+                      (module) => module.id === group.studyGroupDetails.moduleID
+                    )?.name}
+                  </Typography>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    fullWidth
+                    onClick={() => {
+                      void handleJoinGroup(group.id);
+                    }}
+                    style={{ marginTop: "10px" }}
+                    disabled={
+                      group.members.length >= 10 ||
+                      group.members.some((member) => member.userID === "Alessandro")
+                    }
+                  >
+                    {group.members.some((member) => member.userID === "Alessandro")
+                      ? "Joined"
+                      : group.members.length >= 10
+                        ? "Full"
+                        : "Request to Join"}
+                  </Button>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+
+        <Button
+          variant="contained"
+          color="success"
+          onClick={handleOpenDialog}
+          style={{ marginTop: "20px", display: "block", width: "100%" }}
+        >
+          Create a Study Group
+        </Button>
+      </div>
 
       <Dialog open={openDialog} onClose={handleCloseDialog}>
         <DialogTitle>Create a Study Group</DialogTitle>
@@ -417,7 +360,9 @@ const StudyGroupsPage: React.FC = () => {
             <InputLabel>Group Type</InputLabel>
             <Select
               value={groupType}
-              onChange={(e: SelectChangeEvent<string>) => setGroupType(e.target.value as "public" | "closed" | "invite-only")}
+              onChange={(e: SelectChangeEvent<string>) =>
+                setGroupType(e.target.value as "public" | "closed" | "invite-only")
+              }
             >
               <MenuItem value="public">Public</MenuItem>
               <MenuItem value="closed">Closed</MenuItem>
@@ -428,7 +373,9 @@ const StudyGroupsPage: React.FC = () => {
             <InputLabel>Select Module</InputLabel>
             <Select
               value={selectedGroupModule}
-              onChange={(e: SelectChangeEvent<string | number>) => setSelectedGroupModule(e.target.value as number | "")}
+              onChange={(e: SelectChangeEvent<string | number>) =>
+                setSelectedGroupModule(e.target.value as number | "")
+              }
             >
               {modulesList.map((module) => (
                 <MenuItem key={module.id} value={module.id}>
@@ -442,39 +389,14 @@ const StudyGroupsPage: React.FC = () => {
           <Button onClick={handleCloseDialog} color="error" variant="contained">
             Cancel
           </Button>
-          <Button onClick={handleOpenInviteDialog} color="primary" variant="contained">
-            Invite Members
-          </Button>
-          <Button onClick={handleCreateGroup} color="success" variant="contained">
+          <Button
+            onClick={() => {
+              void handleCreateGroup();
+            }}
+            color="success"
+            variant="contained"
+          >
             Create
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      <Dialog open={openInviteDialog} onClose={handleCloseInviteDialog}>
-        <DialogTitle>Invite a User</DialogTitle>
-        <DialogContent>
-          <TextField
-            label="Invite Name"
-            fullWidth
-            value={inviteName}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInviteName(e.target.value)}
-            margin="dense"
-          />
-          <TextField
-            label="Invite Email"
-            fullWidth
-            value={inviteEmail}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInviteEmail(e.target.value)}
-            margin="dense"
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseInviteDialog} color="error" variant="contained">
-            Cancel
-          </Button>
-          <Button onClick={handleInvite} color="primary" variant="contained">
-            Invite
           </Button>
         </DialogActions>
       </Dialog>
