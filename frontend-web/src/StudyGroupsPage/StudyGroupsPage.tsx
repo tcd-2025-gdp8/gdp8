@@ -221,7 +221,6 @@ const StudyGroupsPage: React.FC = () => {
     }
   };
 
-
   const handleOpenDialog = () => setOpenDialog(true);
   const handleCloseDialog = () => {
     setOpenDialog(false);
@@ -236,19 +235,18 @@ const StudyGroupsPage: React.FC = () => {
       alert("Please enter a valid group name and select a module.");
       return;
     }
-
+  
     if (!token) {
-      alert("You are not authorized. Please log in.");
+      alert("You are not authorised. Please log in.");
       return;
     }
-
+  
     const newGroupDetails = {
       name: groupName,
       description: groupDescription,
       type: groupType,
-      userID: "Alessandro",
     };
-
+  
     try {
       const response = await fetch("http://localhost:8080/api/study-groups", {
         method: "POST",
@@ -258,13 +256,13 @@ const StudyGroupsPage: React.FC = () => {
         },
         body: JSON.stringify(newGroupDetails),
       });
-
+  
       if (!response.ok) {
         throw new Error(`Failed to create group: ${response.statusText}`);
       }
-
+  
       const createdGroup = (await response.json()) as APIStudyGroup;
-
+  
       const newGroup: StudyGroup = {
         id: createdGroup.id,
         studyGroupDetails: {
@@ -273,25 +271,33 @@ const StudyGroupsPage: React.FC = () => {
           type: createdGroup.type,
           moduleID: selectedGroupModule,
         },
-        members: [{ userID: "Alessandro", role: "admin" }],
+        members: createdGroup.members.map((member) => ({
+          userID: member.id,
+          role: member.role,
+        })),
       };
-
+  
       setStudyGroups([...studyGroups, newGroup]);
+  
       setNotifications((prev) => [
         ...prev,
         {
           id: Date.now(),
-          message: `New study group "${groupName}" has been created for ${modulesList.find((module) => module.id === selectedGroupModule)?.name
-            }.`,
+          message: `New study group "${groupName}" has been created for ${
+            modulesList.find((module) => module.id === selectedGroupModule)?.name
+          }.`,
         },
       ]);
-
+  
       handleCloseDialog();
     } catch (error) {
       console.error("Error creating study group:", error);
-      alert(`Error creating study group: ${error instanceof Error ? error.message : String(error)}`);
+      alert(
+        `Error creating study group: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   };
+  
 
 
   const handleOpenInviteDialog = () => setOpenInviteDialog(true);
