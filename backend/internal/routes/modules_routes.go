@@ -12,16 +12,16 @@ import (
 	"gdp8-backend/internal/services"
 )
 
+// TODO: share the state of moduleRepo in a more elegant way
+// I have made it global right now so Users and Modules share the same module repo instance
+var ModuleRepo repositories.ModuleRepository
+
 func RegisterModuleRoutes(firebaseAuth *auth.Client) {
 	txManager := persistence.MockTransactionManager{}
-	moduleRepo := repositories.NewMockModuleRepository() // Mocked for now
-	moduleService := services.NewModuleService(&txManager, moduleRepo)
+	ModuleRepo = repositories.NewMockModuleRepository()
+	moduleService := services.NewModuleService(&txManager, ModuleRepo)
 	handler := handlers.NewModuleHandler(moduleService)
 
 	http.HandleFunc("GET /api/modules", middleware.WithFirebaseAuth(firebaseAuth, handler.GetAllModules))
-	http.HandleFunc("POST /api/save-modules", middleware.WithFirebaseAuth(firebaseAuth, handler.SaveUserModules))
-	// Maybe we can rename this to /api/modules/create
-	// like renaming some endpoints to make it harder to enumerate at some point
-	// do not know if that makes sense for you
 	http.HandleFunc("POST /api/modules", middleware.WithFirebaseAuth(firebaseAuth, handler.CreateModule))
 }
