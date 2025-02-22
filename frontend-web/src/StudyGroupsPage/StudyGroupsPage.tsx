@@ -161,7 +161,7 @@ const StudyGroupsPage: React.FC = () => {
   }, [token]);
 
   useEffect(() => {
-    if (selectedModule === "") {
+    if (selectedModule === "" || selectedModule === "All") {
       setFilteredGroups(studyGroups);
     } else {
       setFilteredGroups(
