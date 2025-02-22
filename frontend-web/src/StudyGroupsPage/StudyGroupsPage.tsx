@@ -309,7 +309,7 @@ const StudyGroupsPage: React.FC = () => {
           throw new Error(`Failed to fetch modules: ${response.statusText}`);
         }
   
-        const data: Module[] = await response.json();
+        const data = (await response.json()) as Module[];
   
         // Transform module names
         const formattedModules = data.map((module) => ({
@@ -394,7 +394,7 @@ const StudyGroupsPage: React.FC = () => {
           <InputLabel>Filter by Module</InputLabel>
           <Select
             value={selectedModule}
-            onChange={(e: SelectChangeEvent<string | "">) => setSelectedModule(e.target.value as string | "")}
+            onChange={(e: SelectChangeEvent<string>) => setSelectedModule(e.target.value)}
           >
             {modulesList.map((module) => (
               <MenuItem key={module.id} value={module.id}>
@@ -513,7 +513,8 @@ const StudyGroupsPage: React.FC = () => {
               <InputLabel>Select Module</InputLabel>
               <Select
                 value={selectedGroupModule}
-                onChange={(e: SelectChangeEvent<string>) => setSelectedGroupModule(e.target.value as string)}
+                onChange={(e: SelectChangeEvent<string>) => setSelectedGroupModule(e.target.value)}
+
               >
                 {modulesList.map((module) => (
                   <MenuItem key={module.id} value={module.id}>
