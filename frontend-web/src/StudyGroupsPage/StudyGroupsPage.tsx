@@ -36,7 +36,7 @@ interface StudyGroupDetails {
   name: string;
   description: string;
   type: "public" | "closed" | "invite-only";
-  moduleID: number;
+  moduleID: string;
 }
 
 interface StudyGroup {
@@ -47,7 +47,7 @@ interface StudyGroup {
 
 interface HardcodedStudyGroup {
   id: number;
-  moduleID: number
+  moduleID: string
   members: StudyGroupMember[];
 }
 
@@ -70,32 +70,25 @@ interface APIStudyGroup {
   members: APIMember[];
 }
 
-const modulesList = [
-  { id: 0, name: "All" },
-  { id: 1, name: "CSU44052: Computer Graphics" },
-  { id: 2, name: "CSU44061: Machine Learning" },
-  { id: 3, name: "CSU44051: Human Factors" },
-  { id: 4, name: "CSU44000: Internet Applications" },
-  { id: 5, name: "CSU44012: Topics in Functional Programming" },
-  { id: 6, name: "CSU44099: Final Year Project" },
-  { id: 7, name: "CSU44098: Group Design Project" },
-  { id: 8, name: "CSU44081: Entrepreneurship & High Tech Venture Creation" },
-];
+interface Module {
+  id: string;
+  name: string;
+}
 
 const initialGroups: HardcodedStudyGroup[] = [
   {
     id: 1,
-    moduleID: 1,
+    moduleID: "CSU44052",
     members: [],
   },
   {
     id: 2,
-    moduleID: 1,
+    moduleID: "CSU44052",
     members: [],
   },
   {
     id: 3,
-    moduleID: 6,
+    moduleID: "CSU44099",
     members: [],
   },
 ];
@@ -105,12 +98,12 @@ const StudyGroupsPage: React.FC = () => {
   const navigate = useNavigate();
   const [studyGroups, setStudyGroups] = useState<StudyGroup[]>([]);
   const [filteredGroups, setFilteredGroups] = useState<StudyGroup[]>([]);
-  const [selectedModule, setSelectedModule] = useState<number | "">("");
+  const [selectedModule, setSelectedModule] = useState<string>("");
   const [openDialog, setOpenDialog] = useState(false);
   const [groupName, setGroupName] = useState("");
   const [groupDescription, setGroupDescription] = useState("");
   const [groupType, setGroupType] = useState<"public" | "closed" | "invite-only">("public");
-  const [selectedGroupModule, setSelectedGroupModule] = useState<number | "">("");
+  const [selectedGroupModule, setSelectedGroupModule] = useState<string>("");
   const [openInviteDialog, setOpenInviteDialog] = useState(false);
   const [inviteName, setInviteName] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
@@ -120,6 +113,7 @@ const StudyGroupsPage: React.FC = () => {
     { id: 3, message: 'New study group "The Elites" has been created for CSU44052: Computer Graphics.' }
   ]);
   const [openNotifications, setOpenNotifications] = useState(false);
+  const [modulesList, setModulesList] = useState<Module[]>([]);
 
   useEffect(() => {
     const fetchStudyGroups = async (): Promise<void> => {
@@ -149,7 +143,7 @@ const StudyGroupsPage: React.FC = () => {
               name: group.name,
               description: group.description,
               type: group.type,
-              moduleID: matchedGroup?.moduleID ?? 0,
+              moduleID: matchedGroup?.moduleID ?? "",
             },
             members: group.members ? group.members.map((member) => ({
               userID: member.id,
@@ -167,7 +161,7 @@ const StudyGroupsPage: React.FC = () => {
   }, [token]);
 
   useEffect(() => {
-    if (selectedModule === "" || selectedModule === 0) {
+    if (selectedModule === "") {
       setFilteredGroups(studyGroups);
     } else {
       setFilteredGroups(
@@ -297,8 +291,41 @@ const StudyGroupsPage: React.FC = () => {
       );
     }
   };
-  
 
+  useEffect(() => {
+    const fetchModules = async () => {
+      if (!token) return;
+  
+      try {
+        const response = await fetch("http://localhost:8080/api/modules", {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+  
+        if (!response.ok) {
+          throw new Error(`Failed to fetch modules: ${response.statusText}`);
+        }
+  
+        const data: Module[] = await response.json();
+  
+        // Transform module names
+        const formattedModules = data.map((module) => ({
+          id: module.id,
+          name: `${module.id}: ${module.name}`,
+        }));
+  
+        // Add "All" option at the beginning
+        setModulesList([{ id: "All", name: "All" }, ...formattedModules]);
+      } catch (err) {
+        console.error("Error fetching modules:", err);
+      }
+    };
+  
+    void fetchModules();
+  }, [token]);  
 
   const handleOpenInviteDialog = () => setOpenInviteDialog(true);
   const handleCloseInviteDialog = () => setOpenInviteDialog(false);
@@ -367,7 +394,7 @@ const StudyGroupsPage: React.FC = () => {
           <InputLabel>Filter by Module</InputLabel>
           <Select
             value={selectedModule}
-            onChange={(e: SelectChangeEvent<number | "">) => setSelectedModule(e.target.value as number | "")}
+            onChange={(e: SelectChangeEvent<string | "">) => setSelectedModule(e.target.value as string | "")}
           >
             {modulesList.map((module) => (
               <MenuItem key={module.id} value={module.id}>
@@ -486,7 +513,7 @@ const StudyGroupsPage: React.FC = () => {
               <InputLabel>Select Module</InputLabel>
               <Select
                 value={selectedGroupModule}
-                onChange={(e: SelectChangeEvent<string | number>) => setSelectedGroupModule(e.target.value as number | "")}
+                onChange={(e: SelectChangeEvent<string>) => setSelectedGroupModule(e.target.value as string)}
               >
                 {modulesList.map((module) => (
                   <MenuItem key={module.id} value={module.id}>
