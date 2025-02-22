@@ -12,8 +12,8 @@ import {
     Card,
     CardContent,
     CardActionArea,
+    Grid2,
 } from "@mui/material";
-import Grid from "@mui/material/Grid";
 import { useAuth } from "../auth/useAuth";
 import { useNavigate } from "react-router-dom";
 import AddIcon from "@mui/icons-material/Add";
@@ -200,9 +200,9 @@ const ModuleSettings: React.FC = () => {
                     </Typography>
                 )}
 
-            <Grid container spacing={2} justifyContent="center">
+            <Grid2 container spacing={2} justifyContent="center">
                 {filteredModules.map((module) => (
-                    <Grid key={module.id}>
+                    <Grid2 key={module.id}>
                         <Card
                             onClick={() => handleToggleModule(module.id)}
                             className={`module-card ${selectedModules.includes(module.id) ? "selected" : ""}`}

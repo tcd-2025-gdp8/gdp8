@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/useAuth";
+import { fetchApiWithToken } from "../utils/apiFetch";
 import {
     Typography,
     TextField,
@@ -34,9 +35,9 @@ const Login: React.FC = () => {
                 const newToken = await userCredential.user.getIdToken();
                 const firebaseUID = userCredential.user.uid;
 
-                const createUserResponse = await fetchWithToken<{ id: string }>(
+                const createUserResponse = await fetchApiWithToken<{ id: string }>(
+                    "/user",
                     newToken,
-                    "http://localhost:8080/api/user",
                     {
                         method: "POST",
                         headers: {
