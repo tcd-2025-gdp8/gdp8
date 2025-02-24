@@ -2,29 +2,30 @@ package persistence
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 
-	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/go-sql-driver/mysql" // needed for mysql db connection
 )
 
-type SqlTransactionManager struct {
+type SQLTransactionManager struct {
 	DB *sql.DB
 }
 
-func NewSqlTransactionManager(db *sql.DB) *SqlTransactionManager {
-	return &SqlTransactionManager{DB: db}
+func NewSQLTransactionManager(db *sql.DB) *SQLTransactionManager {
+	return &SQLTransactionManager{DB: db}
 }
 
-func (s SqlTransactionManager) Begin() (*sql.Tx, error) {
+func (s SQLTransactionManager) Begin() (*sql.Tx, error) {
 	return s.DB.Begin()
 }
 
 func OpenDB() (*sql.DB, error) {
 	dsn := os.Getenv("MYSQL_CONNECTION_STRING")
 	if dsn == "" {
-		return nil, fmt.Errorf("MYSQL_CONNECTION_STRING is not set")
+		return nil, errors.New("MYSQL_CONNECTION_STRING is not set")
 	}
 
 	db, err := sql.Open("mysql", dsn)
