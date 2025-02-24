@@ -26,6 +26,7 @@ type StudyGroupDTO struct {
 	Name        string              `json:"name"`
 	Description string              `json:"description"`
 	Type        string              `json:"type"`
+	ModuleID    models.ModuleID     `json:"moduleId"`
 }
 
 type StudyGroupWithMembersDTO struct {
@@ -111,9 +112,10 @@ func (h *StudyGroupHandler) GetAllStudyGroups(w http.ResponseWriter, r *http.Req
 
 func (h *StudyGroupHandler) CreateStudyGroup(w http.ResponseWriter, r *http.Request) {
 	var createDTO struct {
-		Name        string `json:"name"`
-		Description string `json:"description"`
-		Type        string `json:"type"`
+		Name        string          `json:"name"`
+		Description string          `json:"description"`
+		Type        string          `json:"type"`
+		ModuleID    models.ModuleID `json:"moduleId"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&createDTO); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
@@ -131,6 +133,7 @@ func (h *StudyGroupHandler) CreateStudyGroup(w http.ResponseWriter, r *http.Requ
 		Name:        createDTO.Name,
 		Description: createDTO.Description,
 		Type:        models.StudyGroupType(createDTO.Type),
+		ModuleID:    createDTO.ModuleID,
 	}
 
 	createdStudyGroup, err := h.service.CreateStudyGroup(studyGroupDetails, userID)
@@ -254,13 +257,8 @@ func mapStudyGroupWithMembersToDTO(studyGroup *models.StudyGroupView) StudyGroup
 	}
 
 	return StudyGroupWithMembersDTO{
-		StudyGroupDTO: StudyGroupDTO{
-			ID:          studyGroup.ID,
-			Name:        studyGroup.Name,
-			Description: studyGroup.Description,
-			Type:        string(studyGroup.Type),
-		},
-		Members: members,
+		StudyGroupDTO: mapStudyGroupToDTO(studyGroup),
+		Members:       members,
 	}
 }
 
@@ -270,5 +268,6 @@ func mapStudyGroupToDTO(studyGroup *models.StudyGroupView) StudyGroupDTO {
 		Name:        studyGroup.Name,
 		Description: studyGroup.Description,
 		Type:        string(studyGroup.Type),
+		ModuleID:    studyGroup.ModuleID,
 	}
 }
