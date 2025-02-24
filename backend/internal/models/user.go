@@ -1,8 +1,13 @@
 package models
 
 type UserID string
+
+type UserDetails struct {
+	Name string `json:"name"`
+}
+
 type User struct {
-	ID      string   `json:"id"`
-	Name    string   `json:"name"`
+	ID UserID `json:"id"`
+	UserDetails
 	Modules []Module `json:"modules"`
 }

@@ -1,70 +1,87 @@
 package repositories
 
 import (
+	"database/sql"
 	"errors"
-	"sync"
 
 	"gdp8-backend/internal/models"
-	"gdp8-backend/internal/persistence"
 )
 
 type ModuleRepository interface {
-	GetAllModules(tx persistence.Transaction) ([]models.Module, error)
-	AddModule(tx persistence.Transaction, module models.Module) error
-	GetModuleByID(tx persistence.Transaction, id string) (models.Module, error)
+	GetAllModules(tx *sql.Tx) ([]models.Module, error)
+	CreateModule(tx *sql.Tx, moduleDetails models.ModuleDetails) (*models.Module, error)
+	GetModuleByID(tx *sql.Tx, id models.ModuleID) (*models.Module, error)
 }
 
 var ErrModuleAlreadyExists = errors.New("module already exists")
+var ErrModuleNotFound = errors.New("module not found")
 
-type MockModuleRepository struct {
-	modules map[string]models.Module
-	mu      sync.Mutex
+type SQLModuleRepository struct {
 }
 
-func NewMockModuleRepository() ModuleRepository {
-	return &MockModuleRepository{
-		modules: map[string]models.Module{
-			"CSU44052": {ID: "CSU44052", Name: "Computer Graphics"},
-			"CSU44061": {ID: "CSU44061", Name: "Machine Learning"},
-			"CSU44051": {ID: "CSU44051", Name: "Human Factors"},
-			"CSU44000": {ID: "CSU44000", Name: "Internet Applications"},
-			"CSU44012": {ID: "CSU44012", Name: "Topics in Functional Programming"},
-			"CSU44099": {ID: "CSU44099", Name: "Final Year Project"},
-			"CSU44098": {ID: "CSU44098", Name: "Group Design Project"},
-			"CSU44081": {ID: "CSU44081", Name: "Entrepreneurship & High Tech Venture Creation"},
-		},
+func (s *SQLModuleRepository) GetAllModules(tx *sql.Tx) ([]models.Module, error) {
+
+	rows, err := tx.Query("SELECT id, code, name FROM modules")
+	if err != nil {
+		return nil, err
 	}
+	defer func(rows *sql.Rows) {
+		_ = rows.Close()
+	}(rows)
+
+	var modules []models.Module
+	for rows.Next() {
+		var module models.Module
+		if err := rows.Scan(&module.ID, &module.Code, &module.Name); err != nil {
+			return nil, err
+		}
+		modules = append(modules, module)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return modules, nil
 }
 
-func (r *MockModuleRepository) GetAllModules(_ persistence.Transaction) ([]models.Module, error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	modulesList := make([]models.Module, 0, len(r.modules))
-	for _, module := range r.modules {
-		modulesList = append(modulesList, module)
+func (s *SQLModuleRepository) CreateModule(tx *sql.Tx, moduleDetails models.ModuleDetails) (*models.Module, error) {
+	var count int
+	err := tx.QueryRow("SELECT COUNT(1) FROM modules WHERE code = ?", moduleDetails.Code).Scan(&count)
+	if err != nil {
+		return nil, err
 	}
-	return modulesList, nil
+	if count > 0 {
+		return nil, ErrModuleAlreadyExists
+	}
+
+	result, err := tx.Exec("INSERT INTO modules (code, name) VALUES (?, ?)",
+		moduleDetails.Code, moduleDetails.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	moduleID, err := result.LastInsertId()
+	if err != nil {
+		return nil, err
+	}
+
+	return &models.Module{
+		ID:            models.ModuleID(moduleID),
+		ModuleDetails: moduleDetails,
+	}, nil
 }
 
-func (r *MockModuleRepository) AddModule(_ persistence.Transaction, module models.Module) error {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	if _, exists := r.modules[module.ID]; exists {
-		return ErrModuleAlreadyExists
+func (s *SQLModuleRepository) GetModuleByID(tx *sql.Tx, id models.ModuleID) (*models.Module, error) {
+	var module models.Module
+	err := tx.QueryRow("SELECT id, code, name FROM modules WHERE id = ?", id).
+		Scan(&module.ID, &module.Code, &module.Name)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrModuleNotFound
+		}
+		return nil, err
 	}
 
-	r.modules[module.ID] = module
-	return nil
-}
-
-func (r *MockModuleRepository) GetModuleByID(_ persistence.Transaction, id string) (models.Module, error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	mod, ok := r.modules[id]
-	if !ok {
-		return models.Module{}, errors.New("module not found")
-	}
-	return mod, nil
+	return &module, nil
 }

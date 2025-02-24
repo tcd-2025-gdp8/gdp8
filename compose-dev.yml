@@ -1,31 +1,20 @@
-name: gdp8-tests-integration
+name: gdp8-dev
 
 services:
-  tests-runner:
-    build:
-      context: tests-integration
-    environment:
-      - BACKEND_HOST=backend:8080
-      - FIREBASE_AUTH_EMULATOR_HOST=firebase:9099
-    depends_on:
-      - backend
-      - firebase
-
   backend:
     build:
       context: backend
     environment:
-      - FIREBASE_AUTH_EMULATOR_HOST=firebase:9099
       - MYSQL_CONNECTION_STRING=user:password@tcp(mysql:3306)/gdp8?charset=utf8mb4&parseTime=True&loc=Local&multiStatements=True
+    volumes:
+      - ./backend/credentials:/app/credentials:ro
+    ports:
+      - 8080:8080
     depends_on:
-      firebase:
-        condition: service_started
       mysql:
         condition: service_healthy
+        restart: true
 
-  firebase:
-    build:
-      context: firebase-emulator
 
   mysql:
     image: mysql
@@ -34,9 +23,17 @@ services:
       MYSQL_DATABASE: gdp8
       MYSQL_USER: user
       MYSQL_PASSWORD: password
+    ports:
+      - 3306:3306
+    volumes:
+      - mysql_data:/var/lib/mysql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
       retries: 3
       start_period: 10s
       timeout: 10s
+
+
+volumes:
+  mysql_data:

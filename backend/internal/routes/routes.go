@@ -11,20 +11,18 @@ import (
 	"gdp8-backend/internal/services"
 )
 
-func RegisterAllRoutes(firebaseAuth *auth.Client) {
-	txManager := persistence.MockTransactionManager{}
+func RegisterAllRoutes(firebaseAuth *auth.Client, txManager persistence.TransactionManager) {
+	studyGroupRepo := repositories.SQLStudyGroupRepository{}
+	userRepo := repositories.SQLUserRepository{}
+	moduleRepo := repositories.SQLModuleRepository{}
 
-	studyGroupRepo := repositories.NewMockStudyGroupRepository()
-	userRepo := repositories.NewMockUserRepository()
-	moduleRepo := repositories.NewMockModuleRepository()
-
-	studyGroupService := services.NewStudyGroupService(&txManager, studyGroupRepo)
-	userService := services.NewUserService(&txManager, userRepo)
-	moduleService := services.NewModuleService(&txManager, moduleRepo)
+	studyGroupService := services.NewStudyGroupService(txManager, &studyGroupRepo)
+	userService := services.NewUserService(txManager, &userRepo)
+	moduleService := services.NewModuleService(txManager, &moduleRepo)
 
 	RegisterStudyGroupRoutes(firebaseAuth, studyGroupService)
 	RegisterModuleRoutes(firebaseAuth, moduleService)
-	RegisterUserRoutes(firebaseAuth, userService, moduleRepo)
+	RegisterUserRoutes(firebaseAuth, userService)
 
 	authHandler := handlers.NewAuthHandler(firebaseAuth)
 	http.HandleFunc("/api/auth/verify", authHandler.VerifyHandler)

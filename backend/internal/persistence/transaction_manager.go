@@ -1,23 +1,19 @@
 package persistence
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 )
 
 // TransactionManager defines the interface for managing database transactions
 type TransactionManager interface {
-	Begin() (Transaction, error)
-}
-
-type Transaction interface {
-	Commit() error
-	Rollback() error
+	Begin() (*sql.Tx, error)
 }
 
 // WithTransaction executes the given function with a return value T within a transaction context.
 // If the function encounters an error, the transaction is rolled back; otherwise, the transaction is committed.
-func WithTransaction[T any](txMgr TransactionManager, fn func(Transaction) (T, error)) (T, error) {
+func WithTransaction[T any](txMgr TransactionManager, fn func(*sql.Tx) (T, error)) (T, error) {
 	var defaultT T
 	if txMgr == nil {
 		return defaultT, errors.New("transaction manager cannot be nil")
@@ -50,27 +46,9 @@ func WithTransaction[T any](txMgr TransactionManager, fn func(Transaction) (T, e
 
 // WithTransactionNoReturnVal executes the given function with no return value within a transaction context.
 // If the function encounters an error, the transaction is rolled back; otherwise, the transaction is committed.
-func WithTransactionNoReturnVal(txMgr TransactionManager, fn func(Transaction) error) error {
-	_, err := WithTransaction(txMgr, func(tx Transaction) (struct{}, error) {
+func WithTransactionNoReturnVal(txMgr TransactionManager, fn func(*sql.Tx) error) error {
+	_, err := WithTransaction(txMgr, func(tx *sql.Tx) (struct{}, error) {
 		return struct{}{}, fn(tx)
 	})
 	return err
-}
-
-type MockTransactionManager struct {
-}
-
-func (m *MockTransactionManager) Begin() (Transaction, error) {
-	return &MockTransaction{}, nil
-}
-
-type MockTransaction struct {
-}
-
-func (m *MockTransaction) Commit() error {
-	return nil
-}
-
-func (m *MockTransaction) Rollback() error {
-	return nil
 }

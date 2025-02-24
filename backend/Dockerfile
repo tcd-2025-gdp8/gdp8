@@ -16,6 +16,8 @@ WORKDIR /app
 
 COPY credentials/mockServiceAccountKey.json credentials/mockServiceAccountKey.json
 
+COPY migrations migrations
+
 COPY --from=builder /app/backend-server .
 
 EXPOSE 8080

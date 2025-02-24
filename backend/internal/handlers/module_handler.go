@@ -27,14 +27,14 @@ func (h *ModuleHandler) GetAllModules(w http.ResponseWriter, _ *http.Request) {
 }
 
 func (h *ModuleHandler) CreateModule(w http.ResponseWriter, r *http.Request) {
-	var newModule models.Module
+	var moduleDetails models.ModuleDetails
 
-	if err := json.NewDecoder(r.Body).Decode(&newModule); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&moduleDetails); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
 
-	err := h.moduleService.CreateModule(newModule.ID, newModule.Name)
+	_, err := h.moduleService.CreateModule(moduleDetails)
 	if err != nil {
 		http.Error(w, "Failed to create module", http.StatusInternalServerError)
 		return

@@ -88,7 +88,7 @@ linters:
     - rowserrcheck
     - sloglint
     - spancheck
-    - sqlclosecheck
+    #- sqlclosecheck # disabled - doesn't work correctly with defer
     - staticcheck
     #- stylecheck
     - tagalign
@@ -120,6 +120,9 @@ linters-settings:
       - dot
       - alias
       - localmodule
+  gocritic:
+    disabled-checks:
+      - exitAfterDefer
 
 issues:
   exclude-rules:

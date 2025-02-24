@@ -15,7 +15,8 @@ class TestStudyGroups:
         response = session.post("/study-groups", json={
             "name": "New study group",
             "description": "Description of the new study group.",
-            "type": "public"
+            "type": "public",
+            "moduleId": 1
         })
 
         assert response.status_code == 200
