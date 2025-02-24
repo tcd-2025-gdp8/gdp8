@@ -35,9 +35,9 @@ func (s *SQLStudyGroupRepository) GetStudyGroupByID(tx *sql.Tx,
 			s.module_id,
 			JSON_ARRAYAGG(
 				JSON_OBJECT(
-					'user_id', u.id,
-					'name', u.name,
-					'role', usg.type
+					'UserID', u.id,
+					'Name', u.name,
+					'Role', usg.type
 				)
 			) AS members
 		FROM study_groups s
@@ -86,9 +86,9 @@ func (s *SQLStudyGroupRepository) GetAllStudyGroups(tx *sql.Tx) ([]models.StudyG
 			s.module_id,
 			JSON_ARRAYAGG(
 				JSON_OBJECT(
-					'user_id', u.id,
-					'name', u.name,
-					'role', usg.type
+					'UserID', u.id,
+					'Name', u.name,
+					'Role', usg.type
 				)
 			) AS members
 		FROM study_groups s
