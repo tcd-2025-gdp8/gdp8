@@ -98,7 +98,7 @@ func TestStudyGroupHandler_GetStudyGroup(t *testing.T) {
 				return r.WithContext(context.WithValue(r.Context(), middleware.UIDCtxKey{}, "4"))
 			},
 			expectedCode: http.StatusOK,
-			expectedBody: `{"id":123,"name":"Test Group","description":"Test Description","type":"closed","members":[{"id":"3","name":"Name 3","role":"admin"},{"id":"4","name":"Name 4","role":"member"}]}` + "\n",
+			expectedBody: `{"id":123,"name":"Test Group","description":"Test Description","type":"closed","moduleId":42,"members":[{"id":"3","name":"Name 3","role":"admin"},{"id":"4","name":"Name 4","role":"member"}]}` + "\n",
 		},
 		{
 			name: "Valid ID, found, closed, and members are not returned",
@@ -132,7 +132,7 @@ func TestStudyGroupHandler_GetStudyGroup(t *testing.T) {
 				return r.WithContext(context.WithValue(r.Context(), middleware.UIDCtxKey{}, "7"))
 			},
 			expectedCode: http.StatusOK,
-			expectedBody: `{"id":123,"name":"Test Group","description":"Test Description","type":"closed"}` + "\n",
+			expectedBody: `{"id":123,"name":"Test Group","description":"Test Description","type":"closed","moduleId":42}` + "\n",
 		},
 		{
 			name: "Valid ID, found, invite-only, not a member",
@@ -200,7 +200,7 @@ func TestStudyGroupHandler_GetStudyGroup(t *testing.T) {
 				return r.WithContext(context.WithValue(r.Context(), middleware.UIDCtxKey{}, "4"))
 			},
 			expectedCode: http.StatusOK,
-			expectedBody: `{"id":123,"name":"Test Group","description":"Test Description","type":"invite-only","members":[{"id":"3","name":"Name 3","role":"admin"},{"id":"4","name":"Name 4","role":"member"}]}` + "\n",
+			expectedBody: `{"id":123,"name":"Test Group","description":"Test Description","type":"invite-only","moduleId":42,"members":[{"id":"3","name":"Name 3","role":"admin"},{"id":"4","name":"Name 4","role":"member"}]}` + "\n",
 		},
 		{
 			name:         "Invalid ID format",
@@ -374,7 +374,7 @@ func TestStudyGroupHandler_GetAllStudyGroups(t *testing.T) {
 				return r.WithContext(context.WithValue(r.Context(), middleware.UIDCtxKey{}, "2"))
 			},
 			expectedCode: http.StatusOK,
-			expectedBody: `[{"id":1,"name":"Group 1","description":"Description 1","type":"public","members":[{"id":"3","name":"Name 3","role":"admin"},{"id":"4","name":"Name 4","role":"member"}]},{"id":2,"name":"Group 2","description":"Description 2","type":"closed"},{"id":3,"name":"Group 3","description":"Description 3","type":"closed","members":[{"id":"2","name":"Name 2","role":"admin"}]},{"id":5,"name":"Group 5","description":"Description 5","type":"invite-only","members":[{"id":"2","name":"Name 2","role":"admin"}]}]` + "\n",
+			expectedBody: `[{"id":1,"name":"Group 1","description":"Description 1","type":"public","moduleId":42,"members":[{"id":"3","name":"Name 3","role":"admin"},{"id":"4","name":"Name 4","role":"member"}]},{"id":2,"name":"Group 2","description":"Description 2","type":"closed","moduleId":1},{"id":3,"name":"Group 3","description":"Description 3","type":"closed","moduleId":1,"members":[{"id":"2","name":"Name 2","role":"admin"}]},{"id":5,"name":"Group 5","description":"Description 5","type":"invite-only","moduleId":1,"members":[{"id":"2","name":"Name 2","role":"admin"}]}]` + "\n",
 		},
 		{
 			name: "Successfully fetch empty list of study groups",
@@ -466,7 +466,7 @@ func TestStudyGroupHandler_CreateStudyGroup(t *testing.T) {
 				return r.WithContext(context.WithValue(r.Context(), middleware.UIDCtxKey{}, "123"))
 			},
 			expectedCode: http.StatusOK,
-			expectedBody: `{"id":1,"name":"Group A","description":"Desc A","type":"public"}` + "\n",
+			expectedBody: `{"id":1,"name":"Group A","description":"Desc A","type":"public","moduleId":0}` + "\n",
 		},
 		{
 			name:         "Missing user context",
