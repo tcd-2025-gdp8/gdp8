@@ -181,34 +181,80 @@ const StudyGroupsPage: React.FC = () => {
     }
   }, [selectedModule, studyGroups]);
 
+  // const handleJoinGroup = (id: number) => {
+  //   let joinedGroupName = "";
+
+  //   const updatedGroups = studyGroups.map((group) => {
+  //     if (group.id === id) {
+  //       if (!group.members.some((member) => member.userID === "Alessandro")) {
+  //         joinedGroupName = group.studyGroupDetails.name;
+  //         return {
+  //           ...group,
+  //           members: [
+  //             ...group.members,
+  //             { userID: "Alessandro", role: "member" as const },
+  //           ],
+  //         };
+  //       }
+  //     }
+  //     return group;
+  //   });
+
+  //   if (joinedGroupName) {
+  //     setStudyGroups(updatedGroups);
+  //     setNotifications((prev) => [
+  //       ...prev,
+  //       { id: Date.now(), message: `You joined Study Group: '${joinedGroupName}'.` },
+  //     ]);
+  //   }
+  // };
   const handleJoinGroup = (id: number) => {
-    let joinedGroupName = "";
-
-    const updatedGroups = studyGroups.map((group) => {
-      if (group.id === id) {
-        if (!group.members.some((member) => member.userID === "Alessandro")) {
-          joinedGroupName = group.studyGroupDetails.name;
-          return {
-            ...group,
-            members: [
-              ...group.members,
-              { userID: "Alessandro", role: "member" as const },
-            ],
-          };
-        }
-      }
-      return group;
-    });
-
-    if (joinedGroupName) {
-      setStudyGroups(updatedGroups);
-      setNotifications((prev) => [
-        ...prev,
-        { id: Date.now(), message: `You joined Study Group: '${joinedGroupName}'.` },
-      ]);
+    if (!token) {
+      alert("You are not authorised. Please log in.");
+      return;
     }
+  
+    void (async () => {
+      try {
+        const response = await fetch(`http://localhost:8080/api/study-groups/${id}/request-to-join`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+  
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Failed to join study group: ${errorText}`);
+        }
+  
+        setStudyGroups((prevGroups) =>
+          prevGroups.map((group) => {
+            if (group.id === id) {
+              return {
+                ...group,
+                members: [
+                  ...group.members,
+                  { userID: "Alessandro", role: "member" as const },
+                ],
+              };
+            }
+            return group;
+          })
+        );
+  
+        setNotifications((prev) => [
+          ...prev,
+          { id: Date.now(), message: `You joined the study group successfully.` },
+        ]);
+      } catch (error) {
+        console.error("Error joining study group:", error);
+        alert(`Error joining study group: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    })();
   };
-
+  
 
   const handleDeleteNotification = (notificationId: number) => {
     setNotifications((prevNotifications) =>
