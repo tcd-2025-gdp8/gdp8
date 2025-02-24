@@ -19,6 +19,13 @@ type StudyGroupMember struct {
 	Role   StudyGroupRole
 }
 
+// StudyGroupMemberView represents a member with their user details
+type StudyGroupMemberView struct {
+	UserID UserID
+	Name   string
+	Role   StudyGroupRole
+}
+
 type StudyGroupDetails struct {
 	Name        string
 	Description string
@@ -30,4 +37,11 @@ type StudyGroup struct {
 	ID StudyGroupID
 	StudyGroupDetails
 	Members []StudyGroupMember
+}
+
+// StudyGroupView represents a study group with additional member details
+type StudyGroupView struct {
+	ID StudyGroupID
+	StudyGroupDetails
+	Members []StudyGroupMemberView
 }

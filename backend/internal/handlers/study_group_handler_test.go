@@ -20,24 +20,24 @@ type MockStudyGroupService struct {
 	mock.Mock
 }
 
-func (m *MockStudyGroupService) GetStudyGroupByID(id models.StudyGroupID) (*models.StudyGroup, error) {
+func (m *MockStudyGroupService) GetStudyGroupByID(id models.StudyGroupID) (*models.StudyGroupView, error) {
 	args := m.Called(id)
-	return args.Get(0).(*models.StudyGroup), args.Error(1)
+	return args.Get(0).(*models.StudyGroupView), args.Error(1)
 }
 
-func (m *MockStudyGroupService) GetAllStudyGroups() ([]models.StudyGroup, error) {
+func (m *MockStudyGroupService) GetAllStudyGroups() ([]models.StudyGroupView, error) {
 	args := m.Called()
-	return args.Get(0).([]models.StudyGroup), args.Error(1)
+	return args.Get(0).([]models.StudyGroupView), args.Error(1)
 }
 
-func (m *MockStudyGroupService) CreateStudyGroup(studyGroupDetails models.StudyGroupDetails, creatorID models.UserID) (*models.StudyGroup, error) {
+func (m *MockStudyGroupService) CreateStudyGroup(studyGroupDetails models.StudyGroupDetails, creatorID models.UserID) (*models.StudyGroupView, error) {
 	args := m.Called(studyGroupDetails, creatorID)
-	return args.Get(0).(*models.StudyGroup), args.Error(1)
+	return args.Get(0).(*models.StudyGroupView), args.Error(1)
 }
 
-func (m *MockStudyGroupService) UpdateStudyGroupDetails(id models.StudyGroupID, details models.StudyGroupDetails, requesterID models.UserID) (*models.StudyGroup, error) {
+func (m *MockStudyGroupService) UpdateStudyGroupDetails(id models.StudyGroupID, details models.StudyGroupDetails, requesterID models.UserID) (*models.StudyGroupView, error) {
 	args := m.Called(id, details, requesterID)
-	return args.Get(0).(*models.StudyGroup), args.Error(1)
+	return args.Get(0).(*models.StudyGroupView), args.Error(1)
 }
 
 func (m *MockStudyGroupService) DeleteStudyGroup(id models.StudyGroupID, requesterID models.UserID) error {
@@ -62,37 +62,145 @@ func TestStudyGroupHandler_GetStudyGroup(t *testing.T) {
 		name         string
 		url          string
 		mockSetup    func(service *MockStudyGroupService)
+		ctxSetup     func(r *http.Request) *http.Request
 		expectedCode int
 		expectedBody string
 	}{
 		{
-			name: "Valid ID and found",
+			name: "Valid ID, found, closed, and members are returned",
 			url:  "/study-groups/123",
 			mockSetup: func(service *MockStudyGroupService) {
 				service.
 					On("GetStudyGroupByID", models.StudyGroupID(123)).
-					Return(&models.StudyGroup{
+					Return(&models.StudyGroupView{
 						ID: 123,
 						StudyGroupDetails: models.StudyGroupDetails{
 							Name:        "Test Group",
 							Description: "Test Description",
-							Type:        models.TypePublic,
+							Type:        models.TypeClosed,
 							ModuleID:    42,
 						},
-						Members: []models.StudyGroupMember{
+						Members: []models.StudyGroupMemberView{
 							{
 								UserID: "3",
+								Name:   "Name 3",
 								Role:   models.RoleAdmin,
 							},
 							{
 								UserID: "4",
+								Name:   "Name 4",
 								Role:   models.RoleMember,
 							},
 						},
 					}, nil)
 			},
+			ctxSetup: func(r *http.Request) *http.Request {
+				return r.WithContext(context.WithValue(r.Context(), middleware.UIDCtxKey{}, "4"))
+			},
 			expectedCode: http.StatusOK,
-			expectedBody: `{"id":123,"name":"Test Group","description":"Test Description","type":"public","members":[{"id":"3","name":"Name 3","role":"admin"},{"id":"4","name":"Name 4","role":"member"}]}` + "\n",
+			expectedBody: `{"id":123,"name":"Test Group","description":"Test Description","type":"closed","members":[{"id":"3","name":"Name 3","role":"admin"},{"id":"4","name":"Name 4","role":"member"}]}` + "\n",
+		},
+		{
+			name: "Valid ID, found, closed, and members are not returned",
+			url:  "/study-groups/123",
+			mockSetup: func(service *MockStudyGroupService) {
+				service.
+					On("GetStudyGroupByID", models.StudyGroupID(123)).
+					Return(&models.StudyGroupView{
+						ID: 123,
+						StudyGroupDetails: models.StudyGroupDetails{
+							Name:        "Test Group",
+							Description: "Test Description",
+							Type:        models.TypeClosed,
+							ModuleID:    42,
+						},
+						Members: []models.StudyGroupMemberView{
+							{
+								UserID: "3",
+								Name:   "Name 3",
+								Role:   models.RoleAdmin,
+							},
+							{
+								UserID: "4",
+								Name:   "Name 4",
+								Role:   models.RoleMember,
+							},
+						},
+					}, nil)
+			},
+			ctxSetup: func(r *http.Request) *http.Request {
+				return r.WithContext(context.WithValue(r.Context(), middleware.UIDCtxKey{}, "7"))
+			},
+			expectedCode: http.StatusOK,
+			expectedBody: `{"id":123,"name":"Test Group","description":"Test Description","type":"closed"}` + "\n",
+		},
+		{
+			name: "Valid ID, found, invite-only, not a member",
+			url:  "/study-groups/123",
+			mockSetup: func(service *MockStudyGroupService) {
+				service.
+					On("GetStudyGroupByID", models.StudyGroupID(123)).
+					Return(&models.StudyGroupView{
+						ID: 123,
+						StudyGroupDetails: models.StudyGroupDetails{
+							Name:        "Test Group",
+							Description: "Test Description",
+							Type:        models.TypeInviteOnly,
+							ModuleID:    42,
+						},
+						Members: []models.StudyGroupMemberView{
+							{
+								UserID: "3",
+								Name:   "Name 3",
+								Role:   models.RoleAdmin,
+							},
+							{
+								UserID: "4",
+								Name:   "Name 4",
+								Role:   models.RoleMember,
+							},
+						},
+					}, nil)
+			},
+			ctxSetup: func(r *http.Request) *http.Request {
+				return r.WithContext(context.WithValue(r.Context(), middleware.UIDCtxKey{}, "7"))
+			},
+			expectedCode: http.StatusForbidden,
+			expectedBody: "Forbidden\n",
+		},
+		{
+			name: "Valid ID, found, invite-only, member",
+			url:  "/study-groups/123",
+			mockSetup: func(service *MockStudyGroupService) {
+				service.
+					On("GetStudyGroupByID", models.StudyGroupID(123)).
+					Return(&models.StudyGroupView{
+						ID: 123,
+						StudyGroupDetails: models.StudyGroupDetails{
+							Name:        "Test Group",
+							Description: "Test Description",
+							Type:        models.TypeInviteOnly,
+							ModuleID:    42,
+						},
+						Members: []models.StudyGroupMemberView{
+							{
+								UserID: "3",
+								Name:   "Name 3",
+								Role:   models.RoleAdmin,
+							},
+							{
+								UserID: "4",
+								Name:   "Name 4",
+								Role:   models.RoleMember,
+							},
+						},
+					}, nil)
+			},
+			ctxSetup: func(r *http.Request) *http.Request {
+				return r.WithContext(context.WithValue(r.Context(), middleware.UIDCtxKey{}, "4"))
+			},
+			expectedCode: http.StatusOK,
+			expectedBody: `{"id":123,"name":"Test Group","description":"Test Description","type":"invite-only","members":[{"id":"3","name":"Name 3","role":"admin"},{"id":"4","name":"Name 4","role":"member"}]}` + "\n",
 		},
 		{
 			name:         "Invalid ID format",
@@ -107,7 +215,10 @@ func TestStudyGroupHandler_GetStudyGroup(t *testing.T) {
 			mockSetup: func(service *MockStudyGroupService) {
 				service.
 					On("GetStudyGroupByID", models.StudyGroupID(999)).
-					Return((*models.StudyGroup)(nil), services.ErrStudyGroupNotFound)
+					Return((*models.StudyGroupView)(nil), services.ErrStudyGroupNotFound)
+			},
+			ctxSetup: func(r *http.Request) *http.Request {
+				return r.WithContext(context.WithValue(r.Context(), middleware.UIDCtxKey{}, "1"))
 			},
 			expectedCode: http.StatusNotFound,
 			expectedBody: "Study group not found\n",
@@ -118,7 +229,10 @@ func TestStudyGroupHandler_GetStudyGroup(t *testing.T) {
 			mockSetup: func(service *MockStudyGroupService) {
 				service.
 					On("GetStudyGroupByID", models.StudyGroupID(500)).
-					Return((*models.StudyGroup)(nil), errors.New("unexpected error"))
+					Return((*models.StudyGroupView)(nil), errors.New("unexpected error"))
+			},
+			ctxSetup: func(r *http.Request) *http.Request {
+				return r.WithContext(context.WithValue(r.Context(), middleware.UIDCtxKey{}, "1"))
 			},
 			expectedCode: http.StatusInternalServerError,
 			expectedBody: "Error fetching study group\n",
@@ -138,6 +252,9 @@ func TestStudyGroupHandler_GetStudyGroup(t *testing.T) {
 			mux.HandleFunc("GET /study-groups/{id}", handler.GetStudyGroup)
 
 			req := httptest.NewRequest(http.MethodGet, tt.url, bytes.NewReader([]byte{}))
+			if tt.ctxSetup != nil {
+				req = tt.ctxSetup(req)
+			}
 			w := httptest.NewRecorder()
 
 			mux.ServeHTTP(w, req)
@@ -156,6 +273,7 @@ func TestStudyGroupHandler_GetAllStudyGroups(t *testing.T) {
 	tests := []struct {
 		name         string
 		mockSetup    func(service *MockStudyGroupService)
+		ctxSetup     func(r *http.Request) *http.Request
 		expectedCode int
 		expectedBody string
 	}{
@@ -164,7 +282,7 @@ func TestStudyGroupHandler_GetAllStudyGroups(t *testing.T) {
 			mockSetup: func(service *MockStudyGroupService) {
 				service.
 					On("GetAllStudyGroups").
-					Return([]models.StudyGroup{
+					Return([]models.StudyGroupView{
 						{
 							ID: 1,
 							StudyGroupDetails: models.StudyGroupDetails{
@@ -173,13 +291,15 @@ func TestStudyGroupHandler_GetAllStudyGroups(t *testing.T) {
 								Type:        models.TypePublic,
 								ModuleID:    42,
 							},
-							Members: []models.StudyGroupMember{
+							Members: []models.StudyGroupMemberView{
 								{
 									UserID: "3",
+									Name:   "Name 3",
 									Role:   models.RoleAdmin,
 								},
 								{
 									UserID: "4",
+									Name:   "Name 4",
 									Role:   models.RoleMember,
 								},
 							},
@@ -192,24 +312,79 @@ func TestStudyGroupHandler_GetAllStudyGroups(t *testing.T) {
 								Type:        models.TypeClosed,
 								ModuleID:    1,
 							},
-							Members: []models.StudyGroupMember{
+							Members: []models.StudyGroupMemberView{
 								{
 									UserID: "1",
+									Name:   "Name 1",
+									Role:   models.RoleAdmin,
+								},
+							},
+						},
+						{
+							ID: 3,
+							StudyGroupDetails: models.StudyGroupDetails{
+								Name:        "Group 3",
+								Description: "Description 3",
+								Type:        models.TypeClosed,
+								ModuleID:    1,
+							},
+							Members: []models.StudyGroupMemberView{
+								{
+									UserID: "2",
+									Name:   "Name 2",
+									Role:   models.RoleAdmin,
+								},
+							},
+						},
+						{
+							ID: 4,
+							StudyGroupDetails: models.StudyGroupDetails{
+								Name:        "Group 4",
+								Description: "Description 4",
+								Type:        models.TypeInviteOnly,
+								ModuleID:    1,
+							},
+							Members: []models.StudyGroupMemberView{
+								{
+									UserID: "1",
+									Name:   "Name 1",
+									Role:   models.RoleAdmin,
+								},
+							},
+						},
+						{
+							ID: 5,
+							StudyGroupDetails: models.StudyGroupDetails{
+								Name:        "Group 5",
+								Description: "Description 5",
+								Type:        models.TypeInviteOnly,
+								ModuleID:    1,
+							},
+							Members: []models.StudyGroupMemberView{
+								{
+									UserID: "2",
+									Name:   "Name 2",
 									Role:   models.RoleAdmin,
 								},
 							},
 						},
 					}, nil)
 			},
+			ctxSetup: func(r *http.Request) *http.Request {
+				return r.WithContext(context.WithValue(r.Context(), middleware.UIDCtxKey{}, "2"))
+			},
 			expectedCode: http.StatusOK,
-			expectedBody: `[{"id":1,"name":"Group 1","description":"Description 1","type":"public","members":[{"id":"3","name":"Name 3","role":"admin"},{"id":"4","name":"Name 4","role":"member"}]},{"id":2,"name":"Group 2","description":"Description 2","type":"closed"}]` + "\n",
+			expectedBody: `[{"id":1,"name":"Group 1","description":"Description 1","type":"public","members":[{"id":"3","name":"Name 3","role":"admin"},{"id":"4","name":"Name 4","role":"member"}]},{"id":2,"name":"Group 2","description":"Description 2","type":"closed"},{"id":3,"name":"Group 3","description":"Description 3","type":"closed","members":[{"id":"2","name":"Name 2","role":"admin"}]},{"id":5,"name":"Group 5","description":"Description 5","type":"invite-only","members":[{"id":"2","name":"Name 2","role":"admin"}]}]` + "\n",
 		},
 		{
 			name: "Successfully fetch empty list of study groups",
 			mockSetup: func(service *MockStudyGroupService) {
 				service.
 					On("GetAllStudyGroups").
-					Return([]models.StudyGroup{}, nil)
+					Return([]models.StudyGroupView{}, nil)
+			},
+			ctxSetup: func(r *http.Request) *http.Request {
+				return r.WithContext(context.WithValue(r.Context(), middleware.UIDCtxKey{}, "1"))
 			},
 			expectedCode: http.StatusOK,
 			expectedBody: `[]` + "\n",
@@ -219,7 +394,10 @@ func TestStudyGroupHandler_GetAllStudyGroups(t *testing.T) {
 			mockSetup: func(service *MockStudyGroupService) {
 				service.
 					On("GetAllStudyGroups").
-					Return(([]models.StudyGroup)(nil), errors.New("internal error"))
+					Return(([]models.StudyGroupView)(nil), errors.New("internal error"))
+			},
+			ctxSetup: func(r *http.Request) *http.Request {
+				return r.WithContext(context.WithValue(r.Context(), middleware.UIDCtxKey{}, "1"))
 			},
 			expectedCode: http.StatusInternalServerError,
 			expectedBody: "Error fetching study groups\n",
@@ -239,6 +417,9 @@ func TestStudyGroupHandler_GetAllStudyGroups(t *testing.T) {
 			mux.HandleFunc("GET /study-groups", handler.GetAllStudyGroups)
 
 			req := httptest.NewRequest(http.MethodGet, "/study-groups", bytes.NewReader([]byte{}))
+			if tt.ctxSetup != nil {
+				req = tt.ctxSetup(req)
+			}
 			w := httptest.NewRecorder()
 
 			mux.ServeHTTP(w, req)
@@ -272,7 +453,7 @@ func TestStudyGroupHandler_CreateStudyGroup(t *testing.T) {
 						Description: "Desc A",
 						Type:        models.TypePublic,
 					}, models.UserID("123")).
-					Return(&models.StudyGroup{
+					Return(&models.StudyGroupView{
 						ID: 1,
 						StudyGroupDetails: models.StudyGroupDetails{
 							Name:        "Group A",
@@ -315,7 +496,7 @@ func TestStudyGroupHandler_CreateStudyGroup(t *testing.T) {
 						Description: "Desc C",
 						Type:        models.TypeClosed,
 					}, models.UserID("123")).
-					Return((*models.StudyGroup)(nil), errors.New("service error"))
+					Return((*models.StudyGroupView)(nil), errors.New("service error"))
 			},
 			ctxSetup: func(r *http.Request) *http.Request {
 				return r.WithContext(context.WithValue(r.Context(), middleware.UIDCtxKey{}, "123"))

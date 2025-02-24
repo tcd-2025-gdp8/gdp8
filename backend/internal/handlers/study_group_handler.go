@@ -3,10 +3,9 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
+	"slices"
 
-	"gdp8-backend/internal/middleware"
 	"gdp8-backend/internal/models"
 	"gdp8-backend/internal/services"
 	"gdp8-backend/internal/utils"
@@ -23,51 +22,19 @@ type StudyGroupMemberDTO struct {
 }
 
 type StudyGroupDTO struct {
-	ID          models.StudyGroupID   `json:"id"`
-	Name        string                `json:"name"`
-	Description string                `json:"description"`
-	Type        string                `json:"type"`
-	Members     []StudyGroupMemberDTO `json:"members,omitempty"`
+	ID          models.StudyGroupID `json:"id"`
+	Name        string              `json:"name"`
+	Description string              `json:"description"`
+	Type        string              `json:"type"`
 }
 
-type StudyGroupCreateDTO struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Type        string `json:"type"`
-}
-
-type MemberAdminOperationDTO struct {
-	TargetUserID string `json:"targetUserId"`
+type StudyGroupWithMembersDTO struct {
+	StudyGroupDTO
+	Members []StudyGroupMemberDTO `json:"members,omitempty"`
 }
 
 var ErrInvalidRequestPayload = errors.New("invalid request payload")
 var ErrInvalidCommand = errors.New("invalid command")
-
-func mapStudyGroupMemberToDTO(member models.StudyGroupMember) StudyGroupMemberDTO {
-	return StudyGroupMemberDTO{
-		ID:   member.UserID,
-		Name: fmt.Sprintf("Name %s", member.UserID), // TODO change after the user model is complete
-		Role: string(member.Role),
-	}
-}
-
-func mapStudyGroupToDTO(studyGroup models.StudyGroup) StudyGroupDTO {
-	var members []StudyGroupMemberDTO
-	if studyGroup.Type == models.TypePublic {
-		members = make([]StudyGroupMemberDTO, len(studyGroup.Members))
-		for i, member := range studyGroup.Members {
-			members[i] = mapStudyGroupMemberToDTO(member)
-		}
-	}
-
-	return StudyGroupDTO{
-		ID:          studyGroup.ID,
-		Name:        studyGroup.Name,
-		Description: studyGroup.Description,
-		Type:        string(studyGroup.Type),
-		Members:     members,
-	}
-}
 
 func NewStudyGroupHandler(studyGroupService services.StudyGroupService) *StudyGroupHandler {
 	return &StudyGroupHandler{service: studyGroupService}
@@ -81,6 +48,12 @@ func (h *StudyGroupHandler) GetStudyGroup(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	userID, err := getUserID(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
 	studyGroup, err := h.service.GetStudyGroupByID(id)
 	if err != nil {
 		if errors.Is(err, services.ErrStudyGroupNotFound) {
@@ -91,34 +64,64 @@ func (h *StudyGroupHandler) GetStudyGroup(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	sendJSONResponse(w, mapStudyGroupToDTO(*studyGroup))
+	if !canSeeGroup(userID, studyGroup) {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
+
+	if canSeeMembers(userID, studyGroup) {
+		sendJSONResponse(w, mapStudyGroupWithMembersToDTO(studyGroup))
+	} else {
+		sendJSONResponse(w, mapStudyGroupToDTO(studyGroup))
+	}
 }
 
-func (h *StudyGroupHandler) GetAllStudyGroups(w http.ResponseWriter, _ *http.Request) {
+func (h *StudyGroupHandler) GetAllStudyGroups(w http.ResponseWriter, r *http.Request) {
 	studyGroups, err := h.service.GetAllStudyGroups()
 	if err != nil {
 		http.Error(w, "Error fetching study groups", http.StatusInternalServerError)
 		return
 	}
 
-	dtoList := make([]StudyGroupDTO, len(studyGroups))
-	for i, studyGroup := range studyGroups {
-		dtoList[i] = mapStudyGroupToDTO(studyGroup)
+	userID, err := getUserID(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	dtoList := make([]StudyGroupWithMembersDTO, 0, len(studyGroups))
+	for _, studyGroup := range studyGroups {
+		if !canSeeGroup(userID, &studyGroup) {
+			continue
+		}
+
+		if canSeeMembers(userID, &studyGroup) {
+			dtoList = append(dtoList, mapStudyGroupWithMembersToDTO(&studyGroup))
+		} else {
+			dtoList = append(dtoList, StudyGroupWithMembersDTO{
+				StudyGroupDTO: mapStudyGroupToDTO(&studyGroup),
+				Members:       nil,
+			})
+		}
+
 	}
 
 	sendJSONResponse(w, dtoList)
 }
 
 func (h *StudyGroupHandler) CreateStudyGroup(w http.ResponseWriter, r *http.Request) {
-	var createDTO StudyGroupCreateDTO
+	var createDTO struct {
+		Name        string `json:"name"`
+		Description string `json:"description"`
+		Type        string `json:"type"`
+	}
 	if err := json.NewDecoder(r.Body).Decode(&createDTO); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
 
-	ctx := r.Context()
-	uid, ok := ctx.Value(middleware.UIDCtxKey{}).(string)
-	if !ok || uid == "" {
+	userID, err := getUserID(r)
+	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
@@ -130,13 +133,13 @@ func (h *StudyGroupHandler) CreateStudyGroup(w http.ResponseWriter, r *http.Requ
 		Type:        models.StudyGroupType(createDTO.Type),
 	}
 
-	createdStudyGroup, err := h.service.CreateStudyGroup(studyGroupDetails, models.UserID(uid))
+	createdStudyGroup, err := h.service.CreateStudyGroup(studyGroupDetails, userID)
 	if err != nil {
 		http.Error(w, "Error creating study group", http.StatusInternalServerError)
 		return
 	}
 
-	sendJSONResponse(w, mapStudyGroupToDTO(*createdStudyGroup))
+	sendJSONResponse(w, mapStudyGroupWithMembersToDTO(createdStudyGroup))
 }
 
 func (h *StudyGroupHandler) HandleStudyMemberOperation(w http.ResponseWriter, r *http.Request) {
@@ -147,15 +150,15 @@ func (h *StudyGroupHandler) HandleStudyMemberOperation(w http.ResponseWriter, r 
 		return
 	}
 
-	ctx := r.Context()
-	uid, ok := ctx.Value(middleware.UIDCtxKey{}).(string)
-	if !ok || uid == "" {
+	userID, err := getUserID(r)
+	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
-	userID := models.UserID(uid)
 
-	var memberOperationDetails MemberAdminOperationDTO
+	var memberOperationDetails struct {
+		TargetUserID string `json:"targetUserId"`
+	}
 	_ = json.NewDecoder(r.Body).Decode(&memberOperationDetails)
 	targetUserID := models.UserID(memberOperationDetails.TargetUserID)
 
@@ -215,5 +218,57 @@ func (h *StudyGroupHandler) handleCommand(command string, studyGroupID models.St
 			services.RemoveMemberFromStudyGroupCommand, studyGroupID, targetUserID, userID)
 	default:
 		return ErrInvalidCommand
+	}
+}
+
+func canSeeGroup(userID models.UserID, studyGroup *models.StudyGroupView) bool {
+	if studyGroup.Type == models.TypeInviteOnly {
+		return slices.ContainsFunc(studyGroup.Members, func(m models.StudyGroupMemberView) bool {
+			return m.UserID == userID
+		})
+	}
+	return true
+}
+
+func canSeeMembers(userID models.UserID, studyGroup *models.StudyGroupView) bool {
+	if studyGroup.Type == models.TypePublic {
+		return true
+	}
+	return slices.ContainsFunc(studyGroup.Members, func(m models.StudyGroupMemberView) bool {
+		return m.UserID == userID
+	})
+}
+
+func mapStudyGroupMemberToDTO(member *models.StudyGroupMemberView) StudyGroupMemberDTO {
+	return StudyGroupMemberDTO{
+		ID:   member.UserID,
+		Name: member.Name,
+		Role: string(member.Role),
+	}
+}
+
+func mapStudyGroupWithMembersToDTO(studyGroup *models.StudyGroupView) StudyGroupWithMembersDTO {
+	members := make([]StudyGroupMemberDTO, len(studyGroup.Members))
+	for i, member := range studyGroup.Members {
+		members[i] = mapStudyGroupMemberToDTO(&member)
+	}
+
+	return StudyGroupWithMembersDTO{
+		StudyGroupDTO: StudyGroupDTO{
+			ID:          studyGroup.ID,
+			Name:        studyGroup.Name,
+			Description: studyGroup.Description,
+			Type:        string(studyGroup.Type),
+		},
+		Members: members,
+	}
+}
+
+func mapStudyGroupToDTO(studyGroup *models.StudyGroupView) StudyGroupDTO {
+	return StudyGroupDTO{
+		ID:          studyGroup.ID,
+		Name:        studyGroup.Name,
+		Description: studyGroup.Description,
+		Type:        string(studyGroup.Type),
 	}
 }
