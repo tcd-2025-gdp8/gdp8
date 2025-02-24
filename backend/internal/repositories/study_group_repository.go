@@ -11,6 +11,7 @@ import (
 type StudyGroupRepository interface {
 	GetStudyGroupByID(tx *sql.Tx, id models.StudyGroupID) (*models.StudyGroupView, error)
 	GetAllStudyGroups(tx *sql.Tx) ([]models.StudyGroupView, error)
+	GetAllRelevantStudyGroups(tx *sql.Tx, userID models.UserID) ([]models.StudyGroupView, error)
 	CreateStudyGroup(tx *sql.Tx, studyGroupDetails models.StudyGroupDetails,
 		adminUserID models.UserID) (*models.StudyGroupView, error)
 	UpdateStudyGroupDetails(tx *sql.Tx, id models.StudyGroupID,
@@ -47,18 +48,9 @@ func (s *SQLStudyGroupRepository) GetStudyGroupByID(tx *sql.Tx,
 		GROUP BY s.id
 	`
 
-	var studyGroup models.StudyGroupView
 	row := tx.QueryRow(query, id)
-	var membersJSON string
 
-	err := row.Scan(
-		&studyGroup.ID,
-		&studyGroup.StudyGroupDetails.Name,
-		&studyGroup.StudyGroupDetails.Description,
-		&studyGroup.StudyGroupDetails.Type,
-		&studyGroup.StudyGroupDetails.ModuleID,
-		&membersJSON,
-	)
+	studyGroup, err := readStudyGroup(row)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrStudyGroupNotFound
@@ -66,17 +58,10 @@ func (s *SQLStudyGroupRepository) GetStudyGroupByID(tx *sql.Tx,
 		return nil, err
 	}
 
-	//nolint:musttag
-	err = json.Unmarshal([]byte(membersJSON), &studyGroup.Members)
-	if err != nil {
-		return nil, err
-	}
-
-	return &studyGroup, nil
+	return studyGroup, nil
 }
 
 func (s *SQLStudyGroupRepository) GetAllStudyGroups(tx *sql.Tx) ([]models.StudyGroupView, error) {
-
 	query := `
 		SELECT 
 			s.id AS study_group_id,
@@ -105,34 +90,50 @@ func (s *SQLStudyGroupRepository) GetAllStudyGroups(tx *sql.Tx) ([]models.StudyG
 		_ = rows.Close()
 	}(rows)
 
-	var studyGroups []models.StudyGroupView
-
-	for rows.Next() {
-		var studyGroup models.StudyGroupView
-		var membersJSON string
-
-		err := rows.Scan(
-			&studyGroup.ID,
-			&studyGroup.StudyGroupDetails.Name,
-			&studyGroup.StudyGroupDetails.Description,
-			&studyGroup.StudyGroupDetails.Type,
-			&studyGroup.StudyGroupDetails.ModuleID,
-			&membersJSON,
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		//nolint:musttag
-		err = json.Unmarshal([]byte(membersJSON), &studyGroup.Members)
-		if err != nil {
-			return nil, err
-		}
-
-		studyGroups = append(studyGroups, studyGroup)
+	studyGroups, err := readStudyGroups(rows)
+	if err != nil {
+		return nil, err
 	}
 
-	if err := rows.Err(); err != nil {
+	return studyGroups, nil
+}
+
+// GetAllRelevantStudyGroups retrieves all the study groups relevant to a particular user.
+// I.e. retrieves study groups for modules that correspond to the particular user
+func (s *SQLStudyGroupRepository) GetAllRelevantStudyGroups(tx *sql.Tx,
+	userID models.UserID) ([]models.StudyGroupView, error) {
+	query := `
+		SELECT 
+			s.id AS study_group_id,
+			s.name,
+			s.description,
+			s.type,
+			s.module_id,
+			JSON_ARRAYAGG(
+				JSON_OBJECT(
+					'UserID', u.id,
+					'Name', u.name,
+					'Role', usg.type
+				)
+			) AS members
+		FROM user_modules um
+		INNER JOIN study_groups s ON um.module_id = s.module_id
+		LEFT JOIN user_study_groups usg ON s.id = usg.study_group_id
+		LEFT JOIN users u ON usg.user_id = u.id
+		WHERE um.user_id = ?
+		GROUP BY s.id
+	`
+
+	rows, err := tx.Query(query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer func(rows *sql.Rows) {
+		_ = rows.Close()
+	}(rows)
+
+	studyGroups, err := readStudyGroups(rows)
+	if err != nil {
 		return nil, err
 	}
 
@@ -249,4 +250,51 @@ func (s *SQLStudyGroupRepository) UpdateStudyGroupMember(tx *sql.Tx,
 	`
 	_, err = tx.Exec(upsertQuery, userID, id, role)
 	return err
+}
+
+type scanner interface {
+	Scan(dest ...any) error
+}
+
+func readStudyGroup(s scanner) (*models.StudyGroupView, error) {
+	var studyGroup models.StudyGroupView
+	var membersJSON string
+
+	err := s.Scan(
+		&studyGroup.ID,
+		&studyGroup.StudyGroupDetails.Name,
+		&studyGroup.StudyGroupDetails.Description,
+		&studyGroup.StudyGroupDetails.Type,
+		&studyGroup.StudyGroupDetails.ModuleID,
+		&membersJSON,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	//nolint:musttag
+	err = json.Unmarshal([]byte(membersJSON), &studyGroup.Members)
+	if err != nil {
+		return nil, err
+	}
+
+	return &studyGroup, nil
+}
+
+func readStudyGroups(rows *sql.Rows) ([]models.StudyGroupView, error) {
+	var studyGroups []models.StudyGroupView
+
+	for rows.Next() {
+		studyGroup, err := readStudyGroup(rows)
+		if err != nil {
+			return nil, err
+		}
+		studyGroups = append(studyGroups, *studyGroup)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return studyGroups, nil
 }

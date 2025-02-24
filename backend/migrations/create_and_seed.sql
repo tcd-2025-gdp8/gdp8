@@ -17,7 +17,8 @@ CREATE TABLE IF NOT EXISTS study_groups (
     module_id INT NOT NULL,
     max_members INT NOT NULL,
     FOREIGN KEY (module_id) REFERENCES modules(id) ON DELETE RESTRICT,
-    CHECK (max_members > 0)
+    CHECK (max_members > 0),
+    INDEX idx_study_groups_module_id (module_id)
 );
 
 CREATE TABLE IF NOT EXISTS user_modules (
@@ -25,7 +26,9 @@ CREATE TABLE IF NOT EXISTS user_modules (
     module_id INT NOT NULL,
     PRIMARY KEY (user_id, module_id),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (module_id) REFERENCES modules(id) ON DELETE CASCADE
+    FOREIGN KEY (module_id) REFERENCES modules(id) ON DELETE CASCADE,
+    INDEX idx_user_modules_user_id (user_id),
+    INDEX idx_user_modules_module_id (module_id)
 );
 
 CREATE TABLE IF NOT EXISTS user_study_groups (
@@ -34,7 +37,9 @@ CREATE TABLE IF NOT EXISTS user_study_groups (
     type ENUM('admin', 'member', 'invitee', 'requester') NOT NULL,
     PRIMARY KEY (user_id, study_group_id),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT,
-    FOREIGN KEY (study_group_id) REFERENCES study_groups(id) ON DELETE CASCADE
+    FOREIGN KEY (study_group_id) REFERENCES study_groups(id) ON DELETE CASCADE,
+    INDEX idx_user_study_groups_user_id (user_id),
+    INDEX idx_user_study_groups_study_group_id (study_group_id)
 );
 
 INSERT IGNORE INTO modules (id, code, name)

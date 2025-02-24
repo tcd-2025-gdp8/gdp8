@@ -30,6 +30,7 @@ const (
 type StudyGroupService interface {
 	GetStudyGroupByID(id models.StudyGroupID) (*models.StudyGroupView, error)
 	GetAllStudyGroups() ([]models.StudyGroupView, error)
+	GetAllRelevantStudyGroups(userID models.UserID) ([]models.StudyGroupView, error)
 
 	CreateStudyGroup(
 		studyGroupDetails models.StudyGroupDetails,
@@ -92,6 +93,20 @@ func (s *studyGroupServiceImpl) GetAllStudyGroups() ([]models.StudyGroupView, er
 	})
 
 	err = resolveError(err, "fetching all study groups")
+	if err != nil {
+		return nil, err
+	}
+
+	return grp, nil
+}
+
+// GetAllRelevantStudyGroups retrieves a list of study groups relevant to the specified user based on module choices.
+func (s *studyGroupServiceImpl) GetAllRelevantStudyGroups(userID models.UserID) ([]models.StudyGroupView, error) {
+	grp, err := persistence.WithTransaction(s.txMgr, func(tx *sql.Tx) ([]models.StudyGroupView, error) {
+		return s.studyGroupRepo.GetAllRelevantStudyGroups(tx, userID)
+	})
+
+	err = resolveError(err, "fetching all relevant study groups")
 	if err != nil {
 		return nil, err
 	}

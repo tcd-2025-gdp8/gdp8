@@ -1,3 +1,4 @@
+import jwt
 import os
 import requests
 
@@ -20,3 +21,8 @@ def get_firebase_access_token(email: str, password: str) -> str:
         return data["idToken"]
     else:
         raise Exception(f"Error retrieving token: {data.get('error', 'Unknown error')}")
+    
+
+def get_uid(access_token: str) -> str:
+    decoded_token = jwt.decode(access_token, options={"verify_signature": False})
+    return decoded_token.get("user_id")

@@ -77,16 +77,16 @@ func (h *StudyGroupHandler) GetStudyGroup(w http.ResponseWriter, r *http.Request
 	}
 }
 
-func (h *StudyGroupHandler) GetAllStudyGroups(w http.ResponseWriter, r *http.Request) {
-	studyGroups, err := h.service.GetAllStudyGroups()
-	if err != nil {
-		http.Error(w, "Error fetching study groups", http.StatusInternalServerError)
-		return
-	}
-
+func (h *StudyGroupHandler) GetRelevantStudyGroups(w http.ResponseWriter, r *http.Request) {
 	userID, err := getUserID(r)
 	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	studyGroups, err := h.service.GetAllRelevantStudyGroups(userID)
+	if err != nil {
+		http.Error(w, "Error fetching study groups", http.StatusInternalServerError)
 		return
 	}
 
