@@ -30,6 +30,11 @@ func (m *MockStudyGroupService) GetAllStudyGroups() ([]models.StudyGroupView, er
 	return args.Get(0).([]models.StudyGroupView), args.Error(1)
 }
 
+func (m *MockStudyGroupService) GetAllRelevantStudyGroups(userID models.UserID) ([]models.StudyGroupView, error) {
+	args := m.Called(userID)
+	return args.Get(0).([]models.StudyGroupView), args.Error(1)
+}
+
 func (m *MockStudyGroupService) CreateStudyGroup(studyGroupDetails models.StudyGroupDetails, creatorID models.UserID) (*models.StudyGroupView, error) {
 	args := m.Called(studyGroupDetails, creatorID)
 	return args.Get(0).(*models.StudyGroupView), args.Error(1)
@@ -267,7 +272,7 @@ func TestStudyGroupHandler_GetStudyGroup(t *testing.T) {
 	}
 }
 
-func TestStudyGroupHandler_GetAllStudyGroups(t *testing.T) {
+func TestStudyGroupHandler_GetRelevantStudyGroups(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -281,7 +286,7 @@ func TestStudyGroupHandler_GetAllStudyGroups(t *testing.T) {
 			name: "Successfully fetch multiple study groups",
 			mockSetup: func(service *MockStudyGroupService) {
 				service.
-					On("GetAllStudyGroups").
+					On("GetAllRelevantStudyGroups", models.UserID("2")).
 					Return([]models.StudyGroupView{
 						{
 							ID: 1,
@@ -380,7 +385,7 @@ func TestStudyGroupHandler_GetAllStudyGroups(t *testing.T) {
 			name: "Successfully fetch empty list of study groups",
 			mockSetup: func(service *MockStudyGroupService) {
 				service.
-					On("GetAllStudyGroups").
+					On("GetAllRelevantStudyGroups", models.UserID("1")).
 					Return([]models.StudyGroupView{}, nil)
 			},
 			ctxSetup: func(r *http.Request) *http.Request {
@@ -393,7 +398,7 @@ func TestStudyGroupHandler_GetAllStudyGroups(t *testing.T) {
 			name: "Error fetching study groups",
 			mockSetup: func(service *MockStudyGroupService) {
 				service.
-					On("GetAllStudyGroups").
+					On("GetAllRelevantStudyGroups", models.UserID("1")).
 					Return(([]models.StudyGroupView)(nil), errors.New("internal error"))
 			},
 			ctxSetup: func(r *http.Request) *http.Request {
@@ -414,7 +419,7 @@ func TestStudyGroupHandler_GetAllStudyGroups(t *testing.T) {
 			handler := NewStudyGroupHandler(mockService)
 
 			mux := http.NewServeMux()
-			mux.HandleFunc("GET /study-groups", handler.GetAllStudyGroups)
+			mux.HandleFunc("GET /study-groups", handler.GetRelevantStudyGroups)
 
 			req := httptest.NewRequest(http.MethodGet, "/study-groups", bytes.NewReader([]byte{}))
 			if tt.ctxSetup != nil {
