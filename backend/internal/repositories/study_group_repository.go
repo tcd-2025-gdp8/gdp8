@@ -9,12 +9,15 @@ import (
 )
 
 type StudyGroupRepository interface {
-	GetStudyGroupByID(tx persistence.Transaction, id models.StudyGroupID) (*models.StudyGroup, error)
-	GetAllStudyGroups(tx persistence.Transaction) ([]models.StudyGroup, error)
+	GetStudyGroupByID(tx persistence.Transaction, id models.StudyGroupID) (*models.StudyGroupView, error)
+	GetAllStudyGroups(tx persistence.Transaction) ([]models.StudyGroupView, error)
 	CreateStudyGroup(tx persistence.Transaction, studyGroupDetails models.StudyGroupDetails,
-		adminUserID models.UserID) (*models.StudyGroup, error)
-	UpdateStudyGroup(tx persistence.Transaction, studyGroup *models.StudyGroup) (*models.StudyGroup, error)
+		adminUserID models.UserID) (*models.StudyGroupView, error)
+	UpdateStudyGroupDetails(tx persistence.Transaction, id models.StudyGroupID,
+		details models.StudyGroupDetails) (*models.StudyGroupView, error)
 	DeleteStudyGroup(tx persistence.Transaction, id models.StudyGroupID) error
+	UpdateStudyGroupMember(tx persistence.Transaction, id models.StudyGroupID,
+		userID models.UserID, role *models.StudyGroupRole) error
 }
 
 var ErrStudyGroupNotFound = errors.New("study group not found")
@@ -85,7 +88,7 @@ func NewMockStudyGroupRepository() StudyGroupRepository {
 }
 
 func (r *MockStudyGroupRepository) GetStudyGroupByID(_ persistence.Transaction,
-	id models.StudyGroupID) (*models.StudyGroup, error) {
+	id models.StudyGroupID) (*models.StudyGroupView, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -93,22 +96,24 @@ func (r *MockStudyGroupRepository) GetStudyGroupByID(_ persistence.Transaction,
 	if !exists {
 		return nil, ErrStudyGroupNotFound
 	}
-	return &studyGroup, nil
+
+	return convertToView(&studyGroup), nil
 }
 
-func (r *MockStudyGroupRepository) GetAllStudyGroups(_ persistence.Transaction) ([]models.StudyGroup, error) {
+func (r *MockStudyGroupRepository) GetAllStudyGroups(
+	_ persistence.Transaction) ([]models.StudyGroupView, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	studyGroupsList := make([]models.StudyGroup, 0, len(r.studyGroups))
+	studyGroupsView := make([]models.StudyGroupView, 0, len(r.studyGroups))
 	for _, studyGroup := range r.studyGroups {
-		studyGroupsList = append(studyGroupsList, studyGroup)
+		studyGroupsView = append(studyGroupsView, *convertToView(&studyGroup))
 	}
-	return studyGroupsList, nil
+	return studyGroupsView, nil
 }
 
 func (r *MockStudyGroupRepository) CreateStudyGroup(_ persistence.Transaction,
-	studyGroupDetails models.StudyGroupDetails, adminUserID models.UserID) (*models.StudyGroup, error) {
+	studyGroupDetails models.StudyGroupDetails, adminUserID models.UserID) (*models.StudyGroupView, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -127,24 +132,56 @@ func (r *MockStudyGroupRepository) CreateStudyGroup(_ persistence.Transaction,
 	}
 	r.studyGroups[id] = studyGroup
 
-	return &studyGroup, nil
+	return convertToView(&studyGroup), nil
 }
 
-func (r *MockStudyGroupRepository) UpdateStudyGroup(_ persistence.Transaction,
-	studyGroup *models.StudyGroup) (*models.StudyGroup, error) {
+func (r *MockStudyGroupRepository) UpdateStudyGroupDetails(_ persistence.Transaction,
+	id models.StudyGroupID, details models.StudyGroupDetails) (*models.StudyGroupView, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	id := studyGroup.ID
-
-	_, exists := r.studyGroups[id]
+	studyGroup, exists := r.studyGroups[id]
 	if !exists {
 		return nil, ErrStudyGroupNotFound
 	}
 
-	r.studyGroups[id] = *studyGroup
+	studyGroup.StudyGroupDetails = details
+	r.studyGroups[id] = studyGroup
 
-	return studyGroup, nil
+	return convertToView(&studyGroup), nil
+}
+
+// UpdateStudyGroupMember updates the role of a member in a study group or removes the member if the role is nil.
+// The operation is idempotent - it will not return an error if the user already has the requested role.
+// Returns an error if the study group does not exist.
+func (r *MockStudyGroupRepository) UpdateStudyGroupMember(_ persistence.Transaction,
+	id models.StudyGroupID, userID models.UserID, role *models.StudyGroupRole) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	studyGroup, exists := r.studyGroups[id]
+	if !exists {
+		return ErrStudyGroupNotFound
+	}
+
+	for i, member := range studyGroup.Members {
+		if member.UserID == userID {
+			if role == nil {
+				studyGroup.Members = append(studyGroup.Members[:i], studyGroup.Members[i+1:]...)
+			} else {
+				studyGroup.Members[i].Role = *role
+			}
+			r.studyGroups[id] = studyGroup
+			return nil
+		}
+	}
+
+	studyGroup.Members = append(studyGroup.Members, models.StudyGroupMember{
+		UserID: userID,
+		Role:   *role,
+	})
+	r.studyGroups[id] = studyGroup
+	return nil
 }
 
 func (r *MockStudyGroupRepository) DeleteStudyGroup(_ persistence.Transaction, id models.StudyGroupID) error {
@@ -159,4 +196,21 @@ func (r *MockStudyGroupRepository) DeleteStudyGroup(_ persistence.Transaction, i
 	delete(r.studyGroups, id)
 
 	return nil
+}
+
+func convertToView(studyGroup *models.StudyGroup) *models.StudyGroupView {
+	membersView := make([]models.StudyGroupMemberView, 0, len(studyGroup.Members))
+	for _, member := range studyGroup.Members {
+		membersView = append(membersView, models.StudyGroupMemberView{
+			UserID: member.UserID,
+			Name:   string(member.UserID),
+			Role:   member.Role,
+		})
+	}
+
+	return &models.StudyGroupView{
+		ID:                studyGroup.ID,
+		StudyGroupDetails: studyGroup.StudyGroupDetails,
+		Members:           membersView,
+	}
 }

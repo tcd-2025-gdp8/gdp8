@@ -27,17 +27,17 @@ const (
 )
 
 type StudyGroupService interface {
-	GetStudyGroupByID(id models.StudyGroupID) (*models.StudyGroup, error)
-	GetAllStudyGroups() ([]models.StudyGroup, error)
+	GetStudyGroupByID(id models.StudyGroupID) (*models.StudyGroupView, error)
+	GetAllStudyGroups() ([]models.StudyGroupView, error)
 
 	CreateStudyGroup(
 		studyGroupDetails models.StudyGroupDetails,
-		creatorID models.UserID) (*models.StudyGroup, error)
+		creatorID models.UserID) (*models.StudyGroupView, error)
 
 	UpdateStudyGroupDetails(
 		id models.StudyGroupID,
 		details models.StudyGroupDetails,
-		requesterID models.UserID) (*models.StudyGroup, error)
+		requesterID models.UserID) (*models.StudyGroupView, error)
 
 	DeleteStudyGroup(id models.StudyGroupID, requesterID models.UserID) error
 
@@ -72,8 +72,8 @@ func NewStudyGroupService(
 	}
 }
 
-func (s *studyGroupServiceImpl) GetStudyGroupByID(id models.StudyGroupID) (*models.StudyGroup, error) {
-	studyGrp, err := persistence.WithTransaction(s.txMgr, func(tx persistence.Transaction) (*models.StudyGroup, error) {
+func (s *studyGroupServiceImpl) GetStudyGroupByID(id models.StudyGroupID) (*models.StudyGroupView, error) {
+	grp, err := persistence.WithTransaction(s.txMgr, func(tx persistence.Transaction) (*models.StudyGroupView, error) {
 		return s.studyGroupRepo.GetStudyGroupByID(tx, id)
 	})
 
@@ -82,11 +82,11 @@ func (s *studyGroupServiceImpl) GetStudyGroupByID(id models.StudyGroupID) (*mode
 		return nil, err
 	}
 
-	return studyGrp, nil
+	return grp, nil
 }
 
-func (s *studyGroupServiceImpl) GetAllStudyGroups() ([]models.StudyGroup, error) {
-	studyGrp, err := persistence.WithTransaction(s.txMgr, func(tx persistence.Transaction) ([]models.StudyGroup, error) {
+func (s *studyGroupServiceImpl) GetAllStudyGroups() ([]models.StudyGroupView, error) {
+	grp, err := persistence.WithTransaction(s.txMgr, func(tx persistence.Transaction) ([]models.StudyGroupView, error) {
 		return s.studyGroupRepo.GetAllStudyGroups(tx)
 	})
 
@@ -95,12 +95,12 @@ func (s *studyGroupServiceImpl) GetAllStudyGroups() ([]models.StudyGroup, error)
 		return nil, err
 	}
 
-	return studyGrp, nil
+	return grp, nil
 }
 
 func (s *studyGroupServiceImpl) CreateStudyGroup(studyGroupDetails models.StudyGroupDetails,
-	creatorID models.UserID) (*models.StudyGroup, error) {
-	studyGrp, err := persistence.WithTransaction(s.txMgr, func(tx persistence.Transaction) (*models.StudyGroup, error) {
+	creatorID models.UserID) (*models.StudyGroupView, error) {
+	grp, err := persistence.WithTransaction(s.txMgr, func(tx persistence.Transaction) (*models.StudyGroupView, error) {
 		// TODO check if creator exists in the users repo
 		return s.studyGroupRepo.CreateStudyGroup(tx, studyGroupDetails, creatorID)
 	})
@@ -110,12 +110,12 @@ func (s *studyGroupServiceImpl) CreateStudyGroup(studyGroupDetails models.StudyG
 		return nil, err
 	}
 
-	return studyGrp, nil
+	return grp, nil
 }
 
 func (s *studyGroupServiceImpl) UpdateStudyGroupDetails(id models.StudyGroupID,
-	details models.StudyGroupDetails, requesterID models.UserID) (*models.StudyGroup, error) {
-	studyGrp, err := persistence.WithTransaction(s.txMgr, func(tx persistence.Transaction) (*models.StudyGroup, error) {
+	details models.StudyGroupDetails, requesterID models.UserID) (*models.StudyGroupView, error) {
+	grp, err := persistence.WithTransaction(s.txMgr, func(tx persistence.Transaction) (*models.StudyGroupView, error) {
 		studyGroup, err := s.studyGroupRepo.GetStudyGroupByID(tx, id)
 		if err != nil {
 			return nil, err
@@ -125,9 +125,7 @@ func (s *studyGroupServiceImpl) UpdateStudyGroupDetails(id models.StudyGroupID,
 			return nil, ErrUnauthorizedMemberOperation
 		}
 
-		studyGroup.StudyGroupDetails = details
-
-		return s.studyGroupRepo.UpdateStudyGroup(tx, studyGroup)
+		return s.studyGroupRepo.UpdateStudyGroupDetails(tx, id, details)
 	})
 
 	err = resolveError(err, "updating study group details")
@@ -135,7 +133,7 @@ func (s *studyGroupServiceImpl) UpdateStudyGroupDetails(id models.StudyGroupID,
 		return nil, err
 	}
 
-	return studyGrp, nil
+	return grp, nil
 }
 
 func (s *studyGroupServiceImpl) DeleteStudyGroup(id models.StudyGroupID, requesterID models.UserID) error {
@@ -171,23 +169,18 @@ func (s *studyGroupServiceImpl) HandleAdminMemberOperation(command AdminMemberOp
 
 		switch command {
 		case InviteMemberToStudyGroupCommand:
-			studyGroup, err = inviteMember(studyGroup, targetUserID)
+			err = s.inviteMember(tx, studyGroup, targetUserID)
 		case AcceptRequestToJoinStudyGroupCommand:
-			studyGroup, err = acceptRequestToJoin(studyGroup, targetUserID)
+			err = s.acceptRequestToJoin(tx, studyGroup, targetUserID)
 		case RejectRequestToJoinStudyGroupCommand:
-			studyGroup, err = rejectRequestToJoin(studyGroup, targetUserID)
+			err = s.rejectRequestToJoin(tx, studyGroup, targetUserID)
 		case RemoveMemberFromStudyGroupCommand:
-			studyGroup, err = removeMemberFromStudyGroup(studyGroup, targetUserID, adminID)
+			err = s.removeMemberFromStudyGroup(tx, studyGroup, targetUserID, adminID)
 		default:
 			log.Printf("[ERROR] invalid admin member operation command: %s\n", command)
 			return errors.New("invalid admin member operation command")
 		}
 
-		if err != nil {
-			return err
-		}
-
-		_, err = s.studyGroupRepo.UpdateStudyGroup(tx, studyGroup)
 		return err
 	})
 
@@ -208,23 +201,18 @@ func (s *studyGroupServiceImpl) HandleSelfMemberOperation(command SelfMemberOper
 
 		switch command {
 		case AcceptStudyGroupInviteCommand:
-			studyGroup, err = acceptStudyGroupInvite(studyGroup, memberID)
+			err = s.acceptStudyGroupInvite(tx, studyGroup, memberID)
 		case RejectStudyGroupInviteCommand:
-			studyGroup, err = rejectStudyGroupInvite(studyGroup, memberID)
+			err = s.rejectStudyGroupInvite(tx, studyGroup, memberID)
 		case RequestToJoinStudyGroupCommand:
-			studyGroup, err = requestToJoinStudyGroup(studyGroup, memberID)
+			err = s.requestToJoinStudyGroup(tx, studyGroup, memberID)
 		case LeaveStudyGroupCommand:
-			studyGroup, err = leaveStudyGroup(studyGroup, memberID)
+			err = s.leaveStudyGroup(tx, studyGroup, memberID)
 		default:
 			log.Printf("[ERROR] invalid member operation command: %s\n", command)
 			return errors.New("invalid member operation command")
 		}
 
-		if err != nil {
-			return err
-		}
-
-		_, err = s.studyGroupRepo.UpdateStudyGroup(tx, studyGroup)
 		return err
 	})
 
@@ -252,142 +240,99 @@ func resolveError(err error, operation string) error {
 	}
 }
 
-func inviteMember(studyGroup *models.StudyGroup, memberID models.UserID) (*models.StudyGroup, error) {
+func (s *studyGroupServiceImpl) inviteMember(tx persistence.Transaction,
+	studyGroup *models.StudyGroupView, memberID models.UserID) error {
 	// TODO check if member exists in the users repo
 
 	for _, member := range studyGroup.Members {
 		if member.UserID == memberID {
-			return nil, fmt.Errorf("%w: member already exists in the study group", ErrInvalidMemberOperation)
+			return fmt.Errorf("%w: member already exists in the study group", ErrInvalidMemberOperation)
 		}
 	}
 
-	studyGroup.Members = append(studyGroup.Members, models.StudyGroupMember{
-		UserID: memberID,
-		Role:   models.RoleInvitee,
-	})
-
-	return studyGroup, nil
+	role := models.RoleInvitee
+	return s.studyGroupRepo.UpdateStudyGroupMember(tx, studyGroup.ID, memberID, &role)
 }
 
-func acceptRequestToJoin(studyGroup *models.StudyGroup, memberID models.UserID) (*models.StudyGroup, error) {
+func (s *studyGroupServiceImpl) acceptRequestToJoin(tx persistence.Transaction,
+	studyGroup *models.StudyGroupView, memberID models.UserID) error {
 	if !hasRole(memberID, models.RoleRequester, studyGroup.Members) {
-		return nil, fmt.Errorf("%w: member hasn't requested to join the study group", ErrInvalidMemberOperation)
+		return fmt.Errorf("%w: member hasn't requested to join the study group", ErrInvalidMemberOperation)
 	}
 
-	studyGroup.Members = setRole(memberID, models.RoleMember, studyGroup.Members)
-
-	return studyGroup, nil
+	role := models.RoleMember
+	return s.studyGroupRepo.UpdateStudyGroupMember(tx, studyGroup.ID, memberID, &role)
 }
 
-func rejectRequestToJoin(studyGroup *models.StudyGroup, memberID models.UserID) (*models.StudyGroup, error) {
+func (s *studyGroupServiceImpl) rejectRequestToJoin(tx persistence.Transaction,
+	studyGroup *models.StudyGroupView, memberID models.UserID) error {
 	if !hasRole(memberID, models.RoleRequester, studyGroup.Members) {
-		return nil, fmt.Errorf("%w: member hasn't requested to join the study group", ErrInvalidMemberOperation)
+		return fmt.Errorf("%w: member hasn't requested to join the study group", ErrInvalidMemberOperation)
 	}
 
-	studyGroup.Members = slices.DeleteFunc(studyGroup.Members, func(m models.StudyGroupMember) bool {
-		return m.UserID == memberID
-	})
-
-	return studyGroup, nil
+	return s.studyGroupRepo.UpdateStudyGroupMember(tx, studyGroup.ID, memberID, nil)
 }
 
-func removeMemberFromStudyGroup(studyGroup *models.StudyGroup,
-	memberID models.UserID, adminID models.UserID) (*models.StudyGroup, error) {
+func (s *studyGroupServiceImpl) removeMemberFromStudyGroup(tx persistence.Transaction,
+	studyGroup *models.StudyGroupView, memberID models.UserID, adminID models.UserID) error {
 	if memberID == adminID {
-		return nil, fmt.Errorf("%w: cannot remove self from the study group", ErrInvalidMemberOperation)
+		return fmt.Errorf("%w: cannot remove self from the study group", ErrInvalidMemberOperation)
 	}
 
-	for i, member := range studyGroup.Members {
-		if member.UserID == memberID {
-			studyGroup.Members = append(studyGroup.Members[:i], studyGroup.Members[i+1:]...)
-			return studyGroup, nil
-		}
-	}
-
-	return nil, fmt.Errorf("%w: member not found in the study group", ErrInvalidMemberOperation)
+	return s.studyGroupRepo.UpdateStudyGroupMember(tx, studyGroup.ID, memberID, nil)
 }
 
-func acceptStudyGroupInvite(studyGroup *models.StudyGroup, memberID models.UserID) (*models.StudyGroup, error) {
+func (s *studyGroupServiceImpl) acceptStudyGroupInvite(tx persistence.Transaction,
+	studyGroup *models.StudyGroupView, memberID models.UserID) error {
 	if !hasRole(memberID, models.RoleInvitee, studyGroup.Members) {
-		return nil, fmt.Errorf("%w: member not invited to join the study group", ErrInvalidMemberOperation)
+		return fmt.Errorf("%w: member not invited to join the study group", ErrInvalidMemberOperation)
 	}
 
-	studyGroup.Members = setRole(memberID, models.RoleMember, studyGroup.Members)
-
-	return studyGroup, nil
+	role := models.RoleMember
+	return s.studyGroupRepo.UpdateStudyGroupMember(tx, studyGroup.ID, memberID, &role)
 }
 
-func rejectStudyGroupInvite(studyGroup *models.StudyGroup, memberID models.UserID) (*models.StudyGroup, error) {
+func (s *studyGroupServiceImpl) rejectStudyGroupInvite(tx persistence.Transaction,
+	studyGroup *models.StudyGroupView, memberID models.UserID) error {
 	if !hasRole(memberID, models.RoleInvitee, studyGroup.Members) {
-		return nil, fmt.Errorf("%w: member not invited to join the study group", ErrInvalidMemberOperation)
+		return fmt.Errorf("%w: member not invited to join the study group", ErrInvalidMemberOperation)
 	}
 
-	studyGroup.Members = slices.DeleteFunc(studyGroup.Members, func(m models.StudyGroupMember) bool {
-		return m.UserID == memberID
-	})
-
-	return studyGroup, nil
+	return s.studyGroupRepo.UpdateStudyGroupMember(tx, studyGroup.ID, memberID, nil)
 }
 
-func requestToJoinStudyGroup(studyGroup *models.StudyGroup, memberID models.UserID) (*models.StudyGroup, error) {
+func (s *studyGroupServiceImpl) requestToJoinStudyGroup(tx persistence.Transaction,
+	studyGroup *models.StudyGroupView, memberID models.UserID) error {
 	// TODO check if member exists in the users repo
 
 	for _, member := range studyGroup.Members {
 		if member.UserID == memberID {
-			return nil, fmt.Errorf("%w: member already exists in the study group", ErrInvalidMemberOperation)
+			return fmt.Errorf("%w: member already exists in the study group", ErrInvalidMemberOperation)
 		}
 	}
 
 	switch studyGroup.Type {
 	case models.TypePublic:
-		studyGroup.Members = append(studyGroup.Members, models.StudyGroupMember{
-			UserID: memberID,
-			Role:   models.RoleMember,
-		})
+		role := models.RoleMember
+		return s.studyGroupRepo.UpdateStudyGroupMember(tx, studyGroup.ID, memberID, &role)
 	case models.TypeClosed:
-		studyGroup.Members = append(studyGroup.Members, models.StudyGroupMember{
-			UserID: memberID,
-			Role:   models.RoleRequester,
-		})
+		role := models.RoleRequester
+		return s.studyGroupRepo.UpdateStudyGroupMember(tx, studyGroup.ID, memberID, &role)
 	case models.TypeInviteOnly:
-		return nil, fmt.Errorf("%w: the study group is invite-only", ErrInvalidMemberOperation)
+		return fmt.Errorf("%w: the study group is invite-only", ErrInvalidMemberOperation)
 	default:
 		log.Printf("[ERROR] invalid study group type: %s\n", studyGroup.Type)
-		return nil, errors.New("invalid study group type")
+		return errors.New("invalid study group type")
 	}
-
-	return studyGroup, nil
 }
 
-func leaveStudyGroup(studyGroup *models.StudyGroup, memberID models.UserID) (*models.StudyGroup, error) {
-	for i, member := range studyGroup.Members {
-		if member.UserID == memberID {
-			studyGroup.Members = append(studyGroup.Members[:i], studyGroup.Members[i+1:]...)
-			return studyGroup, nil
-		}
-	}
-
-	return nil, fmt.Errorf("%w: not currently a member of the study group", ErrInvalidMemberOperation)
+func (s *studyGroupServiceImpl) leaveStudyGroup(tx persistence.Transaction,
+	studyGroup *models.StudyGroupView, memberID models.UserID) error {
+	return s.studyGroupRepo.UpdateStudyGroupMember(tx, studyGroup.ID, memberID, nil)
 }
 
-func hasRole(userID models.UserID, role models.StudyGroupRole, members []models.StudyGroupMember) bool {
-	return slices.ContainsFunc(members, func(m models.StudyGroupMember) bool {
+func hasRole(userID models.UserID, role models.StudyGroupRole, members []models.StudyGroupMemberView) bool {
+	return slices.ContainsFunc(members, func(m models.StudyGroupMemberView) bool {
 		return m.UserID == userID && m.Role == role
 	})
-}
-
-func setRole(userID models.UserID, role models.StudyGroupRole,
-	members []models.StudyGroupMember) []models.StudyGroupMember {
-	for i, member := range members {
-		if member.UserID == userID {
-			members[i].Role = role
-			return members
-		}
-	}
-
-	members = append(members, models.StudyGroupMember{
-		UserID: userID,
-		Role:   role,
-	})
-	return members
 }
