@@ -382,7 +382,7 @@ const StudyGroupsPage: React.FC = () => {
     };
   
     void fetchModules();
-  }, [token]);  
+  }, [token, modulesList, userID]);  
 
   const handleOpenInviteDialog = () => setOpenInviteDialog(true);
   const handleCloseInviteDialog = () => setOpenInviteDialog(false);
