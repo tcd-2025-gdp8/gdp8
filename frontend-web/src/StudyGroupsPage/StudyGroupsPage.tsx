@@ -76,7 +76,8 @@ interface APIStudyGroup {
 }
 
 interface Module {
-  id: string;
+  id: number;
+  code: string;
   name: string;
 }
 
@@ -99,8 +100,9 @@ const initialGroups: HardcodedStudyGroup[] = [
 ];
 
 const StudyGroupsPage: React.FC = () => {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const navigate = useNavigate();
+  const userID = user?.uid;
   const [studyGroups, setStudyGroups] = useState<StudyGroup[]>([]);
   const [filteredGroups, setFilteredGroups] = useState<StudyGroup[]>([]);
   const [selectedModule, setSelectedModule] = useState<string>("");
@@ -108,7 +110,7 @@ const StudyGroupsPage: React.FC = () => {
   const [groupName, setGroupName] = useState("");
   const [groupDescription, setGroupDescription] = useState("");
   const [groupType, setGroupType] = useState<"public" | "closed" | "invite-only">("public");
-  const [selectedGroupModule, setSelectedGroupModule] = useState<string>("");
+  const [selectedGroupModuleCode, setSelectedGroupModuleCode] = useState<string>("");
   const [openInviteDialog, setOpenInviteDialog] = useState(false);
   const [inviteName, setInviteName] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
@@ -278,11 +280,11 @@ const StudyGroupsPage: React.FC = () => {
     setGroupName("");
     setGroupDescription("");
     setGroupType("public");
-    setSelectedGroupModule("");
+    setSelectedGroupModuleCode("");
   };
 
   const handleCreateGroup = async () => {
-    if (groupName.trim() === "" || selectedGroupModule === "") {
+    if (groupName.trim() === "" || selectedGroupModuleCode === "") {
       alert("Please enter a valid group name and select a module.");
       return;
     }
@@ -291,11 +293,14 @@ const StudyGroupsPage: React.FC = () => {
       alert("You are not authorised. Please log in.");
       return;
     }
+
+    const selectedModuleId = modulesList.find(module => module.code === selectedGroupModuleCode)?.id;
   
     const newGroupDetails = {
       name: groupName,
       description: groupDescription,
       type: groupType,
+      moduleID: selectedModuleId
     };
   
     try {
@@ -320,7 +325,7 @@ const StudyGroupsPage: React.FC = () => {
           name: createdGroup.name,
           description: createdGroup.description,
           type: createdGroup.type,
-          moduleID: selectedGroupModule,
+          moduleID: selectedGroupModuleCode,
         },
         members: createdGroup.members.map((member) => ({
           userID: member.id,
@@ -335,7 +340,7 @@ const StudyGroupsPage: React.FC = () => {
         {
           id: Date.now(),
           message: `New study group "${groupName}" has been created for ${
-            modulesList.find((module) => module.id === selectedGroupModule)?.name
+            modulesList.find((module) => module.code === selectedGroupModuleCode)?.name
           }.`,
         },
       ]);
@@ -354,7 +359,7 @@ const StudyGroupsPage: React.FC = () => {
       if (!token) return;
   
       try {
-        const response = await fetch("http://localhost:8080/api/modules", {
+        const response = await fetch(`http://localhost:8080/api/user/${userID}/modules`, {
           method: "GET",
           headers: {
             Authorization: `Bearer ${token}`,
@@ -368,14 +373,9 @@ const StudyGroupsPage: React.FC = () => {
   
         const data = (await response.json()) as Module[];
   
-        // Transform module names
-        const formattedModules = data.map((module) => ({
-          id: module.id,
-          name: `${module.id}: ${module.name}`,
-        }));
-  
         // Add "All" option at the beginning
-        setModulesList([{ id: "All", name: "All" }, ...formattedModules]);
+        setModulesList([{ id: 0, code: "All", name: "All" }, ...data]);
+        console.log(modulesList);
       } catch (err) {
         console.error("Error fetching modules:", err);
       }
@@ -490,8 +490,8 @@ const StudyGroupsPage: React.FC = () => {
             onChange={(e: SelectChangeEvent<string>) => setSelectedModule(e.target.value)}
           >
             {modulesList.map((module) => (
-              <MenuItem key={module.id} value={module.id}>
-                {module.name}
+              <MenuItem key={module.code} value={module.code}>
+                {module.code === "All" ? module.name : `${module.code}: ${module.name}`}
               </MenuItem>
             ))}
           </Select>
@@ -533,7 +533,7 @@ const StudyGroupsPage: React.FC = () => {
                       </Typography>
                     </Tooltip>
                     <Typography color="textSecondary">
-                      Module: {modulesList.find((module) => module.id === group.studyGroupDetails.moduleID)?.name}
+                      Module: {modulesList.find((module) => module.code === group.studyGroupDetails.moduleID)?.name}
                     </Typography>
                     <Button
                       variant="contained"
@@ -636,12 +636,12 @@ const StudyGroupsPage: React.FC = () => {
             <FormControl fullWidth style={{ marginTop: "10px" }}>
               <InputLabel>Select Module</InputLabel>
               <Select
-                value={selectedGroupModule}
-                onChange={(e: SelectChangeEvent<string>) => setSelectedGroupModule(e.target.value)}
+                value={selectedGroupModuleCode}
+                onChange={(e: SelectChangeEvent<string>) => setSelectedGroupModuleCode(e.target.value)}
 
               >
                 {modulesList.map((module) => (
-                  <MenuItem key={module.id} value={module.id}>
+                  <MenuItem key={module.code} value={module.code}>
                     {module.name}
                   </MenuItem>
                 ))}
