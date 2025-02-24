@@ -1,6 +1,7 @@
 package services
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 	"log"
@@ -73,7 +74,7 @@ func NewStudyGroupService(
 }
 
 func (s *studyGroupServiceImpl) GetStudyGroupByID(id models.StudyGroupID) (*models.StudyGroupView, error) {
-	grp, err := persistence.WithTransaction(s.txMgr, func(tx persistence.Transaction) (*models.StudyGroupView, error) {
+	grp, err := persistence.WithTransaction(s.txMgr, func(tx *sql.Tx) (*models.StudyGroupView, error) {
 		return s.studyGroupRepo.GetStudyGroupByID(tx, id)
 	})
 
@@ -86,7 +87,7 @@ func (s *studyGroupServiceImpl) GetStudyGroupByID(id models.StudyGroupID) (*mode
 }
 
 func (s *studyGroupServiceImpl) GetAllStudyGroups() ([]models.StudyGroupView, error) {
-	grp, err := persistence.WithTransaction(s.txMgr, func(tx persistence.Transaction) ([]models.StudyGroupView, error) {
+	grp, err := persistence.WithTransaction(s.txMgr, func(tx *sql.Tx) ([]models.StudyGroupView, error) {
 		return s.studyGroupRepo.GetAllStudyGroups(tx)
 	})
 
@@ -100,7 +101,7 @@ func (s *studyGroupServiceImpl) GetAllStudyGroups() ([]models.StudyGroupView, er
 
 func (s *studyGroupServiceImpl) CreateStudyGroup(studyGroupDetails models.StudyGroupDetails,
 	creatorID models.UserID) (*models.StudyGroupView, error) {
-	grp, err := persistence.WithTransaction(s.txMgr, func(tx persistence.Transaction) (*models.StudyGroupView, error) {
+	grp, err := persistence.WithTransaction(s.txMgr, func(tx *sql.Tx) (*models.StudyGroupView, error) {
 		// TODO check if creator exists in the users repo
 		return s.studyGroupRepo.CreateStudyGroup(tx, studyGroupDetails, creatorID)
 	})
@@ -115,7 +116,7 @@ func (s *studyGroupServiceImpl) CreateStudyGroup(studyGroupDetails models.StudyG
 
 func (s *studyGroupServiceImpl) UpdateStudyGroupDetails(id models.StudyGroupID,
 	details models.StudyGroupDetails, requesterID models.UserID) (*models.StudyGroupView, error) {
-	grp, err := persistence.WithTransaction(s.txMgr, func(tx persistence.Transaction) (*models.StudyGroupView, error) {
+	grp, err := persistence.WithTransaction(s.txMgr, func(tx *sql.Tx) (*models.StudyGroupView, error) {
 		studyGroup, err := s.studyGroupRepo.GetStudyGroupByID(tx, id)
 		if err != nil {
 			return nil, err
@@ -137,7 +138,7 @@ func (s *studyGroupServiceImpl) UpdateStudyGroupDetails(id models.StudyGroupID,
 }
 
 func (s *studyGroupServiceImpl) DeleteStudyGroup(id models.StudyGroupID, requesterID models.UserID) error {
-	err := persistence.WithTransactionNoReturnVal(s.txMgr, func(tx persistence.Transaction) error {
+	err := persistence.WithTransactionNoReturnVal(s.txMgr, func(tx *sql.Tx) error {
 		studyGroup, err := s.studyGroupRepo.GetStudyGroupByID(tx, id)
 		if err != nil {
 			return err
@@ -157,7 +158,7 @@ func (s *studyGroupServiceImpl) DeleteStudyGroup(id models.StudyGroupID, request
 
 func (s *studyGroupServiceImpl) HandleAdminMemberOperation(command AdminMemberOperationCommand,
 	studyGroupID models.StudyGroupID, targetUserID models.UserID, adminID models.UserID) error {
-	err := persistence.WithTransactionNoReturnVal(s.txMgr, func(tx persistence.Transaction) error {
+	err := persistence.WithTransactionNoReturnVal(s.txMgr, func(tx *sql.Tx) error {
 		studyGroup, err := s.studyGroupRepo.GetStudyGroupByID(tx, studyGroupID)
 		if err != nil {
 			return err
@@ -193,7 +194,7 @@ func (s *studyGroupServiceImpl) HandleAdminMemberOperation(command AdminMemberOp
 
 func (s *studyGroupServiceImpl) HandleSelfMemberOperation(command SelfMemberOperationCommand,
 	studyGroupID models.StudyGroupID, memberID models.UserID) error {
-	err := persistence.WithTransactionNoReturnVal(s.txMgr, func(tx persistence.Transaction) error {
+	err := persistence.WithTransactionNoReturnVal(s.txMgr, func(tx *sql.Tx) error {
 		studyGroup, err := s.studyGroupRepo.GetStudyGroupByID(tx, studyGroupID)
 		if err != nil {
 			return err
@@ -240,7 +241,7 @@ func resolveError(err error, operation string) error {
 	}
 }
 
-func (s *studyGroupServiceImpl) inviteMember(tx persistence.Transaction,
+func (s *studyGroupServiceImpl) inviteMember(tx *sql.Tx,
 	studyGroup *models.StudyGroupView, memberID models.UserID) error {
 	// TODO check if member exists in the users repo
 
@@ -254,7 +255,7 @@ func (s *studyGroupServiceImpl) inviteMember(tx persistence.Transaction,
 	return s.studyGroupRepo.UpdateStudyGroupMember(tx, studyGroup.ID, memberID, &role)
 }
 
-func (s *studyGroupServiceImpl) acceptRequestToJoin(tx persistence.Transaction,
+func (s *studyGroupServiceImpl) acceptRequestToJoin(tx *sql.Tx,
 	studyGroup *models.StudyGroupView, memberID models.UserID) error {
 	if !hasRole(memberID, models.RoleRequester, studyGroup.Members) {
 		return fmt.Errorf("%w: member hasn't requested to join the study group", ErrInvalidMemberOperation)
@@ -264,7 +265,7 @@ func (s *studyGroupServiceImpl) acceptRequestToJoin(tx persistence.Transaction,
 	return s.studyGroupRepo.UpdateStudyGroupMember(tx, studyGroup.ID, memberID, &role)
 }
 
-func (s *studyGroupServiceImpl) rejectRequestToJoin(tx persistence.Transaction,
+func (s *studyGroupServiceImpl) rejectRequestToJoin(tx *sql.Tx,
 	studyGroup *models.StudyGroupView, memberID models.UserID) error {
 	if !hasRole(memberID, models.RoleRequester, studyGroup.Members) {
 		return fmt.Errorf("%w: member hasn't requested to join the study group", ErrInvalidMemberOperation)
@@ -273,7 +274,7 @@ func (s *studyGroupServiceImpl) rejectRequestToJoin(tx persistence.Transaction,
 	return s.studyGroupRepo.UpdateStudyGroupMember(tx, studyGroup.ID, memberID, nil)
 }
 
-func (s *studyGroupServiceImpl) removeMemberFromStudyGroup(tx persistence.Transaction,
+func (s *studyGroupServiceImpl) removeMemberFromStudyGroup(tx *sql.Tx,
 	studyGroup *models.StudyGroupView, memberID models.UserID, adminID models.UserID) error {
 	if memberID == adminID {
 		return fmt.Errorf("%w: cannot remove self from the study group", ErrInvalidMemberOperation)
@@ -282,7 +283,7 @@ func (s *studyGroupServiceImpl) removeMemberFromStudyGroup(tx persistence.Transa
 	return s.studyGroupRepo.UpdateStudyGroupMember(tx, studyGroup.ID, memberID, nil)
 }
 
-func (s *studyGroupServiceImpl) acceptStudyGroupInvite(tx persistence.Transaction,
+func (s *studyGroupServiceImpl) acceptStudyGroupInvite(tx *sql.Tx,
 	studyGroup *models.StudyGroupView, memberID models.UserID) error {
 	if !hasRole(memberID, models.RoleInvitee, studyGroup.Members) {
 		return fmt.Errorf("%w: member not invited to join the study group", ErrInvalidMemberOperation)
@@ -292,7 +293,7 @@ func (s *studyGroupServiceImpl) acceptStudyGroupInvite(tx persistence.Transactio
 	return s.studyGroupRepo.UpdateStudyGroupMember(tx, studyGroup.ID, memberID, &role)
 }
 
-func (s *studyGroupServiceImpl) rejectStudyGroupInvite(tx persistence.Transaction,
+func (s *studyGroupServiceImpl) rejectStudyGroupInvite(tx *sql.Tx,
 	studyGroup *models.StudyGroupView, memberID models.UserID) error {
 	if !hasRole(memberID, models.RoleInvitee, studyGroup.Members) {
 		return fmt.Errorf("%w: member not invited to join the study group", ErrInvalidMemberOperation)
@@ -301,7 +302,7 @@ func (s *studyGroupServiceImpl) rejectStudyGroupInvite(tx persistence.Transactio
 	return s.studyGroupRepo.UpdateStudyGroupMember(tx, studyGroup.ID, memberID, nil)
 }
 
-func (s *studyGroupServiceImpl) requestToJoinStudyGroup(tx persistence.Transaction,
+func (s *studyGroupServiceImpl) requestToJoinStudyGroup(tx *sql.Tx,
 	studyGroup *models.StudyGroupView, memberID models.UserID) error {
 	// TODO check if member exists in the users repo
 
@@ -326,7 +327,7 @@ func (s *studyGroupServiceImpl) requestToJoinStudyGroup(tx persistence.Transacti
 	}
 }
 
-func (s *studyGroupServiceImpl) leaveStudyGroup(tx persistence.Transaction,
+func (s *studyGroupServiceImpl) leaveStudyGroup(tx *sql.Tx,
 	studyGroup *models.StudyGroupView, memberID models.UserID) error {
 	return s.studyGroupRepo.UpdateStudyGroupMember(tx, studyGroup.ID, memberID, nil)
 }

@@ -7,17 +7,15 @@ import (
 	"strings"
 
 	"gdp8-backend/internal/models"
-	"gdp8-backend/internal/repositories"
 	"gdp8-backend/internal/services"
 )
 
 type UserHandler struct {
 	userService services.UserService
-	moduleRepo  repositories.ModuleRepository
 }
 
-func NewUserHandler(userService services.UserService, moduleRepo repositories.ModuleRepository) *UserHandler {
-	return &UserHandler{userService: userService, moduleRepo: moduleRepo}
+func NewUserHandler(userService services.UserService) *UserHandler {
+	return &UserHandler{userService: userService}
 }
 
 func (h *UserHandler) GetUser(w http.ResponseWriter, r *http.Request) {
@@ -27,7 +25,7 @@ func (h *UserHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.userService.GetUser(id)
+	user, err := h.userService.GetUser(models.UserID(id))
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error fetching user: %v", err), http.StatusInternalServerError)
 		return
@@ -42,7 +40,7 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
-	createdUser, err := h.userService.CreateUser(user)
+	createdUser, err := h.userService.CreateUser(user.ID, user.UserDetails)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error creating user: %v", err), http.StatusInternalServerError)
 		return
@@ -54,7 +52,7 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 }
 
 type ModulePreferences struct {
-	IDs []string `json:"selectedModules"`
+	IDs []models.ModuleID `json:"selectedModules"`
 }
 
 func (h *UserHandler) SetModules(w http.ResponseWriter, r *http.Request) {
@@ -71,19 +69,7 @@ func (h *UserHandler) SetModules(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Println("Received module IDs:", prefs.IDs)
-
-	modules := make([]models.Module, len(prefs.IDs))
-	for i, modID := range prefs.IDs {
-		mod, err := h.moduleRepo.GetModuleByID(nil, modID)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("Module %s not found: %v", modID, err), http.StatusBadRequest)
-			return
-		}
-		modules[i] = mod
-	}
-
-	if err := h.userService.SetModules(id, modules); err != nil {
+	if err := h.userService.SetModules(models.UserID(id), prefs.IDs); err != nil {
 		http.Error(w, fmt.Sprintf("Error setting modules: %v", err), http.StatusInternalServerError)
 		return
 	}
@@ -99,7 +85,7 @@ func (h *UserHandler) GetModules(w http.ResponseWriter, r *http.Request) {
 	}
 	id := parts[3]
 
-	user, err := h.userService.GetUser(id)
+	user, err := h.userService.GetUser(models.UserID(id))
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error fetching user: %v", err), http.StatusInternalServerError)
 		return

@@ -1,8 +1,8 @@
 package repositories
 
 import (
+	"database/sql"
 	"errors"
-	"sync"
 
 	"gdp8-backend/internal/models"
 )
@@ -10,50 +10,84 @@ import (
 var ErrUserNotFound = errors.New("user not found")
 
 type UserRepository interface {
-	GetUserByID(id string) (*models.User, error)
-	CreateUser(user models.User) (*models.User, error)
-	SetUserModules(id string, modules []models.Module) error
+	GetUserByID(tx *sql.Tx, id models.UserID) (*models.User, error)
+	CreateUser(tx *sql.Tx, id models.UserID, userDetails models.UserDetails) (*models.User, error)
+	SetUserModules(tx *sql.Tx, id models.UserID, modules []models.ModuleID) error
 }
 
-type MockUserRepository struct {
-	mu    sync.Mutex
-	users map[string]models.User
+type SQLUserRepository struct {
 }
 
-func NewMockUserRepository() UserRepository {
-	return &MockUserRepository{
-		users: make(map[string]models.User),
+func (s *SQLUserRepository) GetUserByID(tx *sql.Tx, id models.UserID) (*models.User, error) {
+
+	row := tx.QueryRow("SELECT id, name FROM users WHERE id = ?", id)
+
+	var user models.User
+	if err := row.Scan(&user.ID, &user.Name); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrUserNotFound
+		}
+		return nil, err
 	}
-}
 
-func (r *MockUserRepository) GetUserByID(id string) (*models.User, error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	user, ok := r.users[id]
-	if !ok {
-		return nil, ErrUserNotFound
+	rows, err := tx.Query(`
+		SELECT m.id, m.code, m.name
+		FROM user_modules um
+		INNER JOIN modules m ON um.module_id = m.id
+		WHERE um.user_id = ?
+	`, id)
+	if err != nil {
+		return nil, err
 	}
-	return &user, nil
-}
+	defer func(rows *sql.Rows) {
+		_ = rows.Close()
+	}(rows)
 
-func (r *MockUserRepository) CreateUser(user models.User) (*models.User, error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	if _, exists := r.users[user.ID]; exists {
-		return nil, errors.New("user already exists")
+	var modules []models.Module
+	for rows.Next() {
+		var module models.Module
+		if err := rows.Scan(&module.ID, &module.Code, &module.Name); err != nil {
+			return nil, err
+		}
+		modules = append(modules, module)
 	}
-	r.users[user.ID] = user
-	return &user, nil
-}
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
 
-func (r *MockUserRepository) SetUserModules(id string, modules []models.Module) error {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	user, ok := r.users[id]
-	if !ok {
-		return ErrUserNotFound
-	}
 	user.Modules = modules
-	r.users[id] = user
+	return &user, nil
+}
+
+func (s *SQLUserRepository) CreateUser(tx *sql.Tx,
+	id models.UserID, userDetails models.UserDetails) (*models.User, error) {
+	_, err := tx.Exec("INSERT INTO users (id, name) VALUES (?, ?)", id, userDetails.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	user := &models.User{
+		ID: id,
+		UserDetails: models.UserDetails{
+			Name: userDetails.Name,
+		},
+		Modules: []models.Module{},
+	}
+	return user, nil
+}
+
+func (s *SQLUserRepository) SetUserModules(tx *sql.Tx, id models.UserID, modules []models.ModuleID) error {
+	_, err := tx.Exec("DELETE FROM user_modules WHERE user_id = ?", id)
+	if err != nil {
+		return err
+	}
+
+	for _, moduleID := range modules {
+		_, err := tx.Exec("INSERT INTO user_modules (user_id, module_id) VALUES (?, ?)", id, moduleID)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }

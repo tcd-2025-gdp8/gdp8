@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"log"
 	"net/http"
 	"os"
@@ -8,6 +9,7 @@ import (
 
 	"gdp8-backend/internal/firebase"
 	"gdp8-backend/internal/middleware"
+	"gdp8-backend/internal/persistence"
 	"gdp8-backend/internal/routes"
 )
 
@@ -22,7 +24,25 @@ func main() {
 		log.Fatalf("Failed to initialize Firebase Admin SDK: %v", err)
 	}
 
-	routes.RegisterAllRoutes(firebaseAuth)
+	db, err := persistence.OpenDB()
+	if err != nil {
+		log.Fatalf("Failed to open database: %v", err)
+	}
+	defer func(db *sql.DB) {
+		err := db.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}(db)
+
+	err = persistence.ExecuteMigrations(db)
+	if err != nil {
+		log.Fatalf("Failed to execute migrations: %v", err)
+	}
+
+	txManager := persistence.NewSQLTransactionManager(db)
+
+	routes.RegisterAllRoutes(firebaseAuth, txManager)
 
 	corsHandler := middleware.SimpleCORS(http.DefaultServeMux)
 
