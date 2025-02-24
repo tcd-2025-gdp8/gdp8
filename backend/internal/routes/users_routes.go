@@ -7,16 +7,13 @@ import (
 
 	"gdp8-backend/internal/handlers"
 	"gdp8-backend/internal/middleware"
-	"gdp8-backend/internal/persistence"
 	"gdp8-backend/internal/repositories"
 	"gdp8-backend/internal/services"
 )
 
-func RegisterUserRoutes(firebaseAuth *auth.Client) {
-	txManager := persistence.MockTransactionManager{}
-	userRepo := repositories.NewMockUserRepository()
-	userService := services.NewUserService(&txManager, userRepo)
-	handler := handlers.NewUserHandler(userService, ModuleRepo)
+func RegisterUserRoutes(firebaseAuth *auth.Client,
+	userService services.UserService, moduleRepo repositories.ModuleRepository) {
+	handler := handlers.NewUserHandler(userService, moduleRepo)
 
 	http.HandleFunc("GET /api/user/{id}", middleware.WithFirebaseAuth(firebaseAuth, handler.GetUser))
 	http.HandleFunc("POST /api/user/{id}/modules", middleware.WithFirebaseAuth(firebaseAuth, handler.SetModules))
