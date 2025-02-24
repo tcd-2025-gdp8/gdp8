@@ -5,6 +5,7 @@ from firebase_admin import auth
 
 TEST_USER_EMAIL = "testuser@example.com"
 TEST_USER_PASSWORD = "password123"
+TEST_USER_NAME = "Mary Jane Holland"
 
 
 if __name__ == "__main__":
