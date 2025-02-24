@@ -21,11 +21,16 @@ import {
   Tooltip,
   Drawer,
   IconButton,
-  Box
+  Box,
+  List,
+  ListItem,
+  ListItemText
 } from "@mui/material";
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import CloseIcon from '@mui/icons-material/Close';
 import { useNavigate } from "react-router-dom";
+import DeleteIcon from "@mui/icons-material/Delete";
+
 
 interface StudyGroupMember {
   userID: string;
@@ -114,6 +119,12 @@ const StudyGroupsPage: React.FC = () => {
   ]);
   const [openNotifications, setOpenNotifications] = useState(false);
   const [modulesList, setModulesList] = useState<Module[]>([]);
+  const [openMemberDialog, setOpenMemberDialog] = useState(false);
+  const [selectedGroupMembers, setSelectedGroupMembers] = useState<StudyGroupMember[]>([]);
+
+  
+
+
 
   useEffect(() => {
     const fetchStudyGroups = async (): Promise<void> => {
@@ -341,6 +352,42 @@ const StudyGroupsPage: React.FC = () => {
     handleCloseInviteDialog();
   };
 
+  const handleOpenMembersDialog = (members: StudyGroupMember[]) => {
+    setSelectedGroupMembers(members);
+    setOpenMemberDialog(true);
+  };
+  
+  const handleCloseMembersDialog = () => {
+    setOpenMemberDialog(false);
+    setSelectedGroupMembers([]);
+  };
+  
+  const handleRemoveMember = async (memberId: string) => {
+    if (!token) return;
+
+    try {
+      const response = await fetch(`http://localhost:8080/api/study-groups/remove-member`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ targetUserId: memberId }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to remove member");
+      }
+
+      setSelectedGroupMembers(prevMembers => prevMembers.filter((member) => member.userID !== memberId));
+    } catch (err) {
+      console.error("Error removing member:", err);
+    }
+  };
+
+
+  
+
   return (
     <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh" width="100vw">
       <Container maxWidth="md" style={{ marginTop: "20px", position: "relative", textAlign: "center" }}>
@@ -421,14 +468,22 @@ const StudyGroupsPage: React.FC = () => {
                     <Tooltip
                       title={
                         group.members.length > 0
-                          ? group.members.map((member) => member.userID).join(", ")
+                          ? ""
                           : (group.studyGroupDetails.type === "closed" ? "You cannot view the members of this group as it is a closed group."
                             : "No members yet")
                       }
                       arrow
                     >
-                      <Typography color="textSecondary" style={{ cursor: "pointer" }}>
-                        Members: {group.studyGroupDetails.type === "closed" ? "confidential" : group.members.length}
+                      <Typography
+                        color="textSecondary"
+                        style={{ cursor: "pointer" }}
+                        onClick={() => {
+                          if (group.studyGroupDetails.type !== "closed") {
+                            handleOpenMembersDialog(group.members);
+                          }
+                        }}
+                      >
+                        View Members
                       </Typography>
                     </Tooltip>
                     <Typography color="textSecondary">
@@ -470,7 +525,30 @@ const StudyGroupsPage: React.FC = () => {
             );
           })}
         </Grid>
-
+        <Dialog open={openMemberDialog} onClose={handleCloseMembersDialog} maxWidth="sm" fullWidth>
+        <DialogContent>
+          
+          {selectedGroupMembers.length > 0 && (
+            <List>
+              {selectedGroupMembers.map((member) => (
+                <ListItem key={member.userID}>
+                  <ListItemText primary={member.userID} secondary={member.role} />
+                  {member.role !== "admin" && selectedGroupMembers.some((m) => m.userID === token && m.role === "admin") && (
+                    <IconButton edge="end" color="secondary" onClick={() => { void handleRemoveMember(member.userID); }}>
+                      <DeleteIcon />
+                    </IconButton>
+                  )}
+                </ListItem>
+              ))}
+            </List>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseMembersDialog} color="primary">
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
 
         <Button
           variant="contained"
