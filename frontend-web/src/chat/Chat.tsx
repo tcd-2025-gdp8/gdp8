@@ -1,12 +1,24 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Send } from "@mui/icons-material";
 import { Card, CardContent, TextField, Button, AppBar, Toolbar, Typography, Box } from "@mui/material";
 import { useAuth } from "../auth/useAuth";
+import { fetchApiWithToken } from "../utils/apiFetch";
 
 interface Message {
     text: string;
     sender: string;
     timestamp: string;
+}
+
+interface Module {
+    id: string;
+    name: string;
+}
+
+interface User {
+    id: string;
+    name: string;
+    modules: Module[];
 }
 
 export default function ChatUI() {
@@ -16,9 +28,26 @@ export default function ChatUI() {
     const currentPath = location.toString().split("/");
     const chatID = currentPath[currentPath.length - 1]; 
     const ws = useRef<WebSocket | null>(null);
-    const { token } = useAuth();
+    const { token, user } = useAuth();
+
+    const [userDetails, setUserDetails] = useState<User | null>(null);
+    const fetchUserDetails = useCallback(async () => {
+        if (!token || !user?.uid) return;
+        try {
+            const data = await fetchApiWithToken<User>(`/user/${user.uid}`, token);
+            console.log("Fetched user details:", data);
+            setUserDetails(data);
+            console.log(userDetails?.name);
+        } catch (error) {
+            console.error("Error fetching user details:", error);
+        }
+    }, [token, user]);
 
     const getTime = () => new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+    useEffect(() => {
+        void fetchUserDetails();
+    }, [token, user, fetchUserDetails]);
 
 
     useEffect(() => {
@@ -49,15 +78,21 @@ export default function ChatUI() {
             ws.current?.close();
         };
 
-    }, [chatID, token]);
-
+    }, [chatID, token, userDetails]);
 
 
     const sendMessage = () => {
         if (input.trim()) {
-            const newMessage: Message = { text: input, sender: "You", timestamp: getTime() };
-            if (ws.current &&  ws.current.readyState === WebSocket.OPEN) ws.current.send(JSON.stringify(newMessage));
-            else setMessages((prevMessages) => [...prevMessages, newMessage]);
+            const newMessage: Message = { 
+                text: input, 
+                sender: userDetails ? userDetails.name : "You",
+                timestamp: getTime() 
+            };
+            if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+                ws.current.send(JSON.stringify(newMessage));
+            } else {
+                setMessages((prevMessages) => [...prevMessages, newMessage]);
+            }
             setInput("");
         }
     };
