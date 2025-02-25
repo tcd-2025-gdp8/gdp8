@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/useAuth";
-import { fetchApiWithToken } from "../utils/apiFetch";
+import { registerUser } from "../api/users";
 import {
     Typography,
     TextField,
@@ -14,10 +14,8 @@ import {
 
 import "./login.css";
 
-const Login: React.FC = () => {
+const LoginPage: React.FC = () => {
     const [isRegister, setIsRegister] = useState<boolean>(false);
-    const [firstName, setFirstName] = useState<string>("");
-    const [lastName, setLastName] = useState<string>("");
     const { login, signup } = useAuth();
     const navigate = useNavigate();
 
@@ -27,44 +25,27 @@ const Login: React.FC = () => {
         const formData = new FormData(e.currentTarget);
         const email = formData.get('email') as string;
         const password = formData.get('password') as string;
+        const firstName = formData.get('firstName') as string;
+        const lastName = formData.get('lastName') as string;
 
-        try {
+        try {      
             if (isRegister) {
                 await signup(email, password);
                 const userCredential = await login(email, password);
                 const newToken = await userCredential.user.getIdToken();
                 const firebaseUID = userCredential.user.uid;
 
-                const createUserResponse = await fetchApiWithToken<{ id: string }>(
-                    "/user",
-                    newToken,
-                    {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                        },
-                        body: JSON.stringify({
-                            id: firebaseUID,
-                            name: firstName + " " + lastName,
-                            modules: []
-                        }),
-                    }
-                );
-                console.log(createUserResponse);
-                alert("Registration successful! Please log in.");
+                await registerUser(newToken, {
+                    id: firebaseUID,
+                    name: firstName + " " + lastName,
+                });
 
-                e.currentTarget.reset();
-                setFirstName("");
-                setLastName("");
-                setIsRegister(false);
-
-                // 3) Navigate to login page
-                void navigate("/landing");
             } else {
                 await login(email, password);
-
-                void navigate("/landing");
             }
+
+            void navigate("/landing");
+
         } catch (error) {
             console.error("Failed to authenticate", error);
             const errorMessage = error instanceof Error ? error.message : String(error);
@@ -121,8 +102,6 @@ const Login: React.FC = () => {
                                         id="firstName"
                                         label="First Name"
                                         name="firstName"
-                                        value={firstName}
-                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFirstName(e.target.value)}
                                     />
                                 </Grid>
                                 <Grid item xs={6}>
@@ -132,8 +111,6 @@ const Login: React.FC = () => {
                                         id="lastName"
                                         label="Last Name"
                                         name="lastName"
-                                        value={lastName}
-                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLastName(e.target.value)}
                                     />
                                 </Grid>
                             </>
@@ -195,4 +172,4 @@ const Login: React.FC = () => {
     );
 };
 
-export default Login;
+export default LoginPage;
