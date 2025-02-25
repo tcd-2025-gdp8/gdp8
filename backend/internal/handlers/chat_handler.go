@@ -1,17 +1,13 @@
 package handlers
 
 import (
-	"context"
 	"log"
 	"net/http"
 	"strings"
 
 	"github.com/gorilla/websocket"
-	"firebase.google.com/go/v4/auth"
-        "gdp8-backend/internal/middleware"
 )
 
-// RoomRegistration represents a connection joining a chat room.
 type RoomRegistration struct {
 	room string
 	conn *websocket.Conn
@@ -74,46 +70,18 @@ func (h *ChatHub) Run() {
 }
 
 var upgrader = websocket.Upgrader{
-	Subprotocols: []string{"auth", "accessToken"},
-	CheckOrigin: func(r *http.Request) bool { return true },
+	CheckOrigin: func(_ *http.Request) bool { return true },
 }
 
 type ChatHandler struct {
-	hub          *ChatHub
-	firebaseAuth *auth.Client
+	hub *ChatHub
 }
 
-func NewChatHandler(hub *ChatHub, firebaseAuth *auth.Client) *ChatHandler {
-	return &ChatHandler{hub: hub, firebaseAuth: firebaseAuth}
+func NewChatHandler(hub *ChatHub) *ChatHandler {
+	return &ChatHandler{hub: hub}
 }
 
 func (h *ChatHandler) ServeWs(w http.ResponseWriter, r *http.Request) {
-	log.Printf("DEBUG: Received headers: %+v", r.Header)
-
-	protocolHeader := r.Header.Get("Sec-WebSocket-Protocol")
-	log.Printf("DEBUG: Sec-WebSocket-Protocol header: %s", protocolHeader)
-	protocols := strings.Split(protocolHeader, ",")
-	for i := range protocols {
-		protocols[i] = strings.TrimSpace(protocols[i])
-	}
-	if len(protocols) < 2 {
-		http.Error(w, "Missing token in subprotocol", http.StatusUnauthorized)
-		return
-	}
-	tokenString := protocols[1]
-	log.Printf("DEBUG: Token from subprotocol: %s", tokenString)
-
-	decodedToken, err := h.firebaseAuth.VerifyIDToken(r.Context(), tokenString)
-	if err != nil {
-		log.Printf("DEBUG: Token verification failed: %v", err)
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
-	log.Printf("DEBUG: Token verified. UID: %s", decodedToken.UID)
-
-	ctx := context.WithValue(r.Context(), middleware.UIDCtxKey{}, decodedToken.UID)
-	r = r.WithContext(ctx)
-
 	parts := strings.Split(r.URL.Path, "/")
 	if len(parts) < 4 {
 		http.Error(w, "Chat ID missing in URL", http.StatusBadRequest)
@@ -128,7 +96,7 @@ func (h *ChatHandler) ServeWs(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "WebSocket upgrade failed", http.StatusInternalServerError)
 		return
 	}
-	log.Printf("DEBUG: WebSocket upgrade successful for chatID: %s, UID: %s", chatID, decodedToken.UID)
+	log.Printf("DEBUG: WebSocket upgrade successful for chatID: %s", chatID)
 
 	h.hub.register <- RoomRegistration{room: chatID, conn: conn}
 	log.Printf("DEBUG: Registered connection for chatID: %s", chatID)
@@ -139,7 +107,7 @@ func (h *ChatHandler) ServeWs(w http.ResponseWriter, r *http.Request) {
 			log.Printf("DEBUG: WebSocket read error: %v", err)
 			break
 		}
-		log.Printf("DEBUG: ChatID %s received message from UID %s: %s", chatID, decodedToken.UID, message)
+		log.Printf("DEBUG: ChatID %s received message: %s", chatID, message)
 		h.hub.broadcast <- RoomMessage{room: chatID, message: message, messageType: messageType}
 	}
 
