@@ -37,6 +37,7 @@ import { removeMemberFromStudyGroup } from "../api/studyGroups";
 
 interface StudyGroupMember {
   userID: string;
+  name: string;
   role: "admin" | "member" | "invitee" | "requester";
 }
 
@@ -50,12 +51,6 @@ interface StudyGroupDetails {
 interface StudyGroup {
   id: number;
   studyGroupDetails: StudyGroupDetails;
-  members: StudyGroupMember[];
-}
-
-interface HardcodedStudyGroup {
-  id: number;
-  moduleID: string
   members: StudyGroupMember[];
 }
 
@@ -75,6 +70,7 @@ interface APIStudyGroup {
   name: string;
   description: string;
   type: "public" | "closed" | "invite-only";
+  moduleId: number;
   members: APIMember[];
 }
 
@@ -83,24 +79,6 @@ interface Module {
   code: string;
   name: string;
 }
-
-const initialGroups: HardcodedStudyGroup[] = [
-  {
-    id: 1,
-    moduleID: "CSU44052",
-    members: [],
-  },
-  {
-    id: 2,
-    moduleID: "CSU44052",
-    members: [],
-  },
-  {
-    id: 3,
-    moduleID: "CSU44099",
-    members: [],
-  },
-];
 
 const StudyGroupsPage: React.FC = () => {
   const { token, user } = useAuth();
@@ -151,30 +129,32 @@ const StudyGroupsPage: React.FC = () => {
         const data: APIStudyGroup[] = (await response.json()) as APIStudyGroup[];
 
         const formattedGroups: StudyGroup[] = data.map((group: APIStudyGroup) => {
-          const matchedGroup = initialGroups.find((g) => g.id === group.id);
-
+          const currentModule = modulesList.find(module => module.id === Number(group.moduleId));
           return {
             id: group.id,
             studyGroupDetails: {
               name: group.name,
               description: group.description,
               type: group.type,
-              moduleID: matchedGroup?.moduleID ?? "",
+              moduleID: currentModule?.code ?? "",
             },
             members: group.members ? group.members.map((member) => ({
               userID: member.id,
+              name: member.name,
               role: member.role,
             })) : [],
           };
         });
+        console.log(formattedGroups);
         setStudyGroups(formattedGroups);
+        console.log(studyGroups);
       } catch (err) {
         console.error("Error fetching study groups:", err);
       }
     };
 
     void fetchStudyGroups();
-  }, [token]);
+  }, [modulesList]);
 
   useEffect(() => {
     if (selectedModule === "" || selectedModule === "All") {
@@ -194,19 +174,39 @@ const StudyGroupsPage: React.FC = () => {
 
     void (async () => {
       try {
-        const response = await fetch(`http://localhost:8080/api/study-groups/${id}/request-to-join`, {
-          method: "POST",
+        // Step 1: Send request to join the study group
+        const joinResponse = await fetch(
+          `http://localhost:8080/api/study-groups/${id}/request-to-join`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+  
+        if (!joinResponse.ok) {
+          const errorText = await joinResponse.text();
+          throw new Error(`Failed to join study group: ${errorText}`);
+        }
+  
+        // Step 2: Fetch current user data
+        const userResponse = await fetch(`http://localhost:8080/api/user/${currentUserID}`, {
+          method: "GET",
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
         });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`Failed to join study group: ${errorText}`);
+  
+        if (!userResponse.ok) {
+          throw new Error(`Failed to fetch user data: ${userResponse.statusText}`);
         }
-
+  
+        const user = await userResponse.json();
+  
+        // Step 3: Update state with new member
         setStudyGroups((prevGroups) =>
           prevGroups.map((group) => {
             if (group.id === id) {
@@ -214,14 +214,15 @@ const StudyGroupsPage: React.FC = () => {
                 ...group,
                 members: [
                   ...group.members,
-                  { userID: currentUserID ?? "", role: "member" as const },
+                  { userID: user.id, name: user.name, role: "member" as const },
                 ],
               };
             }
             return group;
           })
         );
-
+  
+        // Step 4: Notify user
         setNotifications((prev) => [
           ...prev,
           { id: Date.now(), message: `You joined the study group successfully.` },
@@ -231,8 +232,7 @@ const StudyGroupsPage: React.FC = () => {
         alert(`Error joining study group: ${error instanceof Error ? error.message : String(error)}`);
       }
     })();
-  };
-
+  };  
 
   const handleDeleteNotification = (notificationId: number) => {
     setNotifications((prevNotifications) =>
@@ -305,6 +305,7 @@ const StudyGroupsPage: React.FC = () => {
         },
         members: createdGroup.members.map((member) => ({
           userID: member.id,
+          name: "qwer",
           role: member.role,
         })),
       };
@@ -526,7 +527,7 @@ const StudyGroupsPage: React.FC = () => {
 
         <Grid container spacing={2}>
           {filteredGroups.map((group) => {
-            const isMember = group.members.some((member) => member.userID === "Alessandro");
+            const isMember = group.members.some((member) => member.userID === currentUserID);
             const isFull = group.members.length >= 10;
             return ( // ✅ Added return statement
               <Grid item xs={12} sm={6} md={4} key={group.id} style={{ minWidth: "280px" }}>
@@ -584,10 +585,10 @@ const StudyGroupsPage: React.FC = () => {
                       style={{ marginTop: "10px" }}
                       disabled={
                         group.members.length >= 10 ||
-                        group.members.some((member) => member.userID === "Alessandro")
+                        group.members.some((member) => member.userID === currentUserID)
                       }
                     >
-                      {group.members.some((member) => member.userID === "Alessandro")
+                      {group.members.some((member) => member.userID === currentUserID)
                         ? "Joined"
                         : group.members.length >= 10
                           ? "Full"
