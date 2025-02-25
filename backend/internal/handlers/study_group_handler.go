@@ -152,19 +152,15 @@ func (h *StudyGroupHandler) CreateStudyGroup(w http.ResponseWriter, r *http.Requ
 }
 
 func (h *StudyGroupHandler) HandleStudyMemberOperation(w http.ResponseWriter, r *http.Request) {
-	log.Printf("[DEBUG] Entering HandleStudyMemberOperation...")
 	idString := r.PathValue("id")
-	log.Printf("[DEBUG] The studyGroupID param is: %s", idString)
 	studyGroupID, err := utils.ConvertToType[models.StudyGroupID](idString)
 	if err != nil {
-		log.Printf("[ERROR] Invalid study group ID: %v", err)
 		http.Error(w, "Invalid study group ID", http.StatusBadRequest)
 		return
 	}
 
 	userID, err := getUserID(r)
 	if err != nil {
-		log.Printf("[ERROR] Unauthorized: %v", err)
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
@@ -172,23 +168,11 @@ func (h *StudyGroupHandler) HandleStudyMemberOperation(w http.ResponseWriter, r 
 	var memberOperationDetails struct {
 		TargetUserID string `json:"targetUserId"`
 	}
-	decErr := json.NewDecoder(r.Body).Decode(&memberOperationDetails)
-	if decErr != nil {
-		log.Printf("[ERROR] Could not decode request body: %v", decErr)
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
-	}
+	_ = json.NewDecoder(r.Body).Decode(&memberOperationDetails)
 	targetUserID := models.UserID(memberOperationDetails.TargetUserID)
 
 	command := r.PathValue("command")
-	log.Printf("[DEBUG] Handling command=%s, studyGroupID=%d, userID=%s, targetUserID=%s",
-		command, studyGroupID, userID, targetUserID)
 	err = h.handleCommand(command, studyGroupID, userID, targetUserID)
-	if err == nil {
-		w.WriteHeader(http.StatusOK)
-		return
-	}
-	log.Printf("[ERROR] handleCommand returned an error: %v", err)
 
 	switch {
 	case err == nil:

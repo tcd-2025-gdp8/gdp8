@@ -262,7 +262,7 @@ func resolveError(err error, operation string) error {
 func (s *studyGroupServiceImpl) inviteMember(tx *sql.Tx,
 	studyGroup *models.StudyGroupView, memberID models.UserID) error {
 	// TODO check if member exists in the users repo
-	//check if max members reached
+
 	if studyGroup.StudyGroupDetails.MaxMembers > 0 &&
 		len(studyGroup.Members) >= studyGroup.StudyGroupDetails.MaxMembers {
 		return fmt.Errorf("%w: study group is full", ErrStudyGroupFull)
@@ -280,6 +280,7 @@ func (s *studyGroupServiceImpl) inviteMember(tx *sql.Tx,
 
 func (s *studyGroupServiceImpl) acceptRequestToJoin(tx *sql.Tx,
 	studyGroup *models.StudyGroupView, memberID models.UserID) error {
+
 	if studyGroup.StudyGroupDetails.MaxMembers > 0 &&
 		len(studyGroup.Members) >= studyGroup.StudyGroupDetails.MaxMembers {
 		return fmt.Errorf("%w: study group is full", ErrStudyGroupFull)
@@ -312,6 +313,7 @@ func (s *studyGroupServiceImpl) removeMemberFromStudyGroup(tx *sql.Tx,
 
 func (s *studyGroupServiceImpl) acceptStudyGroupInvite(tx *sql.Tx,
 	studyGroup *models.StudyGroupView, memberID models.UserID) error {
+
 	if studyGroup.StudyGroupDetails.MaxMembers > 0 &&
 		len(studyGroup.Members) >= studyGroup.StudyGroupDetails.MaxMembers {
 		return fmt.Errorf("%w: study group is full", ErrStudyGroupFull)
@@ -336,6 +338,7 @@ func (s *studyGroupServiceImpl) rejectStudyGroupInvite(tx *sql.Tx,
 func (s *studyGroupServiceImpl) requestToJoinStudyGroup(tx *sql.Tx,
 	studyGroup *models.StudyGroupView, memberID models.UserID) error {
 	// TODO check if member exists in the users repo
+
 	if studyGroup.StudyGroupDetails.MaxMembers > 0 &&
 		len(studyGroup.Members) >= studyGroup.StudyGroupDetails.MaxMembers {
 		return fmt.Errorf("%w: study group is full", ErrStudyGroupFull)
