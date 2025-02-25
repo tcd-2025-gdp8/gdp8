@@ -2,7 +2,7 @@
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./auth/useAuth";
-import Login from "./loginPage/login";
+import LoginPage from "./pages/login";
 import StudyGroupsPage from "./StudyGroupsPage/StudyGroupsPage";
 import ModuleSettings from "./moduleSettings/moduleSettings";
 import LandingPage from "./landingPage/landingPage";
@@ -15,8 +15,8 @@ const App: React.FC = () => {
     <BrowserRouter>
       <Routes>
         {/* Always show login page on "/" and "/login" */}
-        <Route path="/" element={<Login />} />
-        <Route path="/login" element={<Login />} />
+        <Route path="/" element={<LoginPage />} />
+        <Route path="/login" element={<LoginPage />} />
         {/* Example: Only allow landing page if signed in */}
         <Route
           path="/landing"

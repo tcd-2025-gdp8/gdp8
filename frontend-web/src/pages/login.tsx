@@ -14,7 +14,7 @@ import {
 
 import "./login.css";
 
-const Login: React.FC = () => {
+const LoginPage: React.FC = () => {
     const [isRegister, setIsRegister] = useState<boolean>(false);
     const [firstName, setFirstName] = useState<string>("");
     const [lastName, setLastName] = useState<string>("");
@@ -195,4 +195,4 @@ const Login: React.FC = () => {
     );
 };
 
-export default Login;
+export default LoginPage;
