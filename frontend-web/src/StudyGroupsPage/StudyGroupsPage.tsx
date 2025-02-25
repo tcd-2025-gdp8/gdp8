@@ -24,7 +24,10 @@ import {
   Box,
   List,
   ListItem,
-  ListItemText
+  ListItemText,
+  Badge,
+  Toolbar,
+  AppBar
 } from "@mui/material";
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import CloseIcon from '@mui/icons-material/Close';
@@ -437,52 +440,110 @@ const StudyGroupsPage: React.FC = () => {
 
   return (
     <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh" width="100vw">
-      <Container maxWidth="md" style={{ marginTop: "20px", position: "relative", textAlign: "center" }}>
-        {/* Back to Landing Button */}
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={() => { void navigate("/landing"); }}
-          style={{ position: "absolute", top: "10px", left: "10px" }}
+       {/* Back to Landing Button */}
+       <Button
+        variant="contained"
+        sx={{
+          backgroundColor: "#0056b3",
+          "&:hover": {
+              backgroundColor: "#004494",
+          }}}
+        onClick={() => { void navigate("/landing"); }}
+        style={{ position: "absolute", top: "10px", left: "10px" }}
+      >
+        Back to Landing
+      </Button>
+      <AppBar
+            position="fixed"
+            sx={{
+                backgroundColor: "#ffffff",
+                color: "#000000",
+                zIndex: 1201,
+                width: "calc(100% - 240px)",
+                marginLeft: "240px",
+            }}
         >
-          Back to Landing
-        </Button>
+            <Toolbar sx={{ flexDirection: "row", alignItems: "center" }}>
+                <Box sx={{ flexGrow: 1, display: "flex", alignItems: "center" }}>
+                    <Typography variant="h6">
+                        Blackboard + StudyWise
+                    </Typography>
+                </Box>
+                {user && (
+                    <Typography variant="subtitle1" sx={{ mr: 2 }}>
+                        {user.email}
+                    </Typography>
+                )}
+                <IconButton color="inherit" onClick={() => setOpenNotifications(true)}>
+                    <Badge badgeContent={notifications.length} color="error">
+                        <NotificationsIcon />
+                    </Badge>
+                </IconButton>
+            </Toolbar>
+        </AppBar>
 
+        {/* Notifications Drawer */}
+        <Drawer
+            anchor="right"
+            open={openNotifications}
+            onClose={() => setOpenNotifications(false)}
+            sx={{
+                "& .MuiDrawer-paper": {
+                    zIndex: 1300,
+                },
+            }}
+        >
+            <Box sx={{ width: 300, padding: "1rem" }}>
+                <Box
+                    sx={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        marginBottom: "1rem",
+                    }}
+                >
+                    <Typography variant="h6">Notifications</Typography>
+                    <IconButton onClick={() => setOpenNotifications(false)}>
+                        <CloseIcon />
+                    </IconButton>
+                </Box>
+                {notifications.length === 0 ? (
+                    <Typography
+                        variant="body2"
+                        color="textSecondary"
+                        sx={{ textAlign: "center" }}
+                    >
+                        No notifications
+                    </Typography>
+                ) : (
+                    notifications.map((notification) => (
+                        <Box
+                            key={notification.id}
+                            sx={{
+                                padding: "0.5rem",
+                                borderBottom: "1px solid #ccc",
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                            }}
+                        >
+                            <Typography>{notification.message}</Typography>
+                            <IconButton
+                                size="small"
+                                onClick={() => handleDeleteNotification(notification.id)}
+                            >
+                                <CloseIcon fontSize="small" />
+                            </IconButton>
+                        </Box>
+                    ))
+                )}
+            </Box>
+        </Drawer>
+
+      <Container maxWidth="md" style={{ marginTop: "20px", position: "relative", textAlign: "center" }}>
         <Typography variant="h4" gutterBottom>
           Study Groups
-          <IconButton onClick={() => setOpenNotifications(true)}>
-            <NotificationsIcon />
-          </IconButton>
         </Typography>
-
-        <Drawer anchor="right" open={openNotifications} onClose={() => setOpenNotifications(false)}>
-          <div style={{ width: 300, padding: 16 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <Typography variant="h6">Notifications</Typography>
-              <IconButton onClick={() => setOpenNotifications(false)}>
-                <CloseIcon />
-              </IconButton>
-            </div>
-            {notifications.length === 0 ? (
-              <Typography variant="body2" color="textSecondary" style={{ textAlign: "center", marginTop: "20px" }}>
-                No notifications
-              </Typography>
-            ) : (
-              notifications.map((notification) => (
-                <Card key={notification.id} style={{ marginBottom: "10px" }}>
-                  <CardContent>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <Typography>{notification.message}</Typography>
-                      <IconButton onClick={() => handleDeleteNotification(notification.id)} size="small">
-                        <CloseIcon />
-                      </IconButton>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
-            )}
-          </div>
-        </Drawer>
 
         <FormControl fullWidth style={{ marginBottom: "20px" }}>
           <InputLabel>Filter by Module</InputLabel>
@@ -538,7 +599,11 @@ const StudyGroupsPage: React.FC = () => {
                     </Typography>
                     <Button
                       variant="contained"
-                      color="primary"
+                      sx={{
+                        backgroundColor: "#0056b3",
+                        "&:hover": {
+                            backgroundColor: "#004494",
+                        }}}
                       fullWidth
                       onClick={() => handleJoinGroup(group.id)}
                       style={{ marginTop: "10px" }}
@@ -556,7 +621,11 @@ const StudyGroupsPage: React.FC = () => {
                     {!isFull && (
                       <Button
                         variant="contained"
-                        color="primary"
+                        sx={{
+                          backgroundColor: "#0056b3",
+                          "&:hover": {
+                              backgroundColor: "#004494",
+                          }}}
                         fullWidth
                         onClick={() => handleOpenChat(group.id)}
                         disabled={!isMember}
@@ -601,6 +670,11 @@ const StudyGroupsPage: React.FC = () => {
           variant="contained"
           color="success"
           onClick={handleOpenDialog}
+          sx={{
+            backgroundColor: "#0056b3",
+            "&:hover": {
+                backgroundColor: "#004494",
+            }}}
           style={{ marginTop: "20px", display: "block", width: "100%" }}
         >
           Create a Study Group
@@ -653,10 +727,20 @@ const StudyGroupsPage: React.FC = () => {
             <Button onClick={handleCloseDialog} color="error" variant="contained">
               Cancel
             </Button>
-            <Button onClick={handleOpenInviteDialog} color="primary" variant="contained">
+            <Button onClick={handleOpenInviteDialog} variant="contained"
+                    sx={{
+                      backgroundColor: "#0056b3",
+                      "&:hover": {
+                          backgroundColor: "#004494",
+                      }}}>
               Invite Members
             </Button>
-            <Button onClick={() => { void handleCreateGroup(); }} color="success" variant="contained">
+            <Button onClick={() => { void handleCreateGroup(); }} variant="contained"
+                    sx={{
+                      backgroundColor: "#0056b3",
+                      "&:hover": {
+                          backgroundColor: "#004494",
+                      }}}>
               Create
             </Button>
           </DialogActions>
@@ -684,7 +768,12 @@ const StudyGroupsPage: React.FC = () => {
             <Button onClick={handleCloseInviteDialog} color="error" variant="contained">
               Cancel
             </Button>
-            <Button onClick={handleInvite} color="primary" variant="contained">
+            <Button onClick={handleInvite}  variant="contained"
+                    sx={{
+                        backgroundColor: "#0056b3",
+                        "&:hover": {
+                            backgroundColor: "#004494",
+                        }}}>
               Invite
             </Button>
           </DialogActions>

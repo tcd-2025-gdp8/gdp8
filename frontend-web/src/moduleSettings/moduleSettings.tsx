@@ -13,15 +13,27 @@ import {
     CardContent,
     CardActionArea,
     Grid2,
+    AppBar,
+    Toolbar,
+    Box,
+    Badge,
+    Drawer,
 } from "@mui/material";
 import { useAuth } from "../auth/useAuth";
 import { useNavigate } from "react-router-dom";
 import AddIcon from "@mui/icons-material/Add";
 import "./ModuleSettings.css";
+import NotificationsIcon from "@mui/icons-material/Notifications";
+import CloseIcon from "@mui/icons-material/Close";
 
 interface Module {
     id: string;
     name: string;
+}
+
+interface Notification {
+    id: number;
+    message: string;
 }
 
 const ModuleSettings: React.FC = () => {
@@ -36,6 +48,20 @@ const ModuleSettings: React.FC = () => {
     const [openDialog, setOpenDialog] = useState(false);
     const [moduleID, setModuleID] = useState("");
     const [moduleName, setModuleName] = useState("");
+
+    const [notifications, setNotifications] = useState<Notification[]>([
+            { id: 1, message: 'Your request to join "The Prefects" has been accepted.' },
+            { id: 2, message: 'New study group "CS Wizards" has been created for CSU44051: Human Factors.' },
+            { id: 3, message: 'New study group "The Elites" has been created for CSU44052: Computer Graphics.' },
+        ]);
+    const [openNotifications, setOpenNotifications] = useState(false);
+    
+        // Handler to remove a notification
+        const handleDeleteNotification = (notificationId: number) => {
+            setNotifications((prev) =>
+                prev.filter((notification) => notification.id !== notificationId)
+            );
+        };
 
     const fetchModules = useCallback(async () => {
         if (!token) return;
@@ -163,15 +189,123 @@ const ModuleSettings: React.FC = () => {
     };
 
     return (
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh" width="100vw">
+            {/* Back to Landing Button */}
+       <Button
+        variant="contained"
+        sx={{
+          backgroundColor: "#0056b3",
+          "&:hover": {
+              backgroundColor: "#004494",
+          }}}
+        onClick={() => { void navigate("/landing"); }}
+        style={{ position: "absolute", top: "10px", left: "10px" }}
+      >
+        Back to Landing
+      </Button>
+      <AppBar
+            position="fixed"
+            sx={{
+                backgroundColor: "#ffffff",
+                color: "#000000",
+                zIndex: 1201,
+                width: "calc(100% - 240px)",
+                marginLeft: "240px",
+            }}
+        >
+            <Toolbar sx={{ flexDirection: "row", alignItems: "center" }}>
+                <Box sx={{ flexGrow: 1, display: "flex", alignItems: "center" }}>
+                    <Typography variant="h6">
+                        Blackboard + StudyWise
+                    </Typography>
+                </Box>
+                {user && (
+                    <Typography variant="subtitle1" sx={{ mr: 2 }}>
+                        {user.email}
+                    </Typography>
+                )}
+                <IconButton color="inherit" onClick={() => setOpenNotifications(true)}>
+                    <Badge badgeContent={notifications.length} color="error">
+                        <NotificationsIcon />
+                    </Badge>
+                </IconButton>
+            </Toolbar>
+        </AppBar>
+
+        {/* Notifications Drawer */}
+        <Drawer
+            anchor="right"
+            open={openNotifications}
+            onClose={() => setOpenNotifications(false)}
+            sx={{
+                "& .MuiDrawer-paper": {
+                    zIndex: 1300,
+                },
+            }}
+        >
+            <Box sx={{ width: 300, padding: "1rem" }}>
+                <Box
+                    sx={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        marginBottom: "1rem",
+                    }}
+                >
+                    <Typography variant="h6">Notifications</Typography>
+                    <IconButton onClick={() => setOpenNotifications(false)}>
+                        <CloseIcon />
+                    </IconButton>
+                </Box>
+                {notifications.length === 0 ? (
+                    <Typography
+                        variant="body2"
+                        color="textSecondary"
+                        sx={{ textAlign: "center" }}
+                    >
+                        No notifications
+                    </Typography>
+                ) : (
+                    notifications.map((notification) => (
+                        <Box
+                            key={notification.id}
+                            sx={{
+                                padding: "0.5rem",
+                                borderBottom: "1px solid #ccc",
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                            }}
+                        >
+                            <Typography>{notification.message}</Typography>
+                            <IconButton
+                                size="small"
+                                onClick={() => handleDeleteNotification(notification.id)}
+                            >
+                                <CloseIcon fontSize="small" />
+                            </IconButton>
+                        </Box>
+                    ))
+                )}
+            </Box>
+        </Drawer>
 
         <Container className="module-container">
             <Button
-                variant="contained"
-                color="primary"
-                onClick={() => { void navigate("/landing"); }}
-                style={styles.backButton}
+            variant="contained"
+            sx={{
+                backgroundColor: "#0056b3",
+                "&:hover": {
+                backgroundColor: "#004494",
+                },
+                position: "absolute",
+                top: "10px",
+                left: "10px",
+                color: "white", // Ensure text remains visible
+            }}
+            onClick={() => { void navigate("/landing"); }}
             >
-                Back to Landing
+            Back to Landing
             </Button>
             <IconButton 
             onClick={() => setOpenDialog(true)} 
@@ -219,15 +353,21 @@ const ModuleSettings: React.FC = () => {
                     ))}
                 </Grid2>
 
-            <Button
+                <Button
                 variant="contained"
-                color="primary"
+                sx={{
+                    backgroundColor: "#0056b3",
+                    "&:hover": {
+                    backgroundColor: "#004494",
+                    },
+                    marginTop: "20px",
+                    width: "100%",
+                    color: "white",
+                }}
                 onClick={() => void handleSave()}
-                className="module-save-button"
-            >
+                >
                 Save Preferences
-            </Button>
-
+                </Button>
             {/* Dialog for Creating a New Module */}
             <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
                 <DialogTitle>Create a New Module</DialogTitle>
@@ -248,16 +388,22 @@ const ModuleSettings: React.FC = () => {
                     />
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setOpenDialog(false)} color="error">
+                    <Button onClick={() => setOpenDialog(false)} color="error" variant="contained">
                         Cancel
                     </Button>
-                    <Button onClick={handleCreateModuleClick} color="primary">
+                    <Button onClick={handleCreateModuleClick} color="primary" variant="contained"
+                            sx={{
+                                backgroundColor: "#0056b3",
+                                "&:hover": {
+                                    backgroundColor: "#004494",
+                                }}}>
                         Create
                     </Button>
                     </DialogActions>
                 </Dialog>
                 </>
             </Container>
+            </Box>
     );
 };
 
@@ -304,13 +450,6 @@ const styles = {
         color: "#555",
         fontStyle: "italic",
         marginBottom: "20px",
-    },
-    backButton: {
-        position: "absolute" as const,
-        top: "10px",
-        left: "10px",
-        backgroundColor: "#1976D2",
-        color: "white",
     },
     plusButton: {
         position: "absolute" as const,
