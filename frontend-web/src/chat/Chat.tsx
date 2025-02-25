@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Send } from "@mui/icons-material";
 import { Card, CardContent, TextField, Button, AppBar, Toolbar, Typography, Box } from "@mui/material";
 import { useAuth } from "../auth/useAuth";
-import { fetchApiWithToken } from "../utils/apiFetch";
+import { fetchApiToJson } from "../utils/apiFetch";
 
 interface Message {
     text: string;
@@ -36,7 +36,7 @@ export default function ChatUI() {
     const fetchUserDetails = useCallback(async () => {
         if (!token || !user?.uid) return;
         try {
-            const data = await fetchApiWithToken<User>(`/user/${user.uid}`, token);
+            const data = await fetchApiToJson<User>(`/user/${user.uid}`, token);
             console.log("Fetched user details:", data);
             setUserDetails(data);
         } catch (error) {
