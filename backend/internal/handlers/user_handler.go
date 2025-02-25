@@ -20,7 +20,7 @@ func NewUserHandler(userService services.UserService) *UserHandler {
 }
 
 func (h *UserHandler) GetUser(w http.ResponseWriter, r *http.Request) {
-	id := r.URL.Query().Get("id")
+	id := r.PathValue("id")
 	if id == "" {
 		http.Error(w, "User id required", http.StatusBadRequest)
 		return
