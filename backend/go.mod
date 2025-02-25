@@ -5,7 +5,7 @@ go 1.22
 require (
 	firebase.google.com/go/v4 v4.12.0
 	github.com/go-sql-driver/mysql v1.8.1
-	github.com/joho/godotenv v1.5.1
+	github.com/gorilla/websocket v1.5.3
 	github.com/stretchr/testify v1.10.0
 	google.golang.org/api v0.114.0
 )
