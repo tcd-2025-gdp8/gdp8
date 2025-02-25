@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 	"slices"
 
@@ -61,6 +62,7 @@ func (h *StudyGroupHandler) GetStudyGroup(w http.ResponseWriter, r *http.Request
 			http.Error(w, "Study group not found", http.StatusNotFound)
 			return
 		}
+		log.Printf("Error fetching study group: %v\n", err)
 		http.Error(w, "Error fetching study group", http.StatusInternalServerError)
 		return
 	}
@@ -86,6 +88,7 @@ func (h *StudyGroupHandler) GetRelevantStudyGroups(w http.ResponseWriter, r *htt
 
 	studyGroups, err := h.service.GetAllRelevantStudyGroups(userID)
 	if err != nil {
+		log.Printf("Error fetching study groups: %v\n", err)
 		http.Error(w, "Error fetching study groups", http.StatusInternalServerError)
 		return
 	}
@@ -138,6 +141,7 @@ func (h *StudyGroupHandler) CreateStudyGroup(w http.ResponseWriter, r *http.Requ
 
 	createdStudyGroup, err := h.service.CreateStudyGroup(studyGroupDetails, userID)
 	if err != nil {
+		log.Printf("Error creating study group: %v\n", err)
 		http.Error(w, "Error creating study group", http.StatusInternalServerError)
 		return
 	}
@@ -180,6 +184,7 @@ func (h *StudyGroupHandler) HandleStudyMemberOperation(w http.ResponseWriter, r 
 	case errors.Is(err, services.ErrInvalidMemberOperation):
 		http.Error(w, "Invalid study group operation", http.StatusBadRequest)
 	default:
+		log.Printf("Error processing study group operation: %v\n", err)
 		http.Error(w, "Error processing study group operation", http.StatusInternalServerError)
 	}
 }

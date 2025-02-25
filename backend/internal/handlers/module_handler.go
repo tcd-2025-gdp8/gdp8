@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"gdp8-backend/internal/models"
@@ -19,6 +20,7 @@ func NewModuleHandler(moduleService services.ModuleService) *ModuleHandler {
 func (h *ModuleHandler) GetAllModules(w http.ResponseWriter, _ *http.Request) {
 	modules, err := h.moduleService.GetAllModules()
 	if err != nil {
+		log.Printf("Error fetching modules: %v\n", err)
 		http.Error(w, "Failed to fetch modules", http.StatusInternalServerError)
 		return
 	}
@@ -36,6 +38,7 @@ func (h *ModuleHandler) CreateModule(w http.ResponseWriter, r *http.Request) {
 
 	_, err := h.moduleService.CreateModule(moduleDetails)
 	if err != nil {
+		log.Printf("Error creating module: %v\n", err)
 		http.Error(w, "Failed to create module", http.StatusInternalServerError)
 		return
 	}
