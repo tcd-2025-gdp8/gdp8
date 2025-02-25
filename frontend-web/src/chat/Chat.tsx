@@ -31,6 +31,8 @@ export default function ChatUI() {
     const { token, user } = useAuth();
 
     const [userDetails, setUserDetails] = useState<User | null>(null);
+    const [loading, setLoading] = useState(true);
+
     const fetchUserDetails = useCallback(async () => {
         if (!token || !user?.uid) return;
         try {
@@ -40,6 +42,8 @@ export default function ChatUI() {
             console.log(userDetails?.name);
         } catch (error) {
             console.error("Error fetching user details:", error);
+        } finally {
+            setLoading(false);
         }
     }, [token, user]);
 
@@ -50,35 +54,38 @@ export default function ChatUI() {
     }, [token, user, fetchUserDetails]);
 
 
+
     useEffect(() => {
-        ws.current = new WebSocket(`ws://localhost:8080/api/chat/${chatID}`, ["auth", token ? token : "no-token"]);
+        if (!loading) {
+            ws.current = new WebSocket(`ws://localhost:8080/api/chat/${chatID}`, ["auth", token ? token : "no-token"]);
 
-        ws.current.onopen = () => {
-            console.log("WebSocket connected");
-        };
+            ws.current.onopen = () => {
+                console.log("WebSocket connected");
+            };
 
-        ws.current.onmessage = (event) => {
-            try {
-                const msg: Message = JSON.parse(event.data);
-                setMessages((prev) => [...prev, msg]);
-            } catch (err) {
-                console.error("Error parsing message:", err);
-            }
-        };
+            ws.current.onmessage = (event) => {
+                try {
+                    const msg: Message = JSON.parse(event.data);
+                    setMessages((prev) => [...prev, msg]);
+                } catch (err) {
+                    console.error("Error parsing message:", err);
+                }
+            };
 
-        ws.current.onerror = (error) => {
-            console.error("WebSocket error:", error);
-        };
+            ws.current.onerror = (error) => {
+                console.error("WebSocket error:", error);
+            };
 
-        ws.current.onclose = () => {
-            console.log("WebSocket closed");
-        };
+            ws.current.onclose = () => {
+                console.log("WebSocket closed");
+            };
 
-        return () => {
-            ws.current?.close();
-        };
+            return () => {
+                ws.current?.close();
+            };
+        }
 
-    }, [chatID, token, userDetails]);
+    }, [chatID, token, userDetails, loading]);
 
 
     const sendMessage = () => {
