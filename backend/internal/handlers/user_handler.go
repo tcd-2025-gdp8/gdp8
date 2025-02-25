@@ -25,7 +25,6 @@ func (h *UserHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "User id required", http.StatusBadRequest)
 		return
 	}
-	id := parts[3]
 
 	user, err := h.userService.GetUser(models.UserID(id))
 	if err != nil {

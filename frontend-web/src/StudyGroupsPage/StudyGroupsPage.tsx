@@ -276,7 +276,8 @@ const StudyGroupsPage: React.FC = () => {
       name: groupName,
       description: groupDescription,
       type: groupType,
-      moduleID: selectedModuleId
+      moduleID: selectedModuleId,
+      maxMembers: 5
     };
 
     try {
@@ -624,7 +625,7 @@ const StudyGroupsPage: React.FC = () => {
               <List>
                 {selectedGroupMembers.map((member) => (
                   <ListItem key={member.userID}>
-                    <ListItemText primary={member.userID} secondary={member.role} />
+                    <ListItemText primary={member.name} secondary={member.role} />
                     {isCurrentUserAdmin && member.role !== "admin" && (
                       <IconButton edge="end" onClick={() => void handleRemoveMember(member.userID)}>
                         <DeleteIcon color="error" />
