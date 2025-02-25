@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 
@@ -27,6 +28,7 @@ func (h *UserHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.userService.GetUser(models.UserID(id))
 	if err != nil {
+		log.Printf("Error fetching user: %v\n", err)
 		http.Error(w, fmt.Sprintf("Error fetching user: %v", err), http.StatusInternalServerError)
 		return
 	}
@@ -42,6 +44,7 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 	createdUser, err := h.userService.CreateUser(user.ID, user.UserDetails)
 	if err != nil {
+		log.Printf("Error creating user: %v\n", err)
 		http.Error(w, fmt.Sprintf("Error creating user: %v", err), http.StatusInternalServerError)
 		return
 	}
@@ -70,6 +73,7 @@ func (h *UserHandler) SetModules(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.userService.SetModules(models.UserID(id), prefs.IDs); err != nil {
+		log.Printf("Error setting modules: %v\n", err)
 		http.Error(w, fmt.Sprintf("Error setting modules: %v", err), http.StatusInternalServerError)
 		return
 	}
@@ -87,6 +91,7 @@ func (h *UserHandler) GetModules(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.userService.GetUser(models.UserID(id))
 	if err != nil {
+		log.Printf("Error fetching user: %v\n", err)
 		http.Error(w, fmt.Sprintf("Error fetching user: %v", err), http.StatusInternalServerError)
 		return
 	}
