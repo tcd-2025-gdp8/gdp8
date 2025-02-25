@@ -87,12 +87,14 @@ export default function ChatUI() {
 
     }, [chatID, token, userDetails, loading]);
 
+    const currentSender = userDetails ? userDetails.name : "You";
+
 
     const sendMessage = () => {
         if (input.trim()) {
             const newMessage: Message = { 
                 text: input, 
-                sender: userDetails ? userDetails.name : "You",
+                sender: currentSender,
                 timestamp: getTime() 
             };
             if (ws.current && ws.current.readyState === WebSocket.OPEN) {
@@ -122,12 +124,32 @@ export default function ChatUI() {
                     {messages.length === 0 ? (
                         <p style={{ color: "#9e9e9e", textAlign: "center" }}>Start your Chat!</p>
                     ) : (
+
                             messages.map((msg, index) => (
-                                <div key={index} style={{ display: "flex", flexDirection: "column", alignItems: msg.sender === "You" ? "flex-end" : "flex-start", marginBottom: "8px" }}>
-                                    <Typography variant="caption" style={{ color: "#555", fontWeight: "bold", marginBottom: "2px" }}>
-                                        {msg.sender}
-                                    </Typography>
-                                        <Box style={{ padding: "10px 14px", borderRadius: "8px", maxWidth: "60%", backgroundColor: msg.sender === "You" ? "#3b5998" : "#ffffff", color: msg.sender === "You" ? "#fff" : "#000", boxShadow: "0px 2px 4px rgba(0,0,0,0.1)" }}>
+                                <div
+                                    key={index}
+                                    style={{
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        // Compare with currentSender instead of literal "You"
+                                        alignItems: msg.sender === currentSender ? "flex-end" : "flex-start",
+                                        marginBottom: "8px",
+                                    }}
+                                >
+                                        <Typography variant="caption" style={{ color: "#555", fontWeight: "bold", marginBottom: "2px" }}>
+                                            {msg.sender}
+                                        </Typography>
+                                        <Box
+                                        style={{
+                                            padding: "10px 14px",
+                                            borderRadius: "8px",
+                                            maxWidth: "60%",
+                                            // Use blue background for currentSender messages.
+                                            backgroundColor: msg.sender === currentSender ? "#3b5998" : "#ffffff",
+                                            color: msg.sender === currentSender ? "#fff" : "#000",
+                                            boxShadow: "0px 2px 4px rgba(0,0,0,0.1)",
+                                        }}
+                                    >
                                             {msg.text}
                                         </Box>
                                         <Typography variant="caption" style={{ marginTop: "4px", color: "#666" }}>
