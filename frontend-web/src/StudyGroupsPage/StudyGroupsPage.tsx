@@ -105,7 +105,7 @@ const initialGroups: HardcodedStudyGroup[] = [
 const StudyGroupsPage: React.FC = () => {
   const { token, user } = useAuth();
   const navigate = useNavigate();
-  const userID = user?.uid;
+  const currentUserID = user?.uid;
   const [studyGroups, setStudyGroups] = useState<StudyGroup[]>([]);
   const [filteredGroups, setFilteredGroups] = useState<StudyGroup[]>([]);
   const [selectedModule, setSelectedModule] = useState<string>("");
@@ -186,33 +186,6 @@ const StudyGroupsPage: React.FC = () => {
     }
   }, [selectedModule, studyGroups]);
 
-  // const handleJoinGroup = (id: number) => {
-  //   let joinedGroupName = "";
-
-  //   const updatedGroups = studyGroups.map((group) => {
-  //     if (group.id === id) {
-  //       if (!group.members.some((member) => member.userID === "Alessandro")) {
-  //         joinedGroupName = group.studyGroupDetails.name;
-  //         return {
-  //           ...group,
-  //           members: [
-  //             ...group.members,
-  //             { userID: "Alessandro", role: "member" as const },
-  //           ],
-  //         };
-  //       }
-  //     }
-  //     return group;
-  //   });
-
-  //   if (joinedGroupName) {
-  //     setStudyGroups(updatedGroups);
-  //     setNotifications((prev) => [
-  //       ...prev,
-  //       { id: Date.now(), message: `You joined Study Group: '${joinedGroupName}'.` },
-  //     ]);
-  //   }
-  // };
   const handleJoinGroup = (id: number) => {
     if (!token) {
       alert("You are not authorised. Please log in.");
@@ -241,7 +214,7 @@ const StudyGroupsPage: React.FC = () => {
                 ...group,
                 members: [
                   ...group.members,
-                  { userID: "Alessandro", role: "member" as const },
+                  { userID: currentUserID ?? "", role: "member" as const },
                 ],
               };
             }
@@ -358,11 +331,11 @@ const StudyGroupsPage: React.FC = () => {
   };
 
   useEffect(() => {
-    if (!token || !userID) return;
+    if (!token || !currentUserID) return;
   
     const fetchModules = async () => {
       try {
-        const response = await fetch(`http://localhost:8080/api/user/${userID}/modules`, {
+        const response = await fetch(`http://localhost:8080/api/user/${currentUserID}/modules`, {
           method: "GET",
           headers: {
             Authorization: `Bearer ${token}`,
@@ -386,7 +359,7 @@ const StudyGroupsPage: React.FC = () => {
   
     // Properly handle the async function call
     void fetchModules();
-  }, [token, userID]);   
+  }, [token, currentUserID]);   
 
   const handleOpenInviteDialog = () => setOpenInviteDialog(true);
   const handleCloseInviteDialog = () => setOpenInviteDialog(false);
