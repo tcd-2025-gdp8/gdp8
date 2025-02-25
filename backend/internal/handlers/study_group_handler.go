@@ -119,6 +119,7 @@ func (h *StudyGroupHandler) CreateStudyGroup(w http.ResponseWriter, r *http.Requ
 		Description string          `json:"description"`
 		Type        string          `json:"type"`
 		ModuleID    models.ModuleID `json:"moduleId"`
+		MaxMembers  int             `json:"maxMembers"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&createDTO); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
@@ -137,6 +138,7 @@ func (h *StudyGroupHandler) CreateStudyGroup(w http.ResponseWriter, r *http.Requ
 		Description: createDTO.Description,
 		Type:        models.StudyGroupType(createDTO.Type),
 		ModuleID:    createDTO.ModuleID,
+		MaxMembers:  createDTO.MaxMembers,
 	}
 
 	createdStudyGroup, err := h.service.CreateStudyGroup(studyGroupDetails, userID)
@@ -150,15 +152,19 @@ func (h *StudyGroupHandler) CreateStudyGroup(w http.ResponseWriter, r *http.Requ
 }
 
 func (h *StudyGroupHandler) HandleStudyMemberOperation(w http.ResponseWriter, r *http.Request) {
+	log.Printf("[DEBUG] Entering HandleStudyMemberOperation...")
 	idString := r.PathValue("id")
+	log.Printf("[DEBUG] The studyGroupID param is: %s", idString)
 	studyGroupID, err := utils.ConvertToType[models.StudyGroupID](idString)
 	if err != nil {
+		log.Printf("[ERROR] Invalid study group ID: %v", err)
 		http.Error(w, "Invalid study group ID", http.StatusBadRequest)
 		return
 	}
 
 	userID, err := getUserID(r)
 	if err != nil {
+		log.Printf("[ERROR] Unauthorized: %v", err)
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
@@ -166,11 +172,23 @@ func (h *StudyGroupHandler) HandleStudyMemberOperation(w http.ResponseWriter, r 
 	var memberOperationDetails struct {
 		TargetUserID string `json:"targetUserId"`
 	}
-	_ = json.NewDecoder(r.Body).Decode(&memberOperationDetails)
+	decErr := json.NewDecoder(r.Body).Decode(&memberOperationDetails)
+	if decErr != nil {
+		log.Printf("[ERROR] Could not decode request body: %v", decErr)
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
 	targetUserID := models.UserID(memberOperationDetails.TargetUserID)
 
 	command := r.PathValue("command")
+	log.Printf("[DEBUG] Handling command=%s, studyGroupID=%d, userID=%s, targetUserID=%s",
+		command, studyGroupID, userID, targetUserID)
 	err = h.handleCommand(command, studyGroupID, userID, targetUserID)
+	if err == nil {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+	log.Printf("[ERROR] handleCommand returned an error: %v", err)
 
 	switch {
 	case err == nil:
@@ -181,6 +199,8 @@ func (h *StudyGroupHandler) HandleStudyMemberOperation(w http.ResponseWriter, r 
 		http.Error(w, "Study group not found", http.StatusNotFound)
 	case errors.Is(err, services.ErrUnauthorizedMemberOperation):
 		http.Error(w, "Unauthorized study group operation", http.StatusForbidden)
+	case errors.Is(err, services.ErrStudyGroupFull): // NEW
+		http.Error(w, "Study group is full", http.StatusBadRequest)
 	case errors.Is(err, services.ErrInvalidMemberOperation):
 		http.Error(w, "Invalid study group operation", http.StatusBadRequest)
 	default:

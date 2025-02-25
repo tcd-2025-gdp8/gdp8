@@ -34,6 +34,7 @@ func (s *SQLStudyGroupRepository) GetStudyGroupByID(tx *sql.Tx,
 			s.description,
 			s.type,
 			s.module_id,
+			s.max_members,
 			JSON_ARRAYAGG(
 				JSON_OBJECT(
 					'UserID', u.id,
@@ -51,6 +52,7 @@ func (s *SQLStudyGroupRepository) GetStudyGroupByID(tx *sql.Tx,
 	row := tx.QueryRow(query, id)
 
 	studyGroup, err := readStudyGroup(row)
+	
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrStudyGroupNotFound
@@ -153,7 +155,7 @@ func (s *SQLStudyGroupRepository) CreateStudyGroup(tx *sql.Tx,
 		studyGroupDetails.Description,
 		studyGroupDetails.Type,
 		studyGroupDetails.ModuleID,
-		10, // TODO fix max group members
+		studyGroupDetails.MaxMembers,
 	)
 	if err != nil {
 		return nil, err
@@ -191,7 +193,7 @@ func (s *SQLStudyGroupRepository) UpdateStudyGroupDetails(tx *sql.Tx,
 		details.Description,
 		details.Type,
 		details.ModuleID,
-		10, // TODO fix max study group members
+		details.MaxMembers, // TODO fix max study group members
 		id,
 	)
 	if err != nil {

@@ -31,6 +31,7 @@ type StudyGroupDetails struct {
 	Description string
 	Type        StudyGroupType
 	ModuleID    ModuleID
+	MaxMembers  int
 }
 
 type StudyGroup struct {
