@@ -33,7 +33,7 @@ import NotificationsIcon from '@mui/icons-material/Notifications';
 import CloseIcon from '@mui/icons-material/Close';
 import { useNavigate } from "react-router-dom";
 import DeleteIcon from "@mui/icons-material/Delete";
-
+import { removeMemberFromStudyGroup } from "../api/studyGroups";
 
 interface StudyGroupMember {
   userID: string;
@@ -126,10 +126,10 @@ const StudyGroupsPage: React.FC = () => {
   const [modulesList, setModulesList] = useState<Module[]>([]);
   const [openMemberDialog, setOpenMemberDialog] = useState(false);
   const [selectedGroupMembers, setSelectedGroupMembers] = useState<StudyGroupMember[]>([]);
-
-  
-
-
+  const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
+  const isCurrentUserAdmin = selectedGroupMembers.some(
+    (member) => member.userID === currentUserID && member.role === "admin"
+  );
 
   useEffect(() => {
     const fetchStudyGroups = async (): Promise<void> => {
@@ -191,7 +191,7 @@ const StudyGroupsPage: React.FC = () => {
       alert("You are not authorised. Please log in.");
       return;
     }
-  
+
     void (async () => {
       try {
         const response = await fetch(`http://localhost:8080/api/study-groups/${id}/request-to-join`, {
@@ -201,12 +201,12 @@ const StudyGroupsPage: React.FC = () => {
             "Content-Type": "application/json",
           },
         });
-  
+
         if (!response.ok) {
           const errorText = await response.text();
           throw new Error(`Failed to join study group: ${errorText}`);
         }
-  
+
         setStudyGroups((prevGroups) =>
           prevGroups.map((group) => {
             if (group.id === id) {
@@ -221,7 +221,7 @@ const StudyGroupsPage: React.FC = () => {
             return group;
           })
         );
-  
+
         setNotifications((prev) => [
           ...prev,
           { id: Date.now(), message: `You joined the study group successfully.` },
@@ -232,7 +232,7 @@ const StudyGroupsPage: React.FC = () => {
       }
     })();
   };
-  
+
 
   const handleDeleteNotification = (notificationId: number) => {
     setNotifications((prevNotifications) =>
@@ -264,21 +264,21 @@ const StudyGroupsPage: React.FC = () => {
       alert("Please enter a valid group name and select a module.");
       return;
     }
-  
+
     if (!token) {
       alert("You are not authorised. Please log in.");
       return;
     }
 
     const selectedModuleId = modulesList.find(module => module.code === selectedGroupModuleCode)?.id;
-  
+
     const newGroupDetails = {
       name: groupName,
       description: groupDescription,
       type: groupType,
       moduleID: selectedModuleId
     };
-  
+
     try {
       const response = await fetch("http://localhost:8080/api/study-groups", {
         method: "POST",
@@ -288,13 +288,13 @@ const StudyGroupsPage: React.FC = () => {
         },
         body: JSON.stringify(newGroupDetails),
       });
-  
+
       if (!response.ok) {
         throw new Error(`Failed to create group: ${response.statusText}`);
       }
-  
+
       const createdGroup = (await response.json()) as APIStudyGroup;
-  
+
       const newGroup: StudyGroup = {
         id: createdGroup.id,
         studyGroupDetails: {
@@ -308,19 +308,18 @@ const StudyGroupsPage: React.FC = () => {
           role: member.role,
         })),
       };
-  
+
       setStudyGroups([...studyGroups, newGroup]);
-  
+
       setNotifications((prev) => [
         ...prev,
         {
           id: Date.now(),
-          message: `New study group "${groupName}" has been created for ${
-            modulesList.find((module) => module.code === selectedGroupModuleCode)?.name
-          }.`,
+          message: `New study group "${groupName}" has been created for ${modulesList.find((module) => module.code === selectedGroupModuleCode)?.name
+            }.`,
         },
       ]);
-  
+
       handleCloseDialog();
     } catch (error) {
       console.error("Error creating study group:", error);
@@ -332,7 +331,7 @@ const StudyGroupsPage: React.FC = () => {
 
   useEffect(() => {
     if (!token || !currentUserID) return;
-  
+
     const fetchModules = async () => {
       try {
         const response = await fetch(`http://localhost:8080/api/user/${currentUserID}/modules`, {
@@ -342,24 +341,24 @@ const StudyGroupsPage: React.FC = () => {
             "Content-Type": "application/json",
           },
         });
-  
+
         if (!response.ok) {
           throw new Error(`Failed to fetch modules: ${response.statusText}`);
         }
-  
+
         const data = (await response.json()) as Module[];
-  
+
         // Add "All" option at the beginning
         setModulesList([{ id: 0, code: "All", name: "All" }, ...data]);
-  
+
       } catch (err) {
         console.error("Error fetching modules:", err);
       }
     };
-  
+
     // Properly handle the async function call
     void fetchModules();
-  }, [token, currentUserID]);   
+  }, [token, currentUserID]);
 
   const handleOpenInviteDialog = () => setOpenInviteDialog(true);
   const handleCloseInviteDialog = () => setOpenInviteDialog(false);
@@ -375,143 +374,136 @@ const StudyGroupsPage: React.FC = () => {
     handleCloseInviteDialog();
   };
 
-  const handleOpenMembersDialog = (members: StudyGroupMember[]) => {
+  const handleOpenMembersDialog = (groupId: number, members: StudyGroupMember[]) => {
+    setSelectedGroupId(groupId);
     setSelectedGroupMembers(members);
     setOpenMemberDialog(true);
   };
-  
+
   const handleCloseMembersDialog = () => {
     setOpenMemberDialog(false);
     setSelectedGroupMembers([]);
   };
-  
+
   const handleRemoveMember = async (memberId: string) => {
-    if (!token) return;
+    if (!token || selectedGroupId === null) return;
 
     try {
-      const response = await fetch(`http://localhost:8080/api/study-groups/remove-member`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ targetUserId: memberId }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to remove member");
-      }
-
-      setSelectedGroupMembers(prevMembers => prevMembers.filter((member) => member.userID !== memberId));
+      // Call the API function that handles member removal.
+      await removeMemberFromStudyGroup(token, selectedGroupId, memberId);
+      setSelectedGroupMembers(prevMembers =>
+        prevMembers.filter((member) => member.userID !== memberId)
+      );
     } catch (err) {
       console.error("Error removing member:", err);
     }
   };
 
 
-  
+
 
   return (
     <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh" width="100vw">
-       {/* Back to Landing Button */}
-       <Button
+      {/* Back to Landing Button */}
+      <Button
         variant="contained"
         sx={{
           backgroundColor: "#0056b3",
           "&:hover": {
-              backgroundColor: "#004494",
-          }}}
+            backgroundColor: "#004494",
+          }
+        }}
         onClick={() => { void navigate("/landing"); }}
         style={{ position: "absolute", top: "10px", left: "10px" }}
       >
         Back to Landing
       </Button>
       <AppBar
-            position="fixed"
-            sx={{
-                backgroundColor: "#ffffff",
-                color: "#000000",
-                zIndex: 1201,
-                width: "calc(100% - 240px)",
-                marginLeft: "240px",
-            }}
-        >
-            <Toolbar sx={{ flexDirection: "row", alignItems: "center" }}>
-                <Box sx={{ flexGrow: 1, display: "flex", alignItems: "center" }}>
-                    <Typography variant="h6">
-                        Blackboard + StudyWise
-                    </Typography>
-                </Box>
-                {user && (
-                    <Typography variant="subtitle1" sx={{ mr: 2 }}>
-                        {user.email}
-                    </Typography>
-                )}
-                <IconButton color="inherit" onClick={() => setOpenNotifications(true)}>
-                    <Badge badgeContent={notifications.length} color="error">
-                        <NotificationsIcon />
-                    </Badge>
-                </IconButton>
-            </Toolbar>
-        </AppBar>
+        position="fixed"
+        sx={{
+          backgroundColor: "#ffffff",
+          color: "#000000",
+          zIndex: 1201,
+          width: "calc(100% - 240px)",
+          marginLeft: "240px",
+        }}
+      >
+        <Toolbar sx={{ flexDirection: "row", alignItems: "center" }}>
+          <Box sx={{ flexGrow: 1, display: "flex", alignItems: "center" }}>
+            <Typography variant="h6">
+              WeStudy
+            </Typography>
+          </Box>
+          {user && (
+            <Typography variant="subtitle1" sx={{ mr: 2 }}>
+              {user.email}
+            </Typography>
+          )}
+          <IconButton color="inherit" onClick={() => setOpenNotifications(true)}>
+            <Badge badgeContent={notifications.length} color="error">
+              <NotificationsIcon />
+            </Badge>
+          </IconButton>
+        </Toolbar>
+      </AppBar>
 
-        {/* Notifications Drawer */}
-        <Drawer
-            anchor="right"
-            open={openNotifications}
-            onClose={() => setOpenNotifications(false)}
+      {/* Notifications Drawer */}
+      <Drawer
+        anchor="right"
+        open={openNotifications}
+        onClose={() => setOpenNotifications(false)}
+        sx={{
+          "& .MuiDrawer-paper": {
+            zIndex: 1300,
+          },
+        }}
+      >
+        <Box sx={{ width: 300, padding: "1rem" }}>
+          <Box
             sx={{
-                "& .MuiDrawer-paper": {
-                    zIndex: 1300,
-                },
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "1rem",
             }}
-        >
-            <Box sx={{ width: 300, padding: "1rem" }}>
-                <Box
-                    sx={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        marginBottom: "1rem",
-                    }}
+          >
+            <Typography variant="h6">Notifications</Typography>
+            <IconButton onClick={() => setOpenNotifications(false)}>
+              <CloseIcon />
+            </IconButton>
+          </Box>
+          {notifications.length === 0 ? (
+            <Typography
+              variant="body2"
+              color="textSecondary"
+              sx={{ textAlign: "center" }}
+            >
+              No notifications
+            </Typography>
+          ) : (
+            notifications.map((notification) => (
+              <Box
+                key={notification.id}
+                sx={{
+                  padding: "0.5rem",
+                  borderBottom: "1px solid #ccc",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <Typography>{notification.message}</Typography>
+                <IconButton
+                  size="small"
+                  onClick={() => handleDeleteNotification(notification.id)}
                 >
-                    <Typography variant="h6">Notifications</Typography>
-                    <IconButton onClick={() => setOpenNotifications(false)}>
-                        <CloseIcon />
-                    </IconButton>
-                </Box>
-                {notifications.length === 0 ? (
-                    <Typography
-                        variant="body2"
-                        color="textSecondary"
-                        sx={{ textAlign: "center" }}
-                    >
-                        No notifications
-                    </Typography>
-                ) : (
-                    notifications.map((notification) => (
-                        <Box
-                            key={notification.id}
-                            sx={{
-                                padding: "0.5rem",
-                                borderBottom: "1px solid #ccc",
-                                display: "flex",
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                            }}
-                        >
-                            <Typography>{notification.message}</Typography>
-                            <IconButton
-                                size="small"
-                                onClick={() => handleDeleteNotification(notification.id)}
-                            >
-                                <CloseIcon fontSize="small" />
-                            </IconButton>
-                        </Box>
-                    ))
-                )}
-            </Box>
-        </Drawer>
+                  <CloseIcon fontSize="small" />
+                </IconButton>
+              </Box>
+            ))
+          )}
+        </Box>
+      </Drawer>
 
       <Container maxWidth="md" style={{ marginTop: "20px", position: "relative", textAlign: "center" }}>
         <Typography variant="h4" gutterBottom>
@@ -536,8 +528,6 @@ const StudyGroupsPage: React.FC = () => {
           {filteredGroups.map((group) => {
             const isMember = group.members.some((member) => member.userID === "Alessandro");
             const isFull = group.members.length >= 10;
-
-
             return ( // ✅ Added return statement
               <Grid item xs={12} sm={6} md={4} key={group.id} style={{ minWidth: "280px" }}>
                 <Card>
@@ -547,26 +537,37 @@ const StudyGroupsPage: React.FC = () => {
                       {group.studyGroupDetails.description}
                     </Typography>
                     <Tooltip
-                      title={
-                        group.members.length > 0
-                          ? ""
-                          : (group.studyGroupDetails.type === "closed" ? "You cannot view the members of this group as it is a closed group."
-                            : "No members yet")
-                      }
                       arrow
+                      title={
+                        group.studyGroupDetails.type === "closed"
+                          ? "You cannot view the members of this group as it is a closed group."
+                          : group.members.length === 0
+                            ? "No members yet"
+                            : ""
+                      }
                     >
-                      <Typography
-                        color="textSecondary"
-                        style={{ cursor: "pointer" }}
-                        onClick={() => {
-                          if (group.studyGroupDetails.type !== "closed") {
-                            handleOpenMembersDialog(group.members);
-                          }
-                        }}
-                      >
-                        View Members
-                      </Typography>
+                      {/* Wrap button in a <span> so Tooltip works on a disabled button */}
+                      <span>
+                        <Button
+                          variant="contained"
+                          sx={{
+                            backgroundColor: "#0056b3",
+                            "&:hover": {
+                              backgroundColor: "#004494",
+                            }
+                          }}
+                          onClick={() => {
+                            if (group.studyGroupDetails.type !== "closed") {
+                              handleOpenMembersDialog(group.id, group.members);
+                            }
+                          }}
+                          disabled={group.studyGroupDetails.type === "closed"}
+                        >
+                          View Members
+                        </Button>
+                      </span>
                     </Tooltip>
+
                     <Typography color="textSecondary">
                       Module: {modulesList.find((module) => module.code === group.studyGroupDetails.moduleID)?.name}
                     </Typography>
@@ -575,8 +576,9 @@ const StudyGroupsPage: React.FC = () => {
                       sx={{
                         backgroundColor: "#0056b3",
                         "&:hover": {
-                            backgroundColor: "#004494",
-                        }}}
+                          backgroundColor: "#004494",
+                        }
+                      }}
                       fullWidth
                       onClick={() => handleJoinGroup(group.id)}
                       style={{ marginTop: "10px" }}
@@ -597,8 +599,9 @@ const StudyGroupsPage: React.FC = () => {
                         sx={{
                           backgroundColor: "#0056b3",
                           "&:hover": {
-                              backgroundColor: "#004494",
-                          }}}
+                            backgroundColor: "#004494",
+                          }
+                        }}
                         fullWidth
                         onClick={() => handleOpenChat(group.id)}
                         disabled={!isMember}
@@ -615,29 +618,28 @@ const StudyGroupsPage: React.FC = () => {
           })}
         </Grid>
         <Dialog open={openMemberDialog} onClose={handleCloseMembersDialog} maxWidth="sm" fullWidth>
-        <DialogContent>
-          
-          {selectedGroupMembers.length > 0 && (
-            <List>
-              {selectedGroupMembers.map((member) => (
-                <ListItem key={member.userID}>
-                  <ListItemText primary={member.userID} secondary={member.role} />
-                  {member.role !== "admin" && selectedGroupMembers.some((m) => m.userID === token && m.role === "admin") && (
-                    <IconButton edge="end" color="secondary" onClick={() => { void handleRemoveMember(member.userID); }}>
-                      <DeleteIcon />
-                    </IconButton>
-                  )}
-                </ListItem>
-              ))}
-            </List>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseMembersDialog} color="primary">
-            Close
-          </Button>
-        </DialogActions>
-      </Dialog>
+          <DialogContent>
+            {selectedGroupMembers.length > 0 && (
+              <List>
+                {selectedGroupMembers.map((member) => (
+                  <ListItem key={member.userID}>
+                    <ListItemText primary={member.userID} secondary={member.role} />
+                    {isCurrentUserAdmin && member.role !== "admin" && (
+                      <IconButton edge="end" onClick={() => void handleRemoveMember(member.userID)}>
+                        <DeleteIcon color="error" />
+                      </IconButton>
+                    )}
+                  </ListItem>
+                ))}
+              </List>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseMembersDialog} color="primary">
+              Close
+            </Button>
+          </DialogActions>
+        </Dialog>
 
         <Button
           variant="contained"
@@ -646,8 +648,9 @@ const StudyGroupsPage: React.FC = () => {
           sx={{
             backgroundColor: "#0056b3",
             "&:hover": {
-                backgroundColor: "#004494",
-            }}}
+              backgroundColor: "#004494",
+            }
+          }}
           style={{ marginTop: "20px", display: "block", width: "100%" }}
         >
           Create a Study Group
@@ -701,19 +704,21 @@ const StudyGroupsPage: React.FC = () => {
               Cancel
             </Button>
             <Button onClick={handleOpenInviteDialog} variant="contained"
-                    sx={{
-                      backgroundColor: "#0056b3",
-                      "&:hover": {
-                          backgroundColor: "#004494",
-                      }}}>
+              sx={{
+                backgroundColor: "#0056b3",
+                "&:hover": {
+                  backgroundColor: "#004494",
+                }
+              }}>
               Invite Members
             </Button>
             <Button onClick={() => { void handleCreateGroup(); }} variant="contained"
-                    sx={{
-                      backgroundColor: "#0056b3",
-                      "&:hover": {
-                          backgroundColor: "#004494",
-                      }}}>
+              sx={{
+                backgroundColor: "#0056b3",
+                "&:hover": {
+                  backgroundColor: "#004494",
+                }
+              }}>
               Create
             </Button>
           </DialogActions>
@@ -741,12 +746,13 @@ const StudyGroupsPage: React.FC = () => {
             <Button onClick={handleCloseInviteDialog} color="error" variant="contained">
               Cancel
             </Button>
-            <Button onClick={handleInvite}  variant="contained"
-                    sx={{
-                        backgroundColor: "#0056b3",
-                        "&:hover": {
-                            backgroundColor: "#004494",
-                        }}}>
+            <Button onClick={handleInvite} variant="contained"
+              sx={{
+                backgroundColor: "#0056b3",
+                "&:hover": {
+                  backgroundColor: "#004494",
+                }
+              }}>
               Invite
             </Button>
           </DialogActions>
