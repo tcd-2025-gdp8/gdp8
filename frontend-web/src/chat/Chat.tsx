@@ -39,7 +39,6 @@ export default function ChatUI() {
             const data = await fetchApiWithToken<User>(`/user/${user.uid}`, token);
             console.log("Fetched user details:", data);
             setUserDetails(data);
-            console.log(userDetails?.name);
         } catch (error) {
             console.error("Error fetching user details:", error);
         } finally {
@@ -57,7 +56,7 @@ export default function ChatUI() {
 
     useEffect(() => {
         if (!loading) {
-            ws.current = new WebSocket(`ws://localhost:8080/api/chat/${chatID}`, ["auth", token ? token : "no-token"]);
+            ws.current = new WebSocket(`ws://localhost:8080/api/chat/${chatID}`, ["auth", token ?? "no-token"]);
 
             ws.current.onopen = () => {
                 console.log("WebSocket connected");
@@ -65,7 +64,7 @@ export default function ChatUI() {
 
             ws.current.onmessage = (event) => {
                 try {
-                    const msg: Message = JSON.parse(event.data);
+                    const msg = JSON.parse(event.data as string) as Message;
                     setMessages((prev) => [...prev, msg]);
                 } catch (err) {
                     console.error("Error parsing message:", err);
@@ -87,7 +86,7 @@ export default function ChatUI() {
 
     }, [chatID, token, userDetails, loading]);
 
-    const currentSender = userDetails ? userDetails.name : "You";
+    const currentSender = userDetails?.name ?? "You";
 
 
     const sendMessage = () => {
