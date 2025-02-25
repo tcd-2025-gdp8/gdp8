@@ -622,7 +622,7 @@ const StudyGroupsPage: React.FC = () => {
             <List>
               {selectedGroupMembers.map((member) => (
                 <ListItem key={member.userID}>
-                  <ListItemText primary={member.userID} secondary={member.role} />
+                  <ListItemText primary={member.name} secondary={member.role} />
                   {member.role !== "admin" && selectedGroupMembers.some((m) => m.userID === token && m.role === "admin") && (
                     <IconButton edge="end" color="secondary" onClick={() => { void handleRemoveMember(member.userID); }}>
                       <DeleteIcon />
