@@ -119,6 +119,7 @@ func (h *StudyGroupHandler) CreateStudyGroup(w http.ResponseWriter, r *http.Requ
 		Description string          `json:"description"`
 		Type        string          `json:"type"`
 		ModuleID    models.ModuleID `json:"moduleId"`
+		MaxMembers  int             `json:"maxMembers"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&createDTO); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
@@ -137,6 +138,7 @@ func (h *StudyGroupHandler) CreateStudyGroup(w http.ResponseWriter, r *http.Requ
 		Description: createDTO.Description,
 		Type:        models.StudyGroupType(createDTO.Type),
 		ModuleID:    createDTO.ModuleID,
+		MaxMembers:  createDTO.MaxMembers,
 	}
 
 	createdStudyGroup, err := h.service.CreateStudyGroup(studyGroupDetails, userID)
@@ -181,6 +183,8 @@ func (h *StudyGroupHandler) HandleStudyMemberOperation(w http.ResponseWriter, r 
 		http.Error(w, "Study group not found", http.StatusNotFound)
 	case errors.Is(err, services.ErrUnauthorizedMemberOperation):
 		http.Error(w, "Unauthorized study group operation", http.StatusForbidden)
+	case errors.Is(err, services.ErrStudyGroupFull): // NEW
+		http.Error(w, "Study group is full", http.StatusBadRequest)
 	case errors.Is(err, services.ErrInvalidMemberOperation):
 		http.Error(w, "Invalid study group operation", http.StatusBadRequest)
 	default:

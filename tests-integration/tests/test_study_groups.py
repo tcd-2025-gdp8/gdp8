@@ -1,4 +1,4 @@
-from initial_setup import TEST_USER_NAME
+from initial_setup import TEST_USER
 from utils.custom_session import CustomSession
 from utils.firebase_client_utils import get_uid
 
@@ -19,12 +19,13 @@ class TestStudyGroups:
             "name": "New study group",
             "description": "Description of the new study group.",
             "type": "public",
-            "moduleId": 1
+            "moduleId": 1,
+            "maxMembers": 10
         }
 
         expected_member_data = {
             "id": uid,
-            "name": TEST_USER_NAME,
+            "name": TEST_USER["name"],
             "role": "admin"
         }
 
@@ -64,7 +65,8 @@ class TestStudyGroups:
             "name": "New study group 3",
             "description": "Description of the new study group.",
             "type": "public",
-            "moduleId": 3
+            "moduleId": 3,
+            "maxMembers": 10
         })
         assert response.status_code == 200
         group3_id = response.json().get("id")
@@ -72,7 +74,8 @@ class TestStudyGroups:
             "name": "New study group 4",
             "description": "Description of the new study group.",
             "type": "public",
-            "moduleId": 4
+            "moduleId": 4,
+            "maxMembers": 10
         })
         assert response.status_code == 200
         group4_id = response.json().get("id")

@@ -58,6 +58,7 @@ type StudyGroupService interface {
 var ErrStudyGroupNotFound = errors.New("study group not found")
 var ErrInvalidMemberOperation = errors.New("invalid study group member operation")
 var ErrUnauthorizedMemberOperation = errors.New("unauthorized member operation")
+var ErrStudyGroupFull = errors.New("study group is full")
 
 type studyGroupServiceImpl struct {
 	txMgr          persistence.TransactionManager
@@ -243,6 +244,8 @@ func resolveError(err error, operation string) error {
 	switch {
 	case err == nil:
 		return nil
+	case errors.Is(err, ErrStudyGroupFull):
+		return err
 	case errors.Is(err, ErrInvalidMemberOperation):
 		return err
 	case errors.Is(err, ErrStudyGroupNotFound):
@@ -260,6 +263,11 @@ func (s *studyGroupServiceImpl) inviteMember(tx *sql.Tx,
 	studyGroup *models.StudyGroupView, memberID models.UserID) error {
 	// TODO check if member exists in the users repo
 
+	if studyGroup.StudyGroupDetails.MaxMembers > 0 &&
+		len(studyGroup.Members) >= studyGroup.StudyGroupDetails.MaxMembers {
+		return fmt.Errorf("%w: study group is full", ErrStudyGroupFull)
+	}
+
 	for _, member := range studyGroup.Members {
 		if member.UserID == memberID {
 			return fmt.Errorf("%w: member already exists in the study group", ErrInvalidMemberOperation)
@@ -272,6 +280,11 @@ func (s *studyGroupServiceImpl) inviteMember(tx *sql.Tx,
 
 func (s *studyGroupServiceImpl) acceptRequestToJoin(tx *sql.Tx,
 	studyGroup *models.StudyGroupView, memberID models.UserID) error {
+
+	if studyGroup.StudyGroupDetails.MaxMembers > 0 &&
+		len(studyGroup.Members) >= studyGroup.StudyGroupDetails.MaxMembers {
+		return fmt.Errorf("%w: study group is full", ErrStudyGroupFull)
+	}
 	if !hasRole(memberID, models.RoleRequester, studyGroup.Members) {
 		return fmt.Errorf("%w: member hasn't requested to join the study group", ErrInvalidMemberOperation)
 	}
@@ -300,6 +313,11 @@ func (s *studyGroupServiceImpl) removeMemberFromStudyGroup(tx *sql.Tx,
 
 func (s *studyGroupServiceImpl) acceptStudyGroupInvite(tx *sql.Tx,
 	studyGroup *models.StudyGroupView, memberID models.UserID) error {
+
+	if studyGroup.StudyGroupDetails.MaxMembers > 0 &&
+		len(studyGroup.Members) >= studyGroup.StudyGroupDetails.MaxMembers {
+		return fmt.Errorf("%w: study group is full", ErrStudyGroupFull)
+	}
 	if !hasRole(memberID, models.RoleInvitee, studyGroup.Members) {
 		return fmt.Errorf("%w: member not invited to join the study group", ErrInvalidMemberOperation)
 	}
@@ -321,6 +339,10 @@ func (s *studyGroupServiceImpl) requestToJoinStudyGroup(tx *sql.Tx,
 	studyGroup *models.StudyGroupView, memberID models.UserID) error {
 	// TODO check if member exists in the users repo
 
+	if studyGroup.StudyGroupDetails.MaxMembers > 0 &&
+		len(studyGroup.Members) >= studyGroup.StudyGroupDetails.MaxMembers {
+		return fmt.Errorf("%w: study group is full", ErrStudyGroupFull)
+	}
 	for _, member := range studyGroup.Members {
 		if member.UserID == memberID {
 			return fmt.Errorf("%w: member already exists in the study group", ErrInvalidMemberOperation)
