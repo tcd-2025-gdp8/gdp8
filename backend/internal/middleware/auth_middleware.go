@@ -34,3 +34,27 @@ func WithFirebaseAuth(firebaseAuth *auth.Client, next http.HandlerFunc) http.Han
 		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 }
+
+// Websockets cannot use the same auth mechanism as normal http request, mostly due to its archaic api
+// I am passing the token by using the protocol property from the websocket api
+func WithWebSocketAuth(firebaseAuth *auth.Client, next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		protocolHeader := r.Header.Get("Sec-WebSocket-Protocol")
+		protocols := strings.Split(protocolHeader, ",")
+		if len(protocols) < 2 {
+			http.Error(w, "Unauthorized: Missing token in subprotocol", http.StatusUnauthorized)
+			return
+		}
+		tokenString := strings.TrimSpace(protocols[1])
+
+		ctx := r.Context()
+		token, err := firebaseAuth.VerifyIDToken(ctx, tokenString)
+		if err != nil {
+			http.Error(w, "Unauthorized: Token verification failed", http.StatusUnauthorized)
+			return
+		}
+
+		ctx = context.WithValue(ctx, UIDCtxKey{}, token.UID)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	}
+}
