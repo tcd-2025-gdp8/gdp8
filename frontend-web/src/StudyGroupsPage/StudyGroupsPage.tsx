@@ -355,9 +355,9 @@ const StudyGroupsPage: React.FC = () => {
   };
 
   useEffect(() => {
-    const fetchModules = async () => {
-      if (!token) return;
+    if (!token || !userID) return;
   
+    const fetchModules = async () => {
       try {
         const response = await fetch(`http://localhost:8080/api/user/${userID}/modules`, {
           method: "GET",
@@ -375,14 +375,15 @@ const StudyGroupsPage: React.FC = () => {
   
         // Add "All" option at the beginning
         setModulesList([{ id: 0, code: "All", name: "All" }, ...data]);
-        console.log(modulesList);
+  
       } catch (err) {
         console.error("Error fetching modules:", err);
       }
     };
   
+    // Properly handle the async function call
     void fetchModules();
-  }, [token, modulesList, userID]);  
+  }, [token, userID]);   
 
   const handleOpenInviteDialog = () => setOpenInviteDialog(true);
   const handleCloseInviteDialog = () => setOpenInviteDialog(false);
