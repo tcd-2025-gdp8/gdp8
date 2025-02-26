@@ -7,6 +7,7 @@ import {
   Button,
   Tooltip,
   Divider,
+  Box,
 } from "@mui/material";
 
 import { Module } from "../api/modules";
@@ -45,19 +46,47 @@ export default function StudyGroupCard({ group, module, currentUserId, onUpdate 
   };  
 
   return (
-    <Card>
-      <CardContent>
-        <Typography variant="h6">{group.name}</Typography>
-        <Divider sx={{ my: 1 }} />
-        <Typography color="textPrimary" style={{ marginBottom: "5px" }}>
-          {`${module.code} ${module.name}`}
+    <Card sx={{ 
+      height: '100%',
+      display: 'flex',
+      flexDirection: 'column',
+      transition: 'transform 0.2s, box-shadow 0.2s',
+      '&:hover': {
+        transform: 'translateY(-4px)',
+        boxShadow: 4,
+      }
+    }}>
+      <CardContent sx={{ 
+        flexGrow: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 2 
+      }}>
+        <Typography variant="h6" sx={{ fontWeight: 600 }}>
+          {group.name}
         </Typography>
-        <Typography variant="body2" color="textSecondary" style={{ marginBottom: "5px" }}>
-          {group.description}
-        </Typography>
-        <Typography variant="body2" color="textSecondary" style={{ marginBottom: "10px" }}>
-          {`Group Capacity: ${group.maxMembers} members`}
-        </Typography>
+        
+        <Divider />
+        
+        <div>
+          <Typography variant="subtitle1" sx={{ fontWeight: 500, mb: 1 }}>
+            {`${module.code} ${module.name}`}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {group.description}
+          </Typography>
+          <Typography 
+            variant="body2" 
+            sx={{ 
+              mt: 1,
+              color: isFull ? 'error.main' : 'success.main',
+              fontWeight: 500
+            }}
+          >
+            {`${group.members.length}/${group.maxMembers} members`}
+          </Typography>
+        </div>
+
         <Tooltip
           arrow
           title={
@@ -68,61 +97,41 @@ export default function StudyGroupCard({ group, module, currentUserId, onUpdate 
                 : ""
           }
         >
-
-          {/* Wrap button in a <span> so Tooltip works on a disabled button */}
           <span>
             <Button
-              variant="contained"
-              sx={{
-                backgroundColor: "#0056b3",
-                "&:hover": {
-                  backgroundColor: "#004494",
-                }
-              }}
+              variant="outlined"
               onClick={() => membersDialogRef.current?.openDialog()}
               disabled={group.type !== "public"}
+              fullWidth
             >
               View Members
             </Button>
           </span>
         </Tooltip>
-        <Divider sx={{ my: 1 }} />
-        
-        <Button
-          variant="contained"
-          sx={{
-            backgroundColor: "#0056b3",
-            "&:hover": {
-              backgroundColor: "#004494",
-            }
-          }}
-          fullWidth
-          onClick={() => handleJoinGroup(group.id)}
-          style={{ marginTop: "10px" }}
-          disabled={
-            isMember || isFull
-          }
-        >
-          {isMember ? "Joined" : isFull ? "Full" : "Request to Join"}
-        </Button>
 
-        {!isFull && (
+        <Box sx={{ mt: 'auto' }}>
           <Button
             variant="contained"
-            sx={{
-              backgroundColor: "#0056b3",
-              "&:hover": {
-                backgroundColor: "#004494",
-              }
-            }}
             fullWidth
-            onClick={() => void navigate(`/chat/${group.id}`)}
-            disabled={!isMember}
-            style={{ marginTop: "10px" }}
+            onClick={() => handleJoinGroup(group.id)}
+            disabled={isMember || isFull}
+            sx={{ mb: 1 }}
           >
-            {isMember ? "Open Chat" : "Join to Chat!"}
+            {isMember ? "Joined" : isFull ? "Full" : "Request to Join"}
           </Button>
-        )}
+
+          {!isFull && (
+            <Button
+              variant={isMember ? "contained" : "outlined"}
+              color={isMember ? "primary" : "inherit"}
+              fullWidth
+              onClick={() => void navigate(`/chat/${group.id}`)}
+              disabled={!isMember}
+            >
+              {isMember ? "Open Chat" : "Join to Chat!"}
+            </Button>
+          )}
+        </Box>
 
         <DialogStudyGroupMembers
           studyGroup={group}
@@ -130,7 +139,6 @@ export default function StudyGroupCard({ group, module, currentUserId, onUpdate 
           ref={membersDialogRef}
           onUpdate={onUpdate}
         />
-
       </CardContent>
     </Card>
   );
