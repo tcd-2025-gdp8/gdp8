@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import {
   Button,
   Dialog,
@@ -9,7 +9,9 @@ import {
   MenuItem,
   Select,
   FormControl,
-  InputLabel
+  InputLabel,
+  Typography,
+  Slider
 } from "@mui/material";
 
 import { Module } from "../api/modules";
@@ -38,13 +40,16 @@ export default function DialogCreateStudyGroup({ modules, ref, onClose, onUpdate
   const groupTypeRef = useRef<HTMLSelectElement>(null);
   const moduleIdRef = useRef<HTMLSelectElement>(null);
 
+  const [maxMembers, setMaxMembers] = useState(5);
+
 
   const handleCreateGroup = async () => {
     const groupDetails: StudyGroupCreationDetails = {
       name: groupNameRef.current?.value ?? "",
       description: groupDescriptionRef.current?.value ?? "",
       type: groupTypeRef.current?.value as "public" | "closed" | "invite-only" ?? "public",
-      moduleId: Number(moduleIdRef.current?.value) || -1
+      moduleId: Number(moduleIdRef.current?.value) || -1,
+      maxMembers: maxMembers
     };
 
     if (groupDetails.name.trim() === "" || groupDetails.description.trim() === "") {
@@ -102,6 +107,18 @@ export default function DialogCreateStudyGroup({ modules, ref, onClose, onUpdate
               </MenuItem>
             ))}
           </Select>
+          <Typography gutterBottom style={{ marginTop: "10px" }}>
+            Max Members: {maxMembers}
+          </Typography>
+          <Slider
+            value={maxMembers}
+            onChange={(_, value) => setMaxMembers(value as number)}
+            min={2}
+            max={10}
+            step={1}
+            marks
+            valueLabelDisplay="auto"
+          />
         </FormControl>
       </DialogContent>
       <DialogActions>
