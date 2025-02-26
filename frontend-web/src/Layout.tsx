@@ -1,7 +1,5 @@
-// src/LandingPage.tsx
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
-import { useAuth } from "../auth/useAuth";
+import { useState } from "react";
+import { Link, Navigate, Outlet } from "react-router-dom";
 import {
     Box,
     Typography,
@@ -16,14 +14,17 @@ import {
 } from "@mui/material";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import CloseIcon from "@mui/icons-material/Close";
-import styles from "./LandingPage.module.css";
+
+import { useAuth } from "./auth/useAuth";
+
+import styles from "./layout.module.css";
 
 interface Notification {
     id: number;
     message: string;
 }
 
-const LandingPage: React.FC = () => {
+export default function Layout() {
     const { user } = useAuth();
 
     // Use local state for notifications
@@ -41,8 +42,12 @@ const LandingPage: React.FC = () => {
         );
     };
 
+    if(!user) {
+        return <Navigate to="/login" />;
+    }
+    
     return (
-        <Box sx={{ display: "flex" }}>
+        <Box sx={{ display: "flex", width: "100vw", height: "100vh" }}>
             {/* Sidebar */}
             <Drawer
                 variant="permanent"
@@ -76,7 +81,7 @@ const LandingPage: React.FC = () => {
             </Drawer>
 
             {/* Main Content */}
-            <Box sx={{ flexGrow: 1, marginLeft: "240px" }}>
+            <Box sx={{ flexGrow: 1 }}>
                 {/* AppBar at the top */}
                 <AppBar
                     position="fixed"
@@ -166,12 +171,18 @@ const LandingPage: React.FC = () => {
                 </Drawer>
 
                 {/* Main Content Area (Below the AppBar) */}
-                <Box sx={{ padding: "2rem", marginTop: "64px" }}>
-                    {/* Main content goes here */}
+                <Box 
+                    sx={{
+                        padding: "2rem",
+                        marginTop: "64px", // Height of the AppBar
+                        height: "calc(100vh - 64px)",
+                        boxSizing: "border-box",
+                        overflow: "auto",
+                    }}
+                >
+                    <Outlet />
                 </Box>
             </Box>
         </Box>
     );
-};
-
-export default LandingPage;
+}

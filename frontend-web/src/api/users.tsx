@@ -10,7 +10,7 @@ export interface UserModulesSelection {
     selectedModules: number[];
 }
 
-export async function registerUser(token: string, user: UserRegisterDetails): Promise<void> {
+export async function registerUser(token: string | null, user: UserRegisterDetails): Promise<void> {
     const userWithModules = { ...user, modules: [] };
     await fetchApi("/user", token, {
         method: "POST",
@@ -18,12 +18,12 @@ export async function registerUser(token: string, user: UserRegisterDetails): Pr
     });
 }
 
-export async function getUserModules(token: string, userId: string): Promise<Module[]> {
+export async function getUserModules(token: string | null, userId: string): Promise<Module[]> {
     const modules = await fetchApiToJson<Module[]>(`/user/${userId}/modules`, token);
     return modules;
 }
 
-export async function updateUserModules(token: string, userId: string, modules: UserModulesSelection): Promise<void> {
+export async function updateUserModules(token: string | null, userId: string, modules: UserModulesSelection): Promise<void> {
     await fetchApi(`/user/${userId}/modules`, token, {
         method: "POST",
         body: JSON.stringify(modules),
