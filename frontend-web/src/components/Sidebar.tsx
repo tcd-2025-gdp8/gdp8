@@ -7,6 +7,8 @@ import {
     Drawer,
 } from "@mui/material";
 
+import profileLogo from "../assets/profileLogo.png";
+
 
 export default function Sidebar() {
     return (
@@ -26,7 +28,7 @@ export default function Sidebar() {
         >
             <Box sx={{ padding: "1rem", textAlign: "center" }}>
                 <img
-                    src="/src/assets/profileLogo.png"
+                    src={profileLogo}
                     alt="Profile Logo"
                     style={{ width: '48px', height: '48px', marginRight: '1rem' }}
                 />
