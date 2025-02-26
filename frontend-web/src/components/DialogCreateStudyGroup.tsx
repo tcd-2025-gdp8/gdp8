@@ -89,6 +89,7 @@ export default function DialogCreateStudyGroup({ modules, ref, onClose, onUpdate
           <Select
             defaultValue="public"
             inputRef={groupTypeRef}
+            label="Group Type"
           >
             <MenuItem value="public">Public</MenuItem>
             <MenuItem value="closed">Closed</MenuItem>
@@ -100,6 +101,7 @@ export default function DialogCreateStudyGroup({ modules, ref, onClose, onUpdate
           <Select
             defaultValue=""
             inputRef={moduleIdRef}
+            label="Select Module"
           >
             {modules.map((module) => (
               <MenuItem key={module.id} value={module.id}>
