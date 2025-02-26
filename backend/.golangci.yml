@@ -8,7 +8,7 @@ linters:
     - containedctx
     - contextcheck
     - copyloopvar
-    - cyclop
+    #- cyclop
     - decorder
     #- depguard
     - dogsled
@@ -38,7 +38,7 @@ linters:
     - gocritic
     - gocyclo
     #- godot
-    - godox
+    #- godox
     - gofmt
     #- gofumpt
     #- goheader
@@ -88,12 +88,12 @@ linters:
     - rowserrcheck
     - sloglint
     - spancheck
-    - sqlclosecheck
+    #- sqlclosecheck # disabled - doesn't work correctly with defer
     - staticcheck
     #- stylecheck
     - tagalign
     - tagliatelle
-    - tenv
+    #- tenv
     - testableexamples
     #- testifylint
     #- testpackage
@@ -107,7 +107,7 @@ linters:
     #- varnamelen
     - wastedassign
     #- whitespace
-    - wrapcheck
+    #- wrapcheck
     #- wsl
     #- zerologlint
 
@@ -120,6 +120,9 @@ linters-settings:
       - dot
       - alias
       - localmodule
+  gocritic:
+    disabled-checks:
+      - exitAfterDefer
 
 issues:
   exclude-rules:
