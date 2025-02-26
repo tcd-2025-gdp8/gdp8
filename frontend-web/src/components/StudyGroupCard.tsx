@@ -6,6 +6,7 @@ import {
   Typography,
   Button,
   Tooltip,
+  Divider,
 } from "@mui/material";
 
 import { Module } from "../api/modules";
@@ -47,8 +48,15 @@ export default function StudyGroupCard({ group, module, currentUserId, onUpdate 
     <Card>
       <CardContent>
         <Typography variant="h6">{group.name}</Typography>
-        <Typography variant="body2" color="textSecondary" style={{ marginBottom: "10px" }}>
+        <Divider sx={{ my: 1 }} />
+        <Typography color="textPrimary" style={{ marginBottom: "5px" }}>
+          {`${module.code} ${module.name}`}
+        </Typography>
+        <Typography variant="body2" color="textSecondary" style={{ marginBottom: "5px" }}>
           {group.description}
+        </Typography>
+        <Typography variant="body2" color="textSecondary" style={{ marginBottom: "10px" }}>
+          {`Group Capacity: ${group.maxMembers}`}
         </Typography>
         <Tooltip
           arrow
@@ -78,11 +86,8 @@ export default function StudyGroupCard({ group, module, currentUserId, onUpdate 
             </Button>
           </span>
         </Tooltip>
-
-        <Typography color="textSecondary">
-          {`${module.code} ${module.name}`}
-        </Typography>
-
+        <Divider sx={{ my: 1 }} />
+        
         <Button
           variant="contained"
           sx={{

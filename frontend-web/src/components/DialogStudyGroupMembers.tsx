@@ -43,7 +43,7 @@ export default function DialogStudyGroupMembers({ studyGroup, isCurrentUserAdmin
     <Dialog open={isOpen} onClose={handleClose} maxWidth="sm" fullWidth>
         <DialogContent>
         <Typography variant="h6">
-          Group Members: {studyGroup.members.length} / {studyGroup.maxMembers}
+          {`Group Members: ${studyGroup.members.length} / ${studyGroup.maxMembers}`}
         </Typography>
           {studyGroup.members.length > 0 && (
             <List>
