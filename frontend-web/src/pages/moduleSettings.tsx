@@ -91,16 +91,17 @@ export default function ModuleSettingsPage() {
 
     return (
         <Container className="module-container">
-            <IconButton 
-                onClick={() => moduleDialogRef.current?.openDialog()} 
-                className="plus-button"
-            >
-                <AddIcon />
-            </IconButton>
-
-            <Typography variant="h4" className="module-title">
-                Select Your Modules
-            </Typography>
+            <div className="title-container">
+                <Typography variant="h4" className="module-title">
+                    Select Your Modules
+                </Typography>
+                <IconButton 
+                    onClick={() => moduleDialogRef.current?.openDialog()} 
+                    className="plus-button"
+                >
+                    <AddIcon />
+                </IconButton>
+            </div>
 
             <div className="search-container">
                 <TextField
