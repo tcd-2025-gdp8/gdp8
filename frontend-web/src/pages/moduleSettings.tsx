@@ -102,14 +102,16 @@ export default function ModuleSettingsPage() {
                 Select Your Modules
             </Typography>
 
-            <TextField
-                label="Search Modules"
-                variant="outlined"
-                fullWidth
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="module-search-bar"
-            />
+            <div className="search-container">
+                <TextField
+                    label="Search Modules"
+                    variant="outlined"
+                    fullWidth
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="module-search-bar"
+                />
+            </div>
 
             {loading && <Typography variant="body1">Loading modules...</Typography>}
 
