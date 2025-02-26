@@ -32,11 +32,15 @@
     border-radius: 8px;
     min-width: 200px;
     max-width: 240px;
+    height: 80px;
     margin: 0.4em;
     cursor: pointer;
     transition: background-color 0.3s, transform 0.2s;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
     text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .module-card:hover {
@@ -52,6 +56,14 @@
     font-weight: bold;
     text-align: center;
     color: #333;
+    font-size: 0.9rem;
+    display: -webkit-box;
+    line-clamp: 3;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.2;
 }
 
 .module-save-button {
