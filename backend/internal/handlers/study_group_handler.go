@@ -27,6 +27,7 @@ type StudyGroupDTO struct {
 	Name        string              `json:"name"`
 	Description string              `json:"description"`
 	Type        string              `json:"type"`
+	MaxMembers  int                 `json:"maxMembers"`
 	ModuleID    models.ModuleID     `json:"moduleId"`
 }
 
@@ -278,5 +279,6 @@ func mapStudyGroupToDTO(studyGroup *models.StudyGroupView) StudyGroupDTO {
 		Description: studyGroup.Description,
 		Type:        string(studyGroup.Type),
 		ModuleID:    studyGroup.ModuleID,
+		MaxMembers:  studyGroup.MaxMembers,
 	}
 }
