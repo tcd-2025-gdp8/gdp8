@@ -75,6 +75,7 @@ export default function StudyGroupsPage() {
         <Select
           value={selectedFilterModuleId}
           onChange={(e: SelectChangeEvent<number | string>) => setSelectedFilterModuleId(Number(e.target.value))}
+          label="Filter by Module"
         >
           {modulesList.map((module) => (
             <MenuItem key={module.id} value={module.id}>
