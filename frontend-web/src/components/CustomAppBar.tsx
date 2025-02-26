@@ -90,47 +90,65 @@ export default function CustomAppBar() {
                 sx={{
                     "& .MuiDrawer-paper": {
                         zIndex: 1300,
+                        width: 350,
+                        backgroundColor: "#f8f9fa"
                     },
                 }}
             >
-                <Box sx={{ width: 300, padding: "1rem" }}>
+                <Box sx={{ padding: "1.5rem" }}>
                     <Box
                         sx={{
                             display: "flex",
                             justifyContent: "space-between",
                             alignItems: "center",
-                            marginBottom: "1rem",
+                            marginBottom: "1.5rem",
+                            borderBottom: "1px solid #e0e0e0",
+                            paddingBottom: "1rem"
                         }}
                     >
-                        <Typography variant="h6">Notifications</Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 600 }}>Notifications</Typography>
                         <IconButton onClick={() => setOpenNotifications(false)}>
                             <CloseIcon />
                         </IconButton>
                     </Box>
                     {notifications.length === 0 ? (
-                        <Typography
-                            variant="body2"
-                            color="textSecondary"
-                            sx={{ textAlign: "center" }}
-                        >
-                            No notifications
-                        </Typography>
+                        <Box sx={{ 
+                            textAlign: "center", 
+                            py: 4,
+                            color: "text.secondary"
+                        }}>
+                            <NotificationsIcon sx={{ fontSize: 48, opacity: 0.5, mb: 2 }} />
+                            <Typography variant="body1">
+                                No notifications
+                            </Typography>
+                        </Box>
                     ) : (
                         notifications.map((notification) => (
                             <Box
                                 key={notification.id}
                                 sx={{
-                                    padding: "0.5rem",
-                                    borderBottom: "1px solid #ccc",
+                                    padding: "1rem",
+                                    borderRadius: "8px",
+                                    backgroundColor: "#ffffff",
+                                    boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+                                    marginBottom: "0.75rem",
                                     display: "flex",
                                     justifyContent: "space-between",
                                     alignItems: "center",
+                                    transition: "all 0.2s",
+                                    "&:hover": {
+                                        boxShadow: "0 2px 5px rgba(0,0,0,0.15)",
+                                    }
                                 }}
                             >
-                                <Typography>{notification.content}</Typography>
+                                <Typography sx={{ pr: 2 }}>{notification.content}</Typography>
                                 <IconButton
                                     size="small"
                                     onClick={() => handleDeleteNotification(notification.id)}
+                                    sx={{ 
+                                        opacity: 0.6,
+                                        "&:hover": { opacity: 1 }
+                                    }}
                                 >
                                     <CloseIcon fontSize="small" />
                                 </IconButton>
