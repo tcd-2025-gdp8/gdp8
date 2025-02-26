@@ -130,7 +130,7 @@ export default function ModuleSettingsPage() {
                         >
                             <CardActionArea>
                                 <CardContent>
-                                    <Typography variant="h6" className="module-text">
+                                    <Typography variant="h6" className="module-text" style={{ fontSize: "1rem" }}>
                                         {`${module.code} ${module.name}`}
                                     </Typography>
                                 </CardContent>
