@@ -1,0 +1,23 @@
+FROM node:22 AS builder
+
+WORKDIR /app
+
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+COPY package.json pnpm-lock.yaml ./
+
+# Manually adding typescript for now - bug to be investigated
+RUN pnpm install --frozen-lockfile && pnpm add -D typescript
+
+COPY . .
+
+RUN pnpm run build --mode prodlocal
+
+
+FROM nginx:alpine AS runner
+
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]
