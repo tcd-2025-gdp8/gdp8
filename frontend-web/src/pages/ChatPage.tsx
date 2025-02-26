@@ -21,7 +21,7 @@ interface User {
     modules: Module[];
 }
 
-export default function ChatUI() {
+export default function ChatPage() {
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState("");
     const chatRef = useRef<HTMLDivElement>(null);
@@ -112,8 +112,8 @@ export default function ChatUI() {
     }, [messages]);
 
     return (
-        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", width: "100vw", backgroundColor: "#d0e1fd" }}>
-            <Card style={{ width: "80vw", height: "90vh", display: "flex", flexDirection: "column", boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)", borderRadius: "12px", overflow: "hidden" }}>
+        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", width: "100%", height: "100%", backgroundColor: "#d0e1fd" }}>
+            <Card style={{ display: "flex", flexDirection: "column", width: "100%", height: "100%", boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)", borderRadius: "12px", overflow: "hidden" }}>
                 <AppBar position="static" color="default" style={{ backgroundColor: "#3b5998", color: "white" }}>
                     <Toolbar>
                         <Typography variant="h6">Chat Room</Typography>
@@ -174,6 +174,6 @@ export default function ChatUI() {
                     </Button>
                 </div>
             </Card>
-            </div>
+        </div>
     );
 }

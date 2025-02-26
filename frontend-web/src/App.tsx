@@ -1,36 +1,46 @@
-// App.tsx
 import React from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useAuth } from "./auth/useAuth";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+
+import Layout from "./Layout";
 import LoginPage from "./pages/login";
-import StudyGroupsPage from "./StudyGroupsPage/StudyGroupsPage";
-import ModuleSettings from "./moduleSettings/moduleSettings";
-import LandingPage from "./landingPage/landingPage";
-import Chat from "./chat/Chat";
+import LandingPage from "./pages/landing";
+import StudyGroupsPage from "./pages/StudyGroupsPage";
+import ModuleSettingsPage from "./pages/moduleSettings";
+import ChatPage from "./pages/ChatPage";
 
 const App: React.FC = () => {
-  const { user } = useAuth();
-
   return (
     <BrowserRouter>
       <Routes>
-        {/* Always show login page on "/" and "/login" */}
-        <Route path="/" element={<LoginPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        {/* Example: Only allow landing page if signed in */}
-        <Route
-          path="/landing"
-          element={user ? <LandingPage /> : <Navigate to="/login" />}
+
+        <Route 
+          path="/login" 
+          element={<LoginPage />} 
         />
-        <Route
-          path="/study-groups"
-          element={user ? <StudyGroupsPage /> : <Navigate to="/login" />}
-        />
-        <Route
-          path="/module"
-          element={<ModuleSettings />}
-        />
-        <Route path="/chat/:groupId" element={<Chat />} />
+
+        <Route path="/" element={<Layout />}>
+          <Route 
+            index 
+            element={<LandingPage />} 
+          />
+          <Route
+            path="/landing"
+            element={<LandingPage />}
+          />
+          <Route
+            path="/study-groups"
+            element={<StudyGroupsPage />}
+          />
+          <Route
+            path="/module"
+            element={<ModuleSettingsPage />}
+          />
+          <Route 
+            path="/chat/:groupId" 
+            element={<ChatPage />} 
+          />
+        </Route>
+
       </Routes>
     </BrowserRouter>
   );
