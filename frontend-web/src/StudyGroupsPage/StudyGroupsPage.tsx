@@ -41,6 +41,11 @@ interface StudyGroupMember {
   role: "admin" | "member" | "invitee" | "requester";
 }
 
+interface User {
+  Id: string;
+  Name: string;
+}
+
 interface StudyGroupDetails {
   name: string;
   description: string;
@@ -112,7 +117,7 @@ const StudyGroupsPage: React.FC = () => {
   useEffect(() => {
     const fetchStudyGroups = async (): Promise<void> => {
       if (!token) return;
-
+  
       try {
         const response = await fetch("http://localhost:8080/api/study-groups", {
           method: "GET",
@@ -121,13 +126,13 @@ const StudyGroupsPage: React.FC = () => {
             "Content-Type": "application/json",
           },
         });
-
+  
         if (!response.ok) {
           throw new Error(`Failed to fetch study groups: ${response.statusText}`);
         }
-
+  
         const data: APIStudyGroup[] = (await response.json()) as APIStudyGroup[];
-
+  
         const formattedGroups: StudyGroup[] = data.map((group: APIStudyGroup) => {
           const currentModule = modulesList.find(module => module.id === Number(group.moduleId));
           return {
@@ -138,23 +143,25 @@ const StudyGroupsPage: React.FC = () => {
               type: group.type,
               moduleID: currentModule?.code ?? "",
             },
-            members: group.members ? group.members.map((member) => ({
-              userID: member.id,
-              name: member.name,
-              role: member.role,
-            })) : [],
+            members: group.members
+              ? group.members.map((member) => ({
+                  userID: member.id,
+                  name: member.name,
+                  role: member.role,
+                }))
+              : [],
           };
         });
-        console.log(formattedGroups);
+  
         setStudyGroups(formattedGroups);
-        console.log(studyGroups);
       } catch (err) {
         console.error("Error fetching study groups:", err);
       }
     };
-
+  
     void fetchStudyGroups();
-  }, [modulesList]);
+  }, [token, modulesList, setStudyGroups]);
+  
 
   useEffect(() => {
     if (selectedModule === "" || selectedModule === "All") {
@@ -204,7 +211,7 @@ const StudyGroupsPage: React.FC = () => {
           throw new Error(`Failed to fetch user data: ${userResponse.statusText}`);
         }
   
-        const user = await userResponse.json();
+        const user = await userResponse.json() as User;
   
         // Step 3: Update state with new member
         setStudyGroups((prevGroups) =>
@@ -214,7 +221,7 @@ const StudyGroupsPage: React.FC = () => {
                 ...group,
                 members: [
                   ...group.members,
-                  { userID: user.id, name: user.name, role: "member" as const },
+                  { userID: user.Id, name: user.Name, role: "member" as const },
                 ],
               };
             }
