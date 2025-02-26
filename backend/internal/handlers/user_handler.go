@@ -20,13 +20,11 @@ func NewUserHandler(userService services.UserService) *UserHandler {
 }
 
 func (h *UserHandler) GetUser(w http.ResponseWriter, r *http.Request) {
-
-	parts := strings.Split(r.URL.Path, "/")
-	if len(parts) < 4 {
-		http.Error(w, "User id missing in URL", http.StatusBadRequest)
+	id := r.PathValue("id")
+	if id == "" {
+		http.Error(w, "User id required", http.StatusBadRequest)
 		return
 	}
-	id := parts[3]
 
 	user, err := h.userService.GetUser(models.UserID(id))
 	if err != nil {
