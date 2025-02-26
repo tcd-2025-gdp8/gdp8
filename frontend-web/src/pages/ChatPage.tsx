@@ -112,14 +112,41 @@ export default function ChatPage() {
     }, [messages]);
 
     return (
-        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", width: "100%", height: "100%", backgroundColor: "#d0e1fd" }}>
-            <Card style={{ display: "flex", flexDirection: "column", width: "100%", height: "100%", boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)", borderRadius: "12px", overflow: "hidden" }}>
-                <AppBar position="static" color="default" style={{ backgroundColor: "#3b5998", color: "white" }}>
+        <div style={{ 
+            display: "flex", 
+            justifyContent: "center", 
+            alignItems: "center", 
+            width: "100%", 
+            height: "100%", 
+            backgroundColor: "#ffffff",
+            padding: "16px",
+            boxSizing: "border-box"
+        }}>
+            <Card style={{ 
+                display: "flex", 
+                flexDirection: "column", 
+                width: "100%", 
+                height: "100%", 
+                boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)", 
+                borderRadius: "16px",
+                overflow: "hidden"
+            }}>
+                <AppBar position="static" color="default" style={{ 
+                    backgroundColor: "#3b5998", 
+                    color: "white",
+                    borderTopLeftRadius: "16px",
+                    borderTopRightRadius: "16px"
+                }}>
                     <Toolbar>
                         <Typography variant="h6">Chat Room</Typography>
                     </Toolbar>
                 </AppBar>
-                <CardContent ref={chatRef} style={{ flex: 1, overflowY: "auto", padding: "16px", backgroundColor: "#b3cde8" }}>
+                <CardContent ref={chatRef} style={{ 
+                    flex: 1, 
+                    overflowY: "auto", 
+                    padding: "16px", 
+                    backgroundColor: "#ffffff"
+                }}>
                     {messages.length === 0 ? (
                         <p style={{ color: "#9e9e9e", textAlign: "center" }}>Start your Chat!</p>
                     ) : (
@@ -158,7 +185,15 @@ export default function ChatPage() {
                             ))
                         )}
                 </CardContent>
-                <div style={{ display: "flex", alignItems: "center", padding: "12px", borderTop: "1px solid #ddd", backgroundColor: "#fff" }}>
+                <div style={{ 
+                    display: "flex", 
+                    alignItems: "center", 
+                    padding: "12px", 
+                    borderTop: "1px solid #eee",
+                    backgroundColor: "#fff",
+                    borderBottomLeftRadius: "16px",
+                    borderBottomRightRadius: "16px"
+                }}>
                     <TextField
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
