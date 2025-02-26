@@ -6,6 +6,7 @@ export interface StudyGroup {
     description: string;
     type: "public" | "closed" | "invite-only";
     moduleId: number;
+    maxMembers: number;
     members: StudyGroupMember[];
 }
 
@@ -20,6 +21,7 @@ export interface StudyGroupCreationDetails {
     description: string;
     type: "public" | "closed" | "invite-only";
     moduleId: number;
+    maxMembers: number;
 }
 
 export async function fetchStudyGroups(token: string | null): Promise<StudyGroup[]> {
