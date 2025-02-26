@@ -223,8 +223,11 @@ func (s *studyGroupServiceImpl) HandleAdminMemberOperation(command AdminMemberOp
 			notificationType = models.NotificationTypeStudyGroupRemovedMember
 		}
 		go func() {
-			_ = s.notificationService.AddStudyGroupEventNotification(
+			notificationErr := s.notificationService.AddStudyGroupEventNotification(
 				notificationType, adminID, &targetUserID, studyGroupID, studyGroup.Members)
+			if notificationErr != nil {
+				log.Printf("Error sending notification: %v\n", notificationErr)
+			}
 		}()
 	}
 
@@ -279,8 +282,11 @@ func (s *studyGroupServiceImpl) HandleSelfMemberOperation(command SelfMemberOper
 			notificationType = models.NotificationTypeStudyGroupLeft
 		}
 		go func() {
-			_ = s.notificationService.AddStudyGroupEventNotification(
+			notificationErr := s.notificationService.AddStudyGroupEventNotification(
 				notificationType, memberID, nil, studyGroupID, studyGroup.Members)
+			if notificationErr != nil {
+				log.Printf("Error sending notification: %v\n", notificationErr)
+			}
 		}()
 	}
 
