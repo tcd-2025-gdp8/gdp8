@@ -151,6 +151,7 @@ export default function ModuleSettingsPage() {
                     marginTop: "2em",
                     width: "100%",
                     color: "white",
+                    maxWidth: "600px",
                 }}
                 onClick={() => void handleSave()}
             >
