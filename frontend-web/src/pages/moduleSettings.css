@@ -83,16 +83,18 @@
 .plus-button {
     position: relative;
     width: 2em;
-    padding: 10px;           
+    height: 2em;
+    padding: 8px;           
     border-radius: 50%;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-    transition: background-color 0.3s ease, transform 0.2s ease;
+    background-color: #444;
+    color: white;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
     z-index: 1;
 }
 
 .plus-button:hover {
-    background-color: #1976D2;
-    transform: scale(1.1);
+    background-color: #666;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
 }
 
 .search-container {
