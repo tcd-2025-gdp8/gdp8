@@ -32,11 +32,11 @@ export default function Sidebar() {
                 />
             </Box>
             <List>
-                <ListItemButton component={Link} to="/module">
-                    <ListItemText primary="Modules" />
-                </ListItemButton>
                 <ListItemButton component={Link} to="/study-groups">
                     <ListItemText primary="Study Groups" />
+                </ListItemButton>
+                <ListItemButton component={Link} to="/module">
+                    <ListItemText primary="Modules" />
                 </ListItemButton>
             </List>
         </Drawer>
