@@ -1,0 +1,50 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 800px;
+    /* adjust as needed */
+    margin: 0 auto;
+    padding: 1rem;
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    padding: 1rem 0;
+}
+
+.logo {
+    width: 48px;
+    height: 48px;
+    margin-right: 1rem;
+}
+
+.title {
+    font-size: 1.25rem;
+    font-weight: bold;
+}
+
+.divider {
+    border: none;
+    border-top: 1px solid #ccc;
+    margin: 0;
+    margin-bottom: 1rem;
+}
+
+.tabs {
+    display: flex;
+    gap: 2rem;
+    padding: 1rem 0;
+}
+
+.tabLink {
+    text-decoration: none;
+    color: #0056b3;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.tabLink:hover {
+    text-decoration: underline;
+}
