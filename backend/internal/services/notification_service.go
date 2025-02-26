@@ -10,7 +10,7 @@ import (
 )
 
 type NotificationService interface {
-	GetUserNotifications(userID models.UserID) ([]models.Notification, error)
+	GetUserNotifications(userID models.UserID) ([]models.NotificationView, error)
 
 	MarkNotificationAsRead(userID models.UserID, notificationID models.NotificationID) error
 
@@ -35,8 +35,8 @@ func NewNotificationService(txMgr persistence.TransactionManager,
 	}
 }
 
-func (s *notificationServiceImpl) GetUserNotifications(userID models.UserID) ([]models.Notification, error) {
-	return persistence.WithTransaction(s.txMgr, func(tx *sql.Tx) ([]models.Notification, error) {
+func (s *notificationServiceImpl) GetUserNotifications(userID models.UserID) ([]models.NotificationView, error) {
+	return persistence.WithTransaction(s.txMgr, func(tx *sql.Tx) ([]models.NotificationView, error) {
 		return s.notificationRepo.GetUserNotifications(tx, userID)
 	})
 }

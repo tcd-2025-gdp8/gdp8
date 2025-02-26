@@ -33,3 +33,16 @@ type Notification struct {
 	NotificationDetails
 	CreatedAt time.Time
 }
+
+type NotificationView struct {
+	ID                 NotificationID
+	Type               NotificationType
+	TriggeringUserID   UserID
+	TriggeringUserName string
+	TargetUserID       *UserID
+	TargetUserName     *string
+	StudyGroupID       StudyGroupID
+	StudyGroupName     string
+	MessageID          *int64 // TODO no MessageID type exists yet, to be changed
+	CreatedAt          time.Time
+}
