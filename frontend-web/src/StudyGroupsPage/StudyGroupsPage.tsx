@@ -644,7 +644,15 @@ const StudyGroupsPage: React.FC = () => {
             )}
           </DialogContent>
           <DialogActions>
-            <Button onClick={handleCloseMembersDialog} color="primary">
+            <Button onClick={handleCloseMembersDialog}
+            color="primary"
+            variant="contained"
+            sx={{
+              backgroundColor: "#0056b3",
+              "&:hover": {
+                backgroundColor: "#004494",
+              }
+            }}>
               Close
             </Button>
           </DialogActions>
