@@ -256,10 +256,6 @@ func (s *SQLStudyGroupRepository) UpdateStudyGroupMember(tx *sql.Tx,
 	return err
 }
 
-type scanner interface {
-	Scan(dest ...any) error
-}
-
 func readStudyGroup(s scanner) (*models.StudyGroupView, error) {
 	var studyGroup models.StudyGroupView
 	var membersJSON string
