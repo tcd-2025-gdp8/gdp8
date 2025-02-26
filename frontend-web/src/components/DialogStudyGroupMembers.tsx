@@ -7,6 +7,7 @@ import {
   List,
   ListItem,
   ListItemText,
+  Typography,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 
@@ -41,6 +42,9 @@ export default function DialogStudyGroupMembers({ studyGroup, isCurrentUserAdmin
   return (
     <Dialog open={isOpen} onClose={handleClose} maxWidth="sm" fullWidth>
         <DialogContent>
+        <Typography variant="h6">
+          Group Members: {studyGroup.members.length} / {studyGroup.maxMembers}
+        </Typography>
           {studyGroup.members.length > 0 && (
             <List>
               {studyGroup.members.map((member) => (
