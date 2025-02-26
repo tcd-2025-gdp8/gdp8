@@ -18,7 +18,7 @@
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    margin: 1.5em 0;
+    margin: 0.5em 0;
     position: relative;
 }
 
@@ -32,12 +32,6 @@
     left: 50%;
     transform: translateX(-50%);
     pointer-events: none;
-}
-
-/* Search bar styles */
-.module-search-bar {
-    margin-top: 1em;
-    margin-bottom: 20px;
 }
 
 /* Card styles */
@@ -80,11 +74,6 @@
     line-height: 1.2;
 }
 
-.module-save-button {
-    margin-top: 20px;
-    width: 100%;
-}
-
 .module-no-modules {
     color: #555;
     font-style: italic;
@@ -109,5 +98,6 @@
 .search-container {
     width: 100%;
     max-width: 600px;
-    margin: 2em auto;
+    margin: 1em auto;
+    margin-bottom: 2em;
 }

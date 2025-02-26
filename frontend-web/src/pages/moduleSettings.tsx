@@ -148,7 +148,7 @@ export default function ModuleSettingsPage() {
                     "&:hover": {
                         backgroundColor: "#004494",
                     },
-                    marginTop: "20px",
+                    marginTop: "2em",
                     width: "100%",
                     color: "white",
                 }}
