@@ -12,6 +12,7 @@ PeerSphere is an online platform designed to help students find study groups bas
 - **Robust Backend:** Written in Go, powered by a MySQL database for efficient data management, with Docker containerisation ensuring consistent deployment.
 - **Modular Architecture:** The backend implementation follows scalable design patterns for efficiency and maintainability.
 - **Continuous Integration:** A CI Pipeline automates testing and deployment, maintaining high code quality.
+![Screenshot of PeerSphere’s study groups page](images/study_groups.png)
 
 ## Step by Step
 
