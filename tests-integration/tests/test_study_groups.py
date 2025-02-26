@@ -106,6 +106,7 @@ def assert_study_group_data(data, expected_data):
     assert data["description"] == expected_data["description"]
     assert data["type"] == expected_data["type"]
     assert data["moduleId"] == expected_data["moduleId"]
+    assert data["maxMembers"] == expected_data["maxMembers"]
 
 
 def assert_study_group_has_member(members, expected_member_data):
