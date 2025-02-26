@@ -1,4 +1,3 @@
-// src/firebase/firebase.tsx
 import { initializeApp, FirebaseApp, FirebaseOptions } from "firebase/app";
 import { getAnalytics, Analytics } from "firebase/analytics";
 import {
