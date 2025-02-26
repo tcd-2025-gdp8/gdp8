@@ -91,25 +91,28 @@ export default function ModuleSettingsPage() {
 
     return (
         <Container className="module-container">
-            <IconButton 
-                onClick={() => moduleDialogRef.current?.openDialog()} 
-                className="plus-button"
-            >
-                <AddIcon />
-            </IconButton>
+            <div className="title-container">
+                <Typography variant="h4" className="module-title">
+                    Select Your Modules
+                </Typography>
+                <IconButton 
+                    onClick={() => moduleDialogRef.current?.openDialog()} 
+                    className="plus-button"
+                >
+                    <AddIcon />
+                </IconButton>
+            </div>
 
-            <Typography variant="h4" className="module-title">
-                Select Your Modules
-            </Typography>
-
-            <TextField
-                label="Search Modules"
-                variant="outlined"
-                fullWidth
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="module-search-bar"
-            />
+            <div className="search-container">
+                <TextField
+                    label="Search Modules"
+                    variant="outlined"
+                    fullWidth
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="module-search-bar"
+                />
+            </div>
 
             {loading && <Typography variant="body1">Loading modules...</Typography>}
 
@@ -128,7 +131,7 @@ export default function ModuleSettingsPage() {
                         >
                             <CardActionArea>
                                 <CardContent>
-                                    <Typography variant="h6" className="module-text">
+                                    <Typography variant="h6" className="module-text" style={{ fontSize: "1rem" }}>
                                         {`${module.code} ${module.name}`}
                                     </Typography>
                                 </CardContent>
@@ -140,14 +143,11 @@ export default function ModuleSettingsPage() {
 
             <Button
                 variant="contained"
+                color="primary"
                 sx={{
-                    backgroundColor: "#0056b3",
-                    "&:hover": {
-                        backgroundColor: "#004494",
-                    },
-                    marginTop: "20px",
+                    marginTop: "2em",
                     width: "100%",
-                    color: "white",
+                    maxWidth: "600px",
                 }}
                 onClick={() => void handleSave()}
             >

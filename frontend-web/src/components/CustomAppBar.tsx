@@ -66,7 +66,7 @@ export default function CustomAppBar() {
                 <Toolbar sx={{ flexDirection: "row", alignItems: "center" }}>
                     <Box sx={{ flexGrow: 1, display: "flex", alignItems: "center" }}>
                         <Typography variant="h6">
-                            Blackboard + StudyWise
+                            PeerSphere
                         </Typography>
                     </Box>
                     {user && (

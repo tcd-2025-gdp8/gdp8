@@ -67,10 +67,17 @@ export default function StudyGroupsPage() {
 
   return (
     <Container maxWidth="md" style={{ marginTop: "20px", position: "relative", textAlign: "center" }}>
-      <Typography variant="h4" gutterBottom>
+      <Typography variant="h4" style={{ marginBottom: "2rem" }}>
         Study Groups
       </Typography>
-      <FormControl fullWidth style={{ marginBottom: "20px" }}>
+      <FormControl 
+        fullWidth 
+        style={{ 
+          marginBottom: "2rem",
+          maxWidth: "600px",
+          margin: "0 auto 2em auto"
+        }}
+      >
         <InputLabel>Filter by Module</InputLabel>
         <Select
           value={selectedFilterModuleId}
@@ -85,7 +92,7 @@ export default function StudyGroupsPage() {
         </Select>
       </FormControl>
 
-      <Grid container spacing={2}>
+      <Grid container spacing={2} style={{ marginBottom: "2rem" }}>
         {filteredGroups.map((group) => {
           const module = modulesList.find((module) => module.id === group.moduleId);
           if (!module) return <Fragment key={group.id}></Fragment>;
@@ -104,15 +111,14 @@ export default function StudyGroupsPage() {
 
       <Button
         variant="contained"
-        color="success"
+        color="primary"
         onClick={() => createStudyGroupDialogRef.current?.openDialog()}
         sx={{
-          backgroundColor: "#0056b3",
-          "&:hover": {
-            backgroundColor: "#004494",
-          }
+          maxWidth: "600px",
+          margin: "2rem auto",
+          display: "block",
+          width: "100%"
         }}
-        style={{ marginTop: "20px", display: "block", width: "100%" }}
       >
         Create a Study Group
       </Button>

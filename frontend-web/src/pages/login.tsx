@@ -82,10 +82,10 @@ const LoginPage: React.FC = () => {
                         color: "#0056b3", // Blue color
                         fontWeight: "bold",
                         textAlign: "center",
-                        marginBottom: "2rem",
+                        marginBottom: "1rem",
                     }}
                 >
-                    Blackboard + StudyWise
+                    PeerSphere
                 </Typography>
 
                 <Typography component="h2" variant="h6" align="center" sx={{ marginBottom: "1.5rem" }}>
