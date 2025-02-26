@@ -11,12 +11,12 @@ export interface ModuleCreationDetails {
     name: string;
 }
 
-export async function fetchAllModules(token: string): Promise<Module[]> {
+export async function fetchAllModules(token: string | null): Promise<Module[]> {
     const modules = await fetchApiToJson<Module[]>("/modules", token);
     return modules;
 }
 
-export async function createModule(token: string, module: ModuleCreationDetails): Promise<void> {
+export async function createModule(token: string | null, module: ModuleCreationDetails): Promise<void> {
     await fetchApi("/modules", token, {
         method: "POST",
         body: JSON.stringify(module),
