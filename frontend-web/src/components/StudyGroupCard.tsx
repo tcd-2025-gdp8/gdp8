@@ -56,7 +56,7 @@ export default function StudyGroupCard({ group, module, currentUserId, onUpdate 
           {group.description}
         </Typography>
         <Typography variant="body2" color="textSecondary" style={{ marginBottom: "10px" }}>
-          {`Group Capacity: ${group.maxMembers}`}
+          {`Group Capacity: ${group.maxMembers} members`}
         </Typography>
         <Tooltip
           arrow
