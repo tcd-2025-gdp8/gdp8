@@ -34,6 +34,7 @@ services:
       MYSQL_DATABASE: gdp8
       MYSQL_USER: user
       MYSQL_PASSWORD: password
+    command: --log_bin_trust_function_creators=1 # needed to create triggers
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
