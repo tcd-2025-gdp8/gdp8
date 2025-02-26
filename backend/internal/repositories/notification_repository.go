@@ -7,7 +7,7 @@ import (
 )
 
 type NotificationRepository interface {
-	GetUserNotifications(tx *sql.Tx, id models.UserID) ([]models.Notification, error)
+	GetUserNotifications(tx *sql.Tx, id models.UserID) ([]models.NotificationView, error)
 	DeleteUserNotification(tx *sql.Tx, id models.NotificationID, userID models.UserID) error
 	AddNotification(tx *sql.Tx, notification models.NotificationDetails, usersToBeNotified []models.UserID) error
 }
@@ -15,11 +15,26 @@ type NotificationRepository interface {
 type SQLNotificationRepository struct {
 }
 
-func (s *SQLNotificationRepository) GetUserNotifications(tx *sql.Tx, id models.UserID) ([]models.Notification, error) {
+func (s *SQLNotificationRepository) GetUserNotifications(tx *sql.Tx,
+	id models.UserID) ([]models.NotificationView, error) {
+
 	query := `
-		SELECT n.id, n.type, n.triggering_user_id, n.target_user_id, n.study_group_id, n.message_id, n.created_at
+		SELECT 
+			n.id,
+			n.type,
+			n.triggering_user_id,
+			triggering_user.name as triggering_user_name,
+			n.target_user_id,
+			target_user.name as target_user_name,
+			n.study_group_id,
+			sg.name as study_group_name,
+			n.message_id,
+			n.created_at
 		FROM notifications n
 		INNER JOIN user_notifications un ON n.id = un.notification_id
+		INNER JOIN users triggering_user ON n.triggering_user_id = triggering_user.id
+		LEFT JOIN users target_user ON n.target_user_id = target_user.id
+		INNER JOIN study_groups sg ON n.study_group_id = sg.id
 		WHERE un.user_id = ?`
 
 	rows, err := tx.Query(query, id)
@@ -101,17 +116,21 @@ func (s *SQLNotificationRepository) AddNotification(tx *sql.Tx,
 	return nil
 }
 
-func readNotification(s scanner) (*models.Notification, error) {
-	var notification models.Notification
+func readNotification(s scanner) (*models.NotificationView, error) {
+	var notification models.NotificationView
 	var targetUserID sql.NullString
+	var targetUserName sql.NullString
 	var messageID sql.NullInt64
 
 	if err := s.Scan(
 		&notification.ID,
 		&notification.Type,
 		&notification.TriggeringUserID,
+		&notification.TriggeringUserName,
 		&targetUserID,
+		&targetUserName,
 		&notification.StudyGroupID,
+		&notification.StudyGroupName,
 		&messageID,
 		&notification.CreatedAt,
 	); err != nil {
@@ -119,8 +138,13 @@ func readNotification(s scanner) (*models.Notification, error) {
 	}
 
 	if targetUserID.Valid {
-		targetUser := models.UserID(targetUserID.String)
-		notification.TargetUserID = &targetUser
+		id := models.UserID(targetUserID.String)
+		notification.TargetUserID = &id
+	}
+
+	if targetUserName.Valid {
+		name := targetUserName.String
+		notification.TargetUserName = &name
 	}
 
 	if messageID.Valid {
@@ -130,8 +154,8 @@ func readNotification(s scanner) (*models.Notification, error) {
 	return &notification, nil
 }
 
-func readNotifications(rows *sql.Rows) ([]models.Notification, error) {
-	var notifications []models.Notification
+func readNotifications(rows *sql.Rows) ([]models.NotificationView, error) {
+	var notifications []models.NotificationView
 
 	for rows.Next() {
 		notification, err := readNotification(rows)
