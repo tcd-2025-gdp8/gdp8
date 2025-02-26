@@ -61,17 +61,20 @@ var ErrUnauthorizedMemberOperation = errors.New("unauthorized member operation")
 var ErrStudyGroupFull = errors.New("study group is full")
 
 type studyGroupServiceImpl struct {
-	txMgr          persistence.TransactionManager
-	studyGroupRepo repositories.StudyGroupRepository
+	txMgr               persistence.TransactionManager
+	studyGroupRepo      repositories.StudyGroupRepository
+	notificationService NotificationService
 }
 
 func NewStudyGroupService(
 	txMgr persistence.TransactionManager,
-	studyGroupRepo repositories.StudyGroupRepository) StudyGroupService {
+	studyGroupRepo repositories.StudyGroupRepository,
+	notificationService NotificationService) StudyGroupService {
 
 	return &studyGroupServiceImpl{
-		txMgr:          txMgr,
-		studyGroupRepo: studyGroupRepo,
+		txMgr:               txMgr,
+		studyGroupRepo:      studyGroupRepo,
+		notificationService: notificationService,
 	}
 }
 
@@ -174,14 +177,14 @@ func (s *studyGroupServiceImpl) DeleteStudyGroup(id models.StudyGroupID, request
 
 func (s *studyGroupServiceImpl) HandleAdminMemberOperation(command AdminMemberOperationCommand,
 	studyGroupID models.StudyGroupID, targetUserID models.UserID, adminID models.UserID) error {
-	err := persistence.WithTransactionNoReturnVal(s.txMgr, func(tx *sql.Tx) error {
+	studyGroup, err := persistence.WithTransaction(s.txMgr, func(tx *sql.Tx) (*models.StudyGroupView, error) {
 		studyGroup, err := s.studyGroupRepo.GetStudyGroupByID(tx, studyGroupID)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		if !hasRole(adminID, models.RoleAdmin, studyGroup.Members) {
-			return ErrUnauthorizedMemberOperation
+			return nil, ErrUnauthorizedMemberOperation
 		}
 
 		switch command {
@@ -195,25 +198,45 @@ func (s *studyGroupServiceImpl) HandleAdminMemberOperation(command AdminMemberOp
 			err = s.removeMemberFromStudyGroup(tx, studyGroup, targetUserID, adminID)
 		default:
 			log.Printf("[ERROR] invalid admin member operation command: %s\n", command)
-			return errors.New("invalid admin member operation command")
+			return nil, errors.New("invalid admin member operation command")
 		}
 
-		return err
+		if err != nil {
+			return nil, err
+		}
+
+		return studyGroup, nil
 	})
 
 	err = resolveError(err, fmt.Sprintf("executing admin member operation %s", command))
 
-	// TODO send a notification
+	if err == nil {
+		var notificationType models.NotificationType
+		switch command {
+		case InviteMemberToStudyGroupCommand:
+			notificationType = models.NotificationTypeStudyGroupInvited
+		case AcceptRequestToJoinStudyGroupCommand:
+			notificationType = models.NotificationTypeStudyGroupAcceptedJoinRequest
+		case RejectRequestToJoinStudyGroupCommand:
+			notificationType = models.NotificationTypeStudyGroupRejectedJoinRequest
+		case RemoveMemberFromStudyGroupCommand:
+			notificationType = models.NotificationTypeStudyGroupRemovedMember
+		}
+		go func() {
+			_ = s.notificationService.AddStudyGroupEventNotification(
+				notificationType, adminID, &targetUserID, studyGroupID, studyGroup.Members)
+		}()
+	}
 
 	return err
 }
 
 func (s *studyGroupServiceImpl) HandleSelfMemberOperation(command SelfMemberOperationCommand,
 	studyGroupID models.StudyGroupID, memberID models.UserID) error {
-	err := persistence.WithTransactionNoReturnVal(s.txMgr, func(tx *sql.Tx) error {
+	studyGroup, err := persistence.WithTransaction(s.txMgr, func(tx *sql.Tx) (*models.StudyGroupView, error) {
 		studyGroup, err := s.studyGroupRepo.GetStudyGroupByID(tx, studyGroupID)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		switch command {
@@ -227,15 +250,39 @@ func (s *studyGroupServiceImpl) HandleSelfMemberOperation(command SelfMemberOper
 			err = s.leaveStudyGroup(tx, studyGroup, memberID)
 		default:
 			log.Printf("[ERROR] invalid member operation command: %s\n", command)
-			return errors.New("invalid member operation command")
+			return nil, errors.New("invalid member operation command")
 		}
 
-		return err
+		if err != nil {
+			return nil, err
+		}
+
+		return studyGroup, nil
 	})
 
 	err = resolveError(err, fmt.Sprintf("executing member operation %s", command))
 
-	// TODO send a notification
+	if err == nil {
+		var notificationType models.NotificationType
+		switch command {
+		case AcceptStudyGroupInviteCommand:
+			notificationType = models.NotificationTypeStudyGroupAcceptedInvite
+		case RejectStudyGroupInviteCommand:
+			notificationType = models.NotificationTypeStudyGroupRejectedInvite
+		case RequestToJoinStudyGroupCommand:
+			if studyGroup.Type == models.TypePublic {
+				notificationType = models.NotificationTypeStudyGroupJoined
+			} else {
+				notificationType = models.NotificationTypeStudyGroupRequestedToJoin
+			}
+		case LeaveStudyGroupCommand:
+			notificationType = models.NotificationTypeStudyGroupLeft
+		}
+		go func() {
+			_ = s.notificationService.AddStudyGroupEventNotification(
+				notificationType, memberID, nil, studyGroupID, studyGroup.Members)
+		}()
+	}
 
 	return err
 }
