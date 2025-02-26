@@ -111,13 +111,9 @@ export default function StudyGroupsPage() {
 
       <Button
         variant="contained"
-        color="success"
+        color="primary"
         onClick={() => createStudyGroupDialogRef.current?.openDialog()}
         sx={{
-          backgroundColor: "#0056b3",
-          "&:hover": {
-            backgroundColor: "#004494",
-          },
           maxWidth: "600px",
           margin: "2rem auto",
           display: "block",

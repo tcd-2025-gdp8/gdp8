@@ -143,14 +143,10 @@ export default function ModuleSettingsPage() {
 
             <Button
                 variant="contained"
+                color="primary"
                 sx={{
-                    backgroundColor: "#0056b3",
-                    "&:hover": {
-                        backgroundColor: "#004494",
-                    },
                     marginTop: "2em",
                     width: "100%",
-                    color: "white",
                     maxWidth: "600px",
                 }}
                 onClick={() => void handleSave()}
