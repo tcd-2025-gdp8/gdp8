@@ -58,7 +58,7 @@ export default function CustomAppBar() {
                 sx={{
                     backgroundColor: "#ffffff",
                     color: "#000000",
-                    zIndex: 1201,
+                    zIndex: (theme) => theme.zIndex.drawer - 1,
                     width: "calc(100% - 240px)",
                     marginLeft: "240px",
                 }}
@@ -89,9 +89,9 @@ export default function CustomAppBar() {
                 onClose={() => setOpenNotifications(false)}
                 sx={{
                     "& .MuiDrawer-paper": {
-                        zIndex: 1300,
                         width: 350,
-                        backgroundColor: "#f8f9fa"
+                        backgroundColor: "#ffffff",
+                        borderLeft: "1px solid #e0e0e0",
                     },
                 }}
             >
