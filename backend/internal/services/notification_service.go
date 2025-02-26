@@ -16,7 +16,7 @@ type NotificationService interface {
 
 	AddStudyGroupEventNotification(notificationType models.NotificationType,
 		triggeringUserID models.UserID, targetUserID *models.UserID,
-		studyGroupID models.StudyGroupID, studyGroupMembers []models.UserID) error
+		studyGroupID models.StudyGroupID, studyGroupMembers []models.StudyGroupMemberView) error
 }
 
 var ErrInvalidNotificationType = errors.New("invalid notification type")
@@ -52,7 +52,7 @@ func (s *notificationServiceImpl) MarkNotificationAsRead(userID models.UserID,
 func (s *notificationServiceImpl) AddStudyGroupEventNotification(
 	notificationType models.NotificationType,
 	triggeringUserID models.UserID, targetUserID *models.UserID,
-	studyGroupID models.StudyGroupID, studyGroupMembers []models.UserID) error {
+	studyGroupID models.StudyGroupID, studyGroupMembers []models.StudyGroupMemberView) error {
 
 	notification := models.NotificationDetails{
 		Type:             notificationType,
@@ -62,27 +62,34 @@ func (s *notificationServiceImpl) AddStudyGroupEventNotification(
 		MessageID:        nil,
 	}
 
+	actualStudyGroupMembers := make([]models.UserID, 0, len(studyGroupMembers))
+	for _, member := range studyGroupMembers {
+		if member.Role == models.RoleMember || member.Role == models.RoleAdmin {
+			actualStudyGroupMembers = append(actualStudyGroupMembers, member.UserID)
+		}
+	}
+
 	var usersToBeNotified []models.UserID
 
 	switch notificationType {
 	case models.NotificationTypeStudyGroupJoined:
-		usersToBeNotified = studyGroupMembers
+		usersToBeNotified = actualStudyGroupMembers
 	case models.NotificationTypeStudyGroupRequestedToJoin:
-		usersToBeNotified = studyGroupMembers
+		usersToBeNotified = actualStudyGroupMembers
 	case models.NotificationTypeStudyGroupLeft:
-		usersToBeNotified = studyGroupMembers
+		usersToBeNotified = actualStudyGroupMembers
 	case models.NotificationTypeStudyGroupAcceptedInvite:
-		usersToBeNotified = studyGroupMembers
+		usersToBeNotified = actualStudyGroupMembers
 	case models.NotificationTypeStudyGroupRejectedInvite:
-		usersToBeNotified = studyGroupMembers
+		usersToBeNotified = actualStudyGroupMembers
 	case models.NotificationTypeStudyGroupInvited:
-		usersToBeNotified = append([]models.UserID{triggeringUserID}, studyGroupMembers...)
+		usersToBeNotified = append([]models.UserID{triggeringUserID}, actualStudyGroupMembers...)
 	case models.NotificationTypeStudyGroupAcceptedJoinRequest:
-		usersToBeNotified = append([]models.UserID{triggeringUserID}, studyGroupMembers...)
+		usersToBeNotified = append([]models.UserID{triggeringUserID}, actualStudyGroupMembers...)
 	case models.NotificationTypeStudyGroupRejectedJoinRequest:
-		usersToBeNotified = append([]models.UserID{triggeringUserID}, studyGroupMembers...)
+		usersToBeNotified = append([]models.UserID{triggeringUserID}, actualStudyGroupMembers...)
 	case models.NotificationTypeStudyGroupRemovedMember:
-		usersToBeNotified = append([]models.UserID{triggeringUserID}, studyGroupMembers...)
+		usersToBeNotified = append([]models.UserID{triggeringUserID}, actualStudyGroupMembers...)
 	case models.NotificationTypeStudyGroupChatMessage:
 		return ErrInvalidNotificationType
 	default:
