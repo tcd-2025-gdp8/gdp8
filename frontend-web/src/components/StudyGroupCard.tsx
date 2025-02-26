@@ -29,7 +29,7 @@ export default function StudyGroupCard({ group, module, currentUserId, onUpdate 
 
   const isMember = group.members.some((member) => member.id === currentUserId);
   const isAdmin = group.members.some((member) => member.id === currentUserId && member.role === "admin");
-  const isFull = group.members.length >= 10; // TODO change after max members is implemented
+  const isFull = group.members.length >= group.maxMembers;
 
   const handleJoinGroup = (id: number) => {
     void (async () => {
