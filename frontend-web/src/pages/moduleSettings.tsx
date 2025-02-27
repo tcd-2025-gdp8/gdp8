@@ -43,7 +43,7 @@ export default function ModuleSettingsPage() {
         const fetchUserModules = async () => {
             if (!userID) return;
             const userModules = await getUserModules(token, userID);
-            const ids = userModules.map((mod) => mod.id);
+            const ids = userModules ? userModules.map((mod) => mod.id) : [];
             setSelectedModules(ids);
         };
 
