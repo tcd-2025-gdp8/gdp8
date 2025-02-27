@@ -1,1 +1,0 @@
-docker compose -f ./scripts/compose-local.yml --project-directory . up --build

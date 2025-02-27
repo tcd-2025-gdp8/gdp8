@@ -1,4 +1,4 @@
-name: gdp8-local
+name: gdp8-localprod
 
 services:
   frontend:
