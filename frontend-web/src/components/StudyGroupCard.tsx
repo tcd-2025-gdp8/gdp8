@@ -43,10 +43,10 @@ export default function StudyGroupCard({ group, module, currentUserId, onUpdate 
         alert(`Error joining study group.`);
       }
     })();
-  };  
+  };
 
   return (
-    <Card sx={{ 
+    <Card sx={{
       height: '100%',
       display: 'flex',
       flexDirection: 'column',
@@ -56,18 +56,18 @@ export default function StudyGroupCard({ group, module, currentUserId, onUpdate 
         boxShadow: 4,
       }
     }}>
-      <CardContent sx={{ 
+      <CardContent sx={{
         flexGrow: 1,
         display: 'flex',
         flexDirection: 'column',
-        gap: 2 
+        gap: 2
       }}>
         <Typography variant="h6" sx={{ fontWeight: 600 }}>
           {group.name}
         </Typography>
-        
+
         <Divider />
-        
+
         <div>
           <Typography variant="subtitle1" sx={{ fontWeight: 500, mb: 1 }}>
             {`${module.code} ${module.name}`}
@@ -75,9 +75,9 @@ export default function StudyGroupCard({ group, module, currentUserId, onUpdate 
           <Typography variant="body2" color="text.secondary">
             {group.description}
           </Typography>
-          <Typography 
-            variant="body2" 
-            sx={{ 
+          <Typography
+            variant="body2"
+            sx={{
               mt: 1,
               color: isFull ? 'error.main' : 'success.main',
               fontWeight: 500
@@ -120,7 +120,7 @@ export default function StudyGroupCard({ group, module, currentUserId, onUpdate 
             {isMember ? "Joined" : isFull ? "Full" : "Request to Join"}
           </Button>
 
-          {!isFull && (
+          {(isMember || !isFull) && (
             <Button
               variant={isMember ? "contained" : "outlined"}
               color={isMember ? "primary" : "inherit"}
