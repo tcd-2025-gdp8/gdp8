@@ -40,7 +40,6 @@ export interface Notification extends NotificationDto {
 
 export async function getNotifications(token: string | null, userId: string): Promise<Notification[]> {
     const notifications = await fetchApiToJson<NotificationDto[]>("/notifications", token);
-    console.log(notifications);
     const augmentedNotifications: Notification[] = notifications.map(notification => augmentNotification(notification, userId));
     return augmentedNotifications;
 }
