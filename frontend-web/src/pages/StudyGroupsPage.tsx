@@ -128,7 +128,7 @@ export default function StudyGroupsPage() {
       </Button>
 
       <DialogCreateStudyGroup 
-        modules={modulesList}
+        modules={modulesList.filter((module) => module.id !== -1)}
         ref={createStudyGroupDialogRef}
         onUpdate={() => { void fetchData(); }}
       />
