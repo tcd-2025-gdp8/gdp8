@@ -1,0 +1,63 @@
+name: gdp8-local
+
+services:
+  frontend:
+    build:
+      context: frontend-web
+      dockerfile: Dockerfile.prodlocal
+    ports:
+      - 80:80
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_started
+        restart: true
+
+  backend:
+    build:
+      context: backend
+    environment:
+      - FIREBASE_AUTH_EMULATOR_HOST=firebase:9099
+      - MYSQL_CONNECTION_STRING=user:password@tcp(mysql:3306)/gdp8?charset=utf8mb4&parseTime=True&loc=Local&multiStatements=True
+    ports:
+      - 8080:8080
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+        restart: true
+      firebase:
+        condition: service_started
+        restart: true
+
+  firebase:
+    build:
+      context: firebase-emulator
+    ports:
+      - 9099:9099
+      - 4000:4000
+    restart: unless-stopped
+
+  mysql:
+    image: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: gdp8
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    ports:
+      - 3306:3306
+    command: --log_bin_trust_function_creators=1 # needed to create triggers
+    volumes:
+      - mysql_data:/var/lib/mysql
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      retries: 3
+      start_period: 10s
+      timeout: 10s
+
+
+volumes:
+  mysql_data:
