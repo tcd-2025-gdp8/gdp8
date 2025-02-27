@@ -1,0 +1,40 @@
+name: gdp8-dev
+
+services:
+  backend:
+    build:
+      context: backend
+    environment:
+      - MYSQL_CONNECTION_STRING=user:password@tcp(mysql:3306)/gdp8?charset=utf8mb4&parseTime=True&loc=Local&multiStatements=True
+    volumes:
+      - ./backend/credentials:/app/credentials:ro
+    ports:
+      - 8080:8080
+    depends_on:
+      mysql:
+        condition: service_healthy
+        restart: true
+
+
+  mysql:
+    image: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: gdp8
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    ports:
+      - 3306:3306
+    command: --log_bin_trust_function_creators=1 # needed to create triggers
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      retries: 3
+      start_period: 10s
+      timeout: 10s
+
+
+volumes:
+  mysql_data:

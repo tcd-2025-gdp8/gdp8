@@ -1,0 +1,175 @@
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../auth/useAuth";
+import { registerUser } from "../api/users";
+import {
+    Typography,
+    TextField,
+    Button,
+    Box,
+    Link,
+    Paper,
+    Grid,
+} from "@mui/material";
+
+import "./login.css";
+
+const LoginPage: React.FC = () => {
+    const [isRegister, setIsRegister] = useState<boolean>(false);
+    const { login, signup } = useAuth();
+    const navigate = useNavigate();
+
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+
+        const formData = new FormData(e.currentTarget);
+        const email = formData.get('email') as string;
+        const password = formData.get('password') as string;
+        const firstName = formData.get('firstName') as string;
+        const lastName = formData.get('lastName') as string;
+
+        try {      
+            if (isRegister) {
+                await signup(email, password);
+                const userCredential = await login(email, password);
+                const newToken = await userCredential.user.getIdToken();
+                const firebaseUID = userCredential.user.uid;
+
+                await registerUser(newToken, {
+                    id: firebaseUID,
+                    name: firstName + " " + lastName,
+                });
+
+            } else {
+                await login(email, password);
+            }
+
+            void navigate("/landing");
+
+        } catch (error) {
+            console.error("Failed to authenticate", error);
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            alert("Authentication failed: " + errorMessage);
+        }
+    };
+
+    return (
+        <Box
+            sx={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                minHeight: "100vh", // Full viewport height
+                width: "100vw", // Full viewport width
+                backgroundColor: "#f0f2f5", // Light grey background
+            }}
+        >
+            <Paper
+                elevation={3}
+                sx={{
+                    padding: "2rem",
+                    width: "100%",
+                    maxWidth: "400px", // Limit the width of the white box
+                    borderRadius: "8px", // Rounded corners
+                    backgroundColor: "#ffffff", // White background
+                }}
+            >
+                {/* Blackboard + StudyWise Header */}
+                <Typography
+                    variant="h4"
+                    component="h1"
+                    sx={{
+                        color: "#0056b3", // Blue color
+                        fontWeight: "bold",
+                        textAlign: "center",
+                        marginBottom: "1rem",
+                    }}
+                >
+                    PeerSphere
+                </Typography>
+
+                <Typography component="h2" variant="h6" align="center" sx={{ marginBottom: "1.5rem" }}>
+                    {isRegister ? "Create an Account" : "Sign In"}
+                </Typography>
+                <Box component="form" onSubmit={(e) => void handleSubmit(e)}>
+                    <Grid container spacing={2}>
+                            {isRegister && (
+                            <>
+                                <Grid item xs={6}>
+                                    <TextField
+                                        required
+                                        fullWidth
+                                        id="firstName"
+                                        label="First Name"
+                                        name="firstName"
+                                    />
+                                </Grid>
+                                <Grid item xs={6}>
+                                    <TextField
+                                        required
+                                        fullWidth
+                                        id="lastName"
+                                        label="Last Name"
+                                        name="lastName"
+                                    />
+                                </Grid>
+                            </>
+                        )}
+                        <Grid item xs={12}>
+                            <TextField
+                                required
+                                fullWidth
+                                id="email"
+                                label="Email Address"
+                                name="email"
+                                autoComplete="email"
+                            />
+                        </Grid>
+                        <Grid item xs={12}>
+                            <TextField
+                                required
+                                fullWidth
+                                name="password"
+                                label="Password"
+                                type="password"
+                                id="password"
+                                autoComplete="current-password"
+                            />
+                        </Grid>
+                    </Grid>
+                    <Button
+                        type="submit"
+                        fullWidth
+                        variant="contained"
+                        sx={{
+                            mt: 3,
+                            mb: 2,
+                            backgroundColor: "#0056b3", // Blue color
+                            "&:hover": {
+                                backgroundColor: "#004494", // Darker blue on hover
+                            },
+                        }}
+                    >
+                        {isRegister ? "Register" : "Login"}
+                    </Button>
+                    <Grid container justifyContent="center">
+                        <Grid item>
+                            <Link
+                                href="#"
+                                variant="body2"
+                                onClick={() => setIsRegister(!isRegister)}
+                                sx={{ color: "#0056b3" }} // Blue color
+                            >
+                                {isRegister
+                                    ? "Already have an account? Sign In"
+                                    : "Don't have an account? Register"}
+                            </Link>
+                        </Grid>
+                    </Grid>
+                </Box>
+            </Paper>
+        </Box>
+    );
+};
+
+export default LoginPage;
