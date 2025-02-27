@@ -24,7 +24,7 @@ const analytics: Analytics = getAnalytics(app);
 const auth: Auth = getAuth(app);
 
 if (import.meta.env.MODE === "prodlocal") {
-    connectAuthEmulator(auth, `http://localhost:9099`);
+    connectAuthEmulator(auth, `http://localhost:9099`, { disableWarnings: true });
 }
 
 // Set persistence to session so the user is signed out when the browser or tab is closed.
