@@ -23,7 +23,7 @@ const app: FirebaseApp = initializeApp(firebaseConfig);
 const analytics: Analytics = getAnalytics(app);
 const auth: Auth = getAuth(app);
 
-if (import.meta.env.MODE === "prodlocal") {
+if (import.meta.env.MODE === "localprod") {
     connectAuthEmulator(auth, `http://localhost:9099`, { disableWarnings: true });
 }
 
