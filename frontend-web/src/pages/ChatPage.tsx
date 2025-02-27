@@ -31,7 +31,6 @@ export default function ChatPage() {
     const { token, user } = useAuth();
 
     const [userDetails, setUserDetails] = useState<User | null>(null);
-    const [loading, setLoading] = useState(true);
 
     const fetchUserDetails = useCallback(async () => {
         if (!token || !user?.uid) return;
@@ -41,8 +40,6 @@ export default function ChatPage() {
             setUserDetails(data);
         } catch (error) {
             console.error("Error fetching user details:", error);
-        } finally {
-            setLoading(false);
         }
     }, [token, user]);
 
@@ -53,9 +50,8 @@ export default function ChatPage() {
     }, [token, user, fetchUserDetails]);
 
 
-
     useEffect(() => {
-        if (!loading) {
+        if(ws.current?.readyState !== WebSocket.OPEN) {
             ws.current = new WebSocket(`ws://localhost:8080/api/chat/${chatID}`, ["auth", token ?? "no-token"]);
 
             ws.current.onopen = () => {
@@ -79,12 +75,13 @@ export default function ChatPage() {
                 console.log("WebSocket closed");
             };
 
+            const wsCurrent = ws.current;
+
             return () => {
-                ws.current?.close();
+                wsCurrent.close();
             };
         }
-
-    }, [chatID, token, userDetails, loading]);
+    }, [chatID, token]);
 
     const currentSender = userDetails?.name ?? "You";
 
