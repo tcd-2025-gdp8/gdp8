@@ -14,7 +14,7 @@ PeerSphere is an online platform designed to help students find study groups bas
 - **Continuous Integration:** A CI Pipeline automates testing and static code analysis, ensuring high code quality and streamlined releases.
 
 ![Screenshot of PeerSphere’s study groups page](docs/images/study_groups.png)
-![Screenshot of chat functionality on the study group](docs/images/chats/png)
+![Screenshot of chat functionality on the study group](docs/images/chats.png)
 
 ## Step by Step
 
