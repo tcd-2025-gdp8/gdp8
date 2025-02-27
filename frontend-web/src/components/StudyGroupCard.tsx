@@ -122,7 +122,7 @@ export default function StudyGroupCard({ group, module, currentUserId, onUpdate 
             {isMember ? "Joined" : isFull ? "Full" : "Request to Join"}
           </Button>
 
-          {!isFull && (
+          {(isMember || !isFull) && (
             <Button
               variant={isMember ? "contained" : "outlined"}
               color={isMember ? "primary" : "inherit"}

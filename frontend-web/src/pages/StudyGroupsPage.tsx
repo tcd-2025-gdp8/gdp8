@@ -41,7 +41,11 @@ export default function StudyGroupsPage() {
     const fetchModules = async () => {
       if (!currentUserId) return;
       const data = await getUserModules(token, currentUserId);
-      setModulesList([{ id: -1, code: "All", name: "All" }, ...data]);
+      if(data) {
+        setModulesList([{ id: -1, code: "All", name: "All" }, ...data]);
+      } else {
+        setModulesList([{ id: -1, code: "All", name: "All" }]);
+      }
     }
 
     try {
@@ -124,7 +128,7 @@ export default function StudyGroupsPage() {
       </Button>
 
       <DialogCreateStudyGroup 
-        modules={modulesList}
+        modules={modulesList.filter((module) => module.id !== -1)}
         ref={createStudyGroupDialogRef}
         onUpdate={() => { void fetchData(); }}
       />
