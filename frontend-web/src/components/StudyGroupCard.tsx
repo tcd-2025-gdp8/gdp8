@@ -27,8 +27,6 @@ export default function StudyGroupCard({ group, module, currentUserId, onUpdate 
   const navigate = useNavigate();
   const { token } = useAuth();
 
-  console.log("StudyGroupCard token:", token);
-
   const membersDialogRef = useRef<DialogRef>(null);
 
   const isMember = group.members.some((member) => member.id === currentUserId);
