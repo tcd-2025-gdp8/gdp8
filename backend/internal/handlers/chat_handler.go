@@ -70,7 +70,8 @@ func (h *ChatHub) Run() {
 }
 
 var upgrader = websocket.Upgrader{
-	CheckOrigin: func(_ *http.Request) bool { return true },
+	CheckOrigin:  func(_ *http.Request) bool { return true },
+	Subprotocols: []string{"auth"},
 }
 
 type ChatHandler struct {
