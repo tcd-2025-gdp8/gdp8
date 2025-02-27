@@ -16,6 +16,8 @@ RUN pnpm run build --mode prodlocal
 
 FROM nginx:alpine AS runner
 
+COPY nginx.conf.prodlocal /etc/nginx/nginx.conf
+
 COPY --from=builder /app/dist /usr/share/nginx/html
 
 EXPOSE 80
