@@ -86,7 +86,8 @@ export default function ModuleSettingsPage() {
     }
 
     const filteredModules = modulesList.filter((module) =>
-        module.name.toLowerCase().includes(searchQuery.toLowerCase())
+        module.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        module.code.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     return (
