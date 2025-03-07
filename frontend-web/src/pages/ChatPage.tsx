@@ -3,6 +3,7 @@ import { Send } from "@mui/icons-material";
 import { Card, CardContent, TextField, Button, AppBar, Toolbar, Typography, Box } from "@mui/material";
 import { useAuth } from "../auth/useAuth";
 import { fetchApiToJson } from "../utils/apiFetch";
+import ChatbotChat from "../components/ChatbotChat";
 
 interface Message {
     text: string;
@@ -29,7 +30,7 @@ export default function ChatPage() {
     const chatID = currentPath[currentPath.length - 1]; 
     const ws = useRef<WebSocket | null>(null);
     const { token, user } = useAuth();
-
+    const [chatbotOpen, setChatbotOpen] = useState(false);
     const [userDetails, setUserDetails] = useState<User | null>(null);
 
     const fetchUserDetails = useCallback(async () => {
@@ -136,6 +137,13 @@ export default function ChatPage() {
                 }}>
                     <Toolbar>
                         <Typography variant="h6">Chat Room</Typography>
+                        <Button 
+                            variant="contained" 
+                            style={{ backgroundColor: "#fff", color: "#3b5998", marginLeft: "auto" }} 
+                            onClick={() => setChatbotOpen((prev) => !prev)}
+                        >
+                            Chatbot
+                        </Button>
                     </Toolbar>
                 </AppBar>
                 <CardContent ref={chatRef} style={{ 
@@ -205,6 +213,7 @@ export default function ChatPage() {
                         <Send />
                     </Button>
                 </div>
+                {chatbotOpen && <ChatbotChat onClose={() => setChatbotOpen(false)} />}
             </Card>
         </div>
     );
