@@ -17,7 +17,8 @@ export default function ChatbotChat({ onClose }: ChatbotChatProps) {
     const [botInput, setBotInput] = useState("");
     const botChatRef = useRef<HTMLDivElement>(null);
 
-    const sendBotMessage = async () => {
+    // Function to handle sending bot messages (removed async)
+    const sendBotMessage = () => {
         if (botInput.trim()) {
             const userMessage: Message = {
                 text: botInput,
@@ -40,6 +41,7 @@ export default function ChatbotChat({ onClose }: ChatbotChatProps) {
         }
     };
 
+    // Scroll to the bottom whenever botMessages change
     useEffect(() => {
         if (botChatRef.current) {
             botChatRef.current.scrollTop = botChatRef.current.scrollHeight;
@@ -107,9 +109,9 @@ export default function ChatbotChat({ onClose }: ChatbotChatProps) {
                     variant="outlined"
                     size="small"
                     fullWidth
-                    onKeyDown={(e) => e.key === "Enter" && sendBotMessage()}
+                    onKeyDown={(e) => { if (e.key === "Enter") sendBotMessage(); }} // Wrapped function to avoid promise-returning issues
                 />
-                <Button onClick={sendBotMessage} style={{ marginLeft: "8px", backgroundColor: "#3b5998", color: "#fff" }}>
+                <Button onClick={() => sendBotMessage()} style={{ marginLeft: "8px", backgroundColor: "#3b5998", color: "#fff" }}>
                     <Send />
                 </Button>
             </div>
