@@ -27,6 +27,7 @@ func RegisterAllRoutes(firebaseAuth *auth.Client, txManager persistence.Transact
 	RegisterNotificationRoutes(firebaseAuth, notificationService)
 	RegisterUserRoutes(firebaseAuth, userService)
 	RegisterChatRoutes(firebaseAuth)
+	RegisterFileRoutes(firebaseAuth)
 
 	authHandler := handlers.NewAuthHandler(firebaseAuth)
 	http.HandleFunc("/api/auth/verify", authHandler.VerifyHandler)
