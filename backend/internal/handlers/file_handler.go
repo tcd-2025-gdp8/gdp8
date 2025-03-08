@@ -1,20 +1,29 @@
 package handlers
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
+
+	"gdp8-backend/internal/models"
+	"gdp8-backend/internal/services"
 )
 
 const fileSizeLimitMb = 20
 
-type FileHandler struct{}
+type FileHandler struct {
+	studyGroupService services.StudyGroupService
+}
 
-func NewFileHandler() *FileHandler {
-	return &FileHandler{}
+func NewFileHandler(studyGroupService services.StudyGroupService) *FileHandler {
+	return &FileHandler{
+		studyGroupService: studyGroupService,
+	}
 }
 
 func (h *FileHandler) GetFiles(w http.ResponseWriter, r *http.Request) {
@@ -35,63 +44,87 @@ func (h *FileHandler) GetFiles(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *FileHandler) UploadFile(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseMultipartForm(fileSizeLimitMb << 20)
-	if err != nil {
-		fmt.Println("Error parsing multipart form:", err)
+	if err := r.ParseMultipartForm(fileSizeLimitMb << 20); err != nil {
 		http.Error(w, "Error parsing multipart form", http.StatusBadRequest)
 		return
 	}
 
 	file, header, err := r.FormFile("file")
 	if err != nil {
-		fmt.Println("Error retrieving file:", err)
 		http.Error(w, "Missing file", http.StatusBadRequest)
 		return
 	}
 	defer file.Close()
 
+	chatID, userID, err := h.extractFormValues(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if !h.isUserMember(chatID, userID) {
+		http.Error(w, "User not a member of the study group", http.StatusForbidden)
+		return
+	}
+
+	if err := h.saveFile(file, header.Filename); err != nil {
+		http.Error(w, "Error saving file", http.StatusInternalServerError)
+		return
+	}
+
+	sendJSONResponse(w, map[string]string{"message": "File uploaded successfully"})
+}
+
+func (h *FileHandler) extractFormValues(r *http.Request) (string, string, error) {
 	chatID := r.FormValue("chatID")
 	if chatID == "" {
-		fmt.Println("chatID is missing in form data")
-		http.Error(w, "Missing chatID", http.StatusBadRequest)
-		return
+		return "", "", errors.New("Missing chatID")
 	}
 
 	userID := r.FormValue("userID")
 	if userID == "" {
-		fmt.Println("userID is missing in form data")
-		http.Error(w, "Missing userID", http.StatusBadRequest)
-		return
+		return "", "", errors.New("Missing userID")
 	}
 
+	return chatID, userID, nil
+}
+
+func (h *FileHandler) isUserMember(chatID string, userID string) bool {
+	studyGroupID, err := strconv.Atoi(chatID)
+	if err != nil {
+		return false
+	}
+
+	studyGroup, err := h.studyGroupService.GetStudyGroupByID(models.StudyGroupID(studyGroupID))
+	if err != nil {
+		return false
+	}
+
+	return isUserMemberOfStudyGroup(models.UserID(userID), studyGroup)
+}
+
+func (h *FileHandler) saveFile(file io.Reader, filename string) error {
 	uploadDir := "uploads"
 	if err := os.MkdirAll(uploadDir, os.ModePerm); err != nil {
-		fmt.Println("Error creating uploads directory:", err)
-		http.Error(w, "Server error", http.StatusInternalServerError)
-		return
+		return err
 	}
 
-	dstPath := filepath.Join(uploadDir, header.Filename)
+	dstPath := filepath.Join(uploadDir, filename)
 	dst, err := os.Create(dstPath)
 	if err != nil {
-		fmt.Println("Error creating file:", err)
-		http.Error(w, "Error saving file", http.StatusInternalServerError)
-		return
+		return err
 	}
 	defer dst.Close()
 
 	_, err = io.Copy(dst, file)
-	if err != nil {
-		fmt.Println("Error writing file:", err)
-		http.Error(w, "Error writing file", http.StatusInternalServerError)
-		return
-	}
-	response := map[string]string{
-		"message": "File uploaded successfully",
-		"chatID":  chatID,
-		"file":    header.Filename,
-		"userID":  userID,
-	}
+	return err
+}
 
-	sendJSONResponse(w, response)
+func isUserMemberOfStudyGroup(userID models.UserID, studyGroup *models.StudyGroupView) bool {
+	for _, member := range studyGroup.Members {
+		if member.UserID == userID {
+			return true
+		}
+	}
+	return false
 }
