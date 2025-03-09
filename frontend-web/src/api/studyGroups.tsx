@@ -49,3 +49,24 @@ export async function removeMemberFromStudyGroup(token: string | null, studyGrou
         body: JSON.stringify({ targetUserId: memberId }),
     });
 }
+
+export async function fetchStudyGroupById(token: string | null, studyGroupId: number): Promise<StudyGroup> {
+    return await fetchApiToJson<StudyGroup>(`/api/study-groups/${studyGroupId}`, token);
+}
+
+export async function updateStudyGroup(
+    token: string | null,
+    studyGroupId: number,
+    updates: Partial<StudyGroupCreationDetails>
+): Promise<StudyGroup> {
+    return await fetchApiToJson<StudyGroup>(`/api/study-groups/${studyGroupId}`, token, {
+        method: "PUT", // Adjust method if needed by your backend
+        body: JSON.stringify(updates),
+    });
+}
+
+export async function deleteStudyGroup(token: string | null, studyGroupId: number): Promise<void> {
+    await fetchApi(`/api/study-groups/${studyGroupId}`, token, {
+        method: "DELETE",
+    });
+}
