@@ -36,6 +36,7 @@ func (h *FileHandler) GetFiles(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("GetFiles called with chatID:", chatID)
 
 	// TODO: integrate with SCRUM 110
+
 	response := map[string]string{
 		"message": "Fetched files for chatID " + chatID,
 	}
@@ -67,7 +68,7 @@ func (h *FileHandler) UploadFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.saveFile(file, header.Filename); err != nil {
+	if err := h.saveFile(file, header.Filename, chatID); err != nil {
 		http.Error(w, "Error saving file", http.StatusInternalServerError)
 		return
 	}
@@ -103,13 +104,13 @@ func (h *FileHandler) isUserMember(chatID string, userID string) bool {
 	return isUserMemberOfStudyGroup(models.UserID(userID), studyGroup)
 }
 
-func (h *FileHandler) saveFile(file io.Reader, filename string) error {
-	uploadDir := "uploads"
-	if err := os.MkdirAll(uploadDir, os.ModePerm); err != nil {
+func (h *FileHandler) saveFile(file io.Reader, filename string, chatID string) error {
+	dirPath := "uploads/" + chatID
+	if err := os.MkdirAll(dirPath, os.ModePerm); err != nil {
 		return err
 	}
 
-	dstPath := filepath.Join(uploadDir, filename)
+	dstPath := filepath.Join(dirPath, filename)
 	dst, err := os.Create(dstPath)
 	if err != nil {
 		return err
