@@ -34,7 +34,7 @@ export async function fetchApi(
     await makeRequest(url, token, options);
 }
 
-async function makeRequest(
+export async function makeRequest(
     url: string,
     token: string | null,
     options: RequestInit = {}

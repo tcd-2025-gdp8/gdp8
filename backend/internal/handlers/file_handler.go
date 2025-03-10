@@ -34,7 +34,6 @@ func (h *FileHandler) GetFiles(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	chatID := parts[3]
-	fmt.Println("GetFiles called with chatID:", chatID)
 
 	files, err := h.getFilesByID(chatID)
 	if err != nil {
