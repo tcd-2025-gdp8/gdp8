@@ -10,7 +10,7 @@ import {
   FormControl,
   InputLabel,
 } from "@mui/material";
-
+import { Link } from "react-router-dom";
 import { Module } from "../api/modules";
 import { fetchStudyGroups, StudyGroup } from "../api/studyGroups";
 import { getUserModules } from "../api/users";
@@ -41,7 +41,7 @@ export default function StudyGroupsPage() {
     const fetchModules = async () => {
       if (!currentUserId) return;
       const data = await getUserModules(token, currentUserId);
-      if(data) {
+      if (data) {
         setModulesList([{ id: -1, code: "All", name: "All" }, ...data]);
       } else {
         setModulesList([{ id: -1, code: "All", name: "All" }]);
@@ -74,14 +74,7 @@ export default function StudyGroupsPage() {
       <Typography variant="h4" style={{ marginBottom: "2rem" }}>
         Study Groups
       </Typography>
-      <FormControl 
-        fullWidth 
-        style={{ 
-          marginBottom: "2rem",
-          maxWidth: "600px",
-          margin: "0 auto 2em auto"
-        }}
-      >
+      <FormControl fullWidth style={{ marginBottom: "2rem", maxWidth: "600px", margin: "0 auto 2em auto" }}>
         <InputLabel>Filter by Module</InputLabel>
         <Select
           value={selectedFilterModuleId}
@@ -102,12 +95,15 @@ export default function StudyGroupsPage() {
           if (!module) return <Fragment key={group.id}></Fragment>;
           return (
             <Grid item xs={12} sm={6} md={4} key={group.id} style={{ minWidth: "280px" }}>
-              <StudyGroupCard 
-                group={group} 
-                module={module} 
-                currentUserId={currentUserId!} 
-                onUpdate={() => { void fetchData(); }} 
-              />
+              {/* Wrapping the entire StudyGroupCard in a Link */}
+              <Link to={`/study-groups/${group.id}`} style={{ textDecoration: "none", color: "inherit" }}>
+                <StudyGroupCard
+                  group={group}
+                  module={module}
+                  currentUserId={currentUserId!}
+                  onUpdate={() => void fetchData()}
+                />
+              </Link>
             </Grid>
           );
         })}
@@ -117,22 +113,16 @@ export default function StudyGroupsPage() {
         variant="contained"
         color="primary"
         onClick={() => createStudyGroupDialogRef.current?.openDialog()}
-        sx={{
-          maxWidth: "600px",
-          margin: "2rem auto",
-          display: "block",
-          width: "100%"
-        }}
+        sx={{ maxWidth: "600px", margin: "2rem auto", display: "block", width: "100%" }}
       >
         Create a Study Group
       </Button>
 
-      <DialogCreateStudyGroup 
+      <DialogCreateStudyGroup
         modules={modulesList.filter((module) => module.id !== -1)}
         ref={createStudyGroupDialogRef}
-        onUpdate={() => { void fetchData(); }}
+        onUpdate={() => void fetchData()}
       />
-
     </Container>
   );
-};
+}
