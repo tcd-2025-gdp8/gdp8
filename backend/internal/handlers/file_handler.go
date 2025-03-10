@@ -105,6 +105,11 @@ func (h *FileHandler) isUserMember(chatID string, userID string) bool {
 }
 
 func (h *FileHandler) saveFile(file io.Reader, filename string, chatID string) error {
+	filename = filepath.Base(filename)
+	if filename == "." || filename == "" {
+		return errors.New("invalid filename")
+	}
+
 	dirPath := "uploads/" + chatID
 	if err := os.MkdirAll(dirPath, os.ModePerm); err != nil {
 		return err
