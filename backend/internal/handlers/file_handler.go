@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"archive/zip"
 	"errors"
 	"fmt"
 	"io"
@@ -33,14 +34,30 @@ func (h *FileHandler) GetFiles(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	chatID := parts[3]
-	fmt.Println("GetFiles called with chatID:", chatID)
 
-	// TODO: integrate with SCRUM 110
-	response := map[string]string{
-		"message": "Fetched files for chatID " + chatID,
+	files, err := h.getFilesByID(chatID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
 	}
 
-	sendJSONResponse(w, response)
+	w.Header().Set("Content-Type", "application/zip")
+	w.Header().Set("Content-Disposition", "attachment; filename=\"files.zip\"")
+	zipWriter := zip.NewWriter(w)
+	defer zipWriter.Close()
+
+	for _, file := range files {
+		f, err := zipWriter.Create(file.Name)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		_, err = f.Write(file.Content)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
 }
 
 func (h *FileHandler) UploadFile(w http.ResponseWriter, r *http.Request) {
@@ -67,7 +84,7 @@ func (h *FileHandler) UploadFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.saveFile(file, header.Filename); err != nil {
+	if err := h.saveFile(file, header.Filename, chatID); err != nil {
 		http.Error(w, "Error saving file", http.StatusInternalServerError)
 		return
 	}
@@ -103,13 +120,18 @@ func (h *FileHandler) isUserMember(chatID string, userID string) bool {
 	return isUserMemberOfStudyGroup(models.UserID(userID), studyGroup)
 }
 
-func (h *FileHandler) saveFile(file io.Reader, filename string) error {
-	uploadDir := "uploads"
-	if err := os.MkdirAll(uploadDir, os.ModePerm); err != nil {
+func (h *FileHandler) saveFile(file io.Reader, filename string, chatID string) error {
+	filename = filepath.Base(filename)
+	if filename == "." || filename == "" {
+		return errors.New("invalid filename")
+	}
+
+	dirPath := filepath.Join("uploads", chatID)
+	if err := os.MkdirAll(dirPath, os.ModePerm); err != nil {
 		return err
 	}
 
-	dstPath := filepath.Join(uploadDir, filename)
+	dstPath := filepath.Join(dirPath, filename)
 	dst, err := os.Create(dstPath)
 	if err != nil {
 		return err
@@ -127,4 +149,33 @@ func isUserMemberOfStudyGroup(userID models.UserID, studyGroup *models.StudyGrou
 		}
 	}
 	return false
+}
+func (h *FileHandler) getFilesByID(chatID string) ([]File, error) {
+	dirPath := filepath.Join("uploads", chatID)
+	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
+		return nil, fmt.Errorf("directory %s does not exist", dirPath)
+	}
+
+	entries, err := os.ReadDir(dirPath)
+	if err != nil {
+		return nil, err
+	}
+
+	var files []File
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			content, err := os.ReadFile(filepath.Join(dirPath, entry.Name()))
+			if err != nil {
+				return nil, err
+			}
+			files = append(files, File{Name: entry.Name(), Content: content})
+		}
+	}
+
+	return files, nil
+}
+
+type File struct {
+	Name    string
+	Content []byte
 }
