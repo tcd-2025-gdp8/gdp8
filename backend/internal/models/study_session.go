@@ -5,9 +5,9 @@ import "time"
 type StudySessionID int64
 
 type StudySession struct {
-	StudySessionID StudySessionID
-	StudyGroupID   StudyGroupID
-	CreatorID      UserID
+	ID           StudySessionID
+	StudyGroupID StudyGroupID
+	CreatorID    UserID
 	StudySessionDetails
 	EndTime time.Time
 }
