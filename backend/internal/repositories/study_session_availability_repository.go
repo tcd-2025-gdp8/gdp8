@@ -10,9 +10,9 @@ import (
 type StudySessionAvailabilityRepository interface {
 	GetCurrentStudySessionAvailabilityRequests(tx *sql.Tx,
 		studyGroupID models.StudyGroupID) ([]models.StudySessionAvailabilityRequest, error)
-	CreateStudySessionAvailabilityRequests(tx *sql.Tx, studyGroupID models.StudyGroupID,
+	CreateStudySessionAvailabilityRequest(tx *sql.Tx, studyGroupID models.StudyGroupID,
 		availabilityRequestDetails *models.StudySessionAvailabilityRequestDetails) error
-	DeleteStudySessionAvailabilityRequests(tx *sql.Tx,
+	DeleteStudySessionAvailabilityRequest(tx *sql.Tx,
 		availabilityRequestID models.StudySessionAvailabilityRequestID) error
 	UpsertUserAvailabilityEntries(tx *sql.Tx, availabilityRequestID models.StudySessionAvailabilityRequestID,
 		userID models.UserID, availabilityEntries []models.AvailabilityEntry) error
@@ -59,7 +59,7 @@ func (s *SQLStudySessionAvailabilityRepository) GetCurrentStudySessionAvailabili
 	return requests, nil
 }
 
-func (s *SQLStudySessionAvailabilityRepository) CreateStudySessionAvailabilityRequests(tx *sql.Tx,
+func (s *SQLStudySessionAvailabilityRepository) CreateStudySessionAvailabilityRequest(tx *sql.Tx,
 	studyGroupID models.StudyGroupID, availabilityRequestDetails *models.StudySessionAvailabilityRequestDetails) error {
 
 	query := `
@@ -67,7 +67,7 @@ func (s *SQLStudySessionAvailabilityRepository) CreateStudySessionAvailabilityRe
 		(study_group_id, availability_period_start, availability_period_end)
 		VALUES (?, ?, ?)`
 
-	result, err := tx.Exec(query,
+	_, err := tx.Exec(query,
 		studyGroupID,
 		availabilityRequestDetails.AvailabilityPeriodStart,
 		availabilityRequestDetails.AvailabilityPeriodEnd,
@@ -76,35 +76,19 @@ func (s *SQLStudySessionAvailabilityRepository) CreateStudySessionAvailabilityRe
 		return fmt.Errorf("failed to create availability request: %w", err)
 	}
 
-	affected, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("failed to get affected rows: %w", err)
-	}
-	if affected == 0 {
-		return fmt.Errorf("no rows were affected when creating availability request")
-	}
-
 	return nil
 }
 
-func (s *SQLStudySessionAvailabilityRepository) DeleteStudySessionAvailabilityRequests(tx *sql.Tx,
+func (s *SQLStudySessionAvailabilityRepository) DeleteStudySessionAvailabilityRequest(tx *sql.Tx,
 	availabilityRequestID models.StudySessionAvailabilityRequestID) error {
 
 	query := `
 		DELETE FROM study_session_availability_requests
 		WHERE id = ?`
 
-	result, err := tx.Exec(query, availabilityRequestID)
+	_, err := tx.Exec(query, availabilityRequestID)
 	if err != nil {
 		return fmt.Errorf("failed to delete availability request: %w", err)
-	}
-
-	affected, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("failed to get affected rows: %w", err)
-	}
-	if affected == 0 {
-		return fmt.Errorf("no availability request found with ID %d", availabilityRequestID)
 	}
 
 	return nil
