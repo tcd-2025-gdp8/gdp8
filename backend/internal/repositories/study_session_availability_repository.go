@@ -51,33 +51,9 @@ func (s *SQLStudySessionAvailabilityRepository) GetCurrentStudySessionAvailabili
 			return nil, fmt.Errorf("failed to scan availability request: %w", err)
 		}
 
-		entryQuery := `
-			SELECT user_id, availability_entry_start, availability_entry_end
-			FROM study_session_availability_entries
-			WHERE availability_request_id = ?`
-		entryRows, err := tx.Query(entryQuery, request.ID)
+		entries, err := s.getEntriesForRequest(tx, request.ID)
 		if err != nil {
-			return nil, fmt.Errorf("failed to query availability entries for request %d: %w", request.ID, err)
-		}
-
-		var entries []models.StudySessionAvailabilityEntry
-		for entryRows.Next() {
-			var entry models.StudySessionAvailabilityEntry
-			err := entryRows.Scan(
-				&entry.UserID,
-				&entry.AvailabilityEntryStart,
-				&entry.AvailabilityEntryEnd,
-			)
-			if err != nil {
-				_ = entryRows.Close()
-				return nil, fmt.Errorf("failed to scan availability entry: %w", err)
-			}
-			entries = append(entries, entry)
-		}
-		_ = entryRows.Close()
-
-		if err = entryRows.Err(); err != nil {
-			return nil, fmt.Errorf("error iterating availability entries: %w", err)
+			return nil, err
 		}
 
 		request.Entries = entries
@@ -169,4 +145,39 @@ func (s *SQLStudySessionAvailabilityRepository) UpsertUserAvailabilityEntries(tx
 	}
 
 	return nil
+}
+
+func (s *SQLStudySessionAvailabilityRepository) getEntriesForRequest(tx *sql.Tx,
+	requestID models.StudySessionAvailabilityRequestID) ([]models.StudySessionAvailabilityEntry, error) {
+
+	entryQuery := `
+		SELECT user_id, availability_entry_start, availability_entry_end
+		FROM study_session_availability_entries
+		WHERE availability_request_id = ?`
+	entryRows, err := tx.Query(entryQuery, requestID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query availability entries: %w", err)
+	}
+
+	var entries []models.StudySessionAvailabilityEntry
+	for entryRows.Next() {
+		var entry models.StudySessionAvailabilityEntry
+		err := entryRows.Scan(
+			&entry.UserID,
+			&entry.AvailabilityEntryStart,
+			&entry.AvailabilityEntryEnd,
+		)
+		if err != nil {
+			_ = entryRows.Close()
+			return nil, fmt.Errorf("failed to scan availability entry: %w", err)
+		}
+		entries = append(entries, entry)
+	}
+	_ = entryRows.Close()
+
+	if err = entryRows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating availability entries: %w", err)
+	}
+
+	return entries, nil
 }
