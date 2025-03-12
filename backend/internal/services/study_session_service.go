@@ -2,6 +2,7 @@ package services
 
 import (
 	"database/sql"
+
 	"gdp8-backend/internal/models"
 	"gdp8-backend/internal/persistence"
 	"gdp8-backend/internal/repositories"
@@ -51,8 +52,8 @@ func (s *studySessionServiceImpl) GetAllStudySessionsByStudyGroup(
 	})
 }
 
-func (s *studySessionServiceImpl) GetAllStudySessionsByUser(userID models.UserID) ([]models.StudySession, error) {
-	//TODO implement me
+func (s *studySessionServiceImpl) GetAllStudySessionsByUser(_ models.UserID) ([]models.StudySession, error) {
+	// TODO implement me
 	panic("implement me")
 }
 

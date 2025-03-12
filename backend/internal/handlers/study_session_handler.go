@@ -2,11 +2,12 @@ package handlers
 
 import (
 	"encoding/json"
+	"net/http"
+	"time"
+
 	"gdp8-backend/internal/models"
 	"gdp8-backend/internal/services"
 	"gdp8-backend/internal/utils"
-	"net/http"
-	"time"
 )
 
 type StudySessionResponse struct {
@@ -70,7 +71,7 @@ func (h *StudySessionHandler) GetStudySessionsByGroup(w http.ResponseWriter, r *
 	sendJSONResponse(w, response)
 }
 
-func (h *StudySessionHandler) GetStudySessionsByUser(w http.ResponseWriter, r *http.Request) {
+func (h *StudySessionHandler) GetStudySessionsByUser(_ http.ResponseWriter, _ *http.Request) {
 	// TODO implement
 	panic("Not implemented")
 }

@@ -66,8 +66,8 @@ func (s *SQLStudySessionRepository) GetAllStudySessionsByStudyGroup(tx *sql.Tx,
 	return sessions, nil
 }
 
-func (s *SQLStudySessionRepository) GetAllStudySessionsByUser(tx *sql.Tx,
-	userID models.UserID) ([]models.StudySession, error) {
+func (s *SQLStudySessionRepository) GetAllStudySessionsByUser(_ *sql.Tx,
+	_ models.UserID) ([]models.StudySession, error) {
 
 	// TODO implement
 	panic("not implemented")
