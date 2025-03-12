@@ -105,17 +105,12 @@ func (h *FileHandler) DeleteFile(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Cannot delete the file", http.StatusUnauthorized)
 	}
 
-	deleted, err := h.deleteFileByName(filename)
+	err = h.deleteFileByName(filename, chatID)
 	if err != nil {
-		http.Error(w, "Couldn't delete the file", http.StatusInternalServerError)
+            http.Error(w, err.Error(), http.StatusInternalServerError)
 
 	}
-	status := "File uploaded successfully"
-	if !deleted {
-		status = fmt.Sprintf("The file %s does not exist", filename)
-
-	}
-	sendJSONResponse(w, map[string]string{"message": status})
+	sendJSONResponse(w, map[string]string{"message": fmt.Sprintf("the file '%s' has been deleted", filename)})
 }
 
 func (h *FileHandler) extractFormValues(r *http.Request) (string, string, error) {
@@ -201,10 +196,9 @@ func (h *FileHandler) getFilesByID(chatID string) ([]File, error) {
 	return files, nil
 }
 
-func (h *FileHandler) deleteFileByName(filename string) (bool, error) {
-	_ = h
-	_ = filename
-	return true, nil
+func (h *FileHandler) deleteFileByName(filename string, chatID string) error {
+    file := filepath.Join("uploads", chatID, filename)
+    return os.Remove(file)
 }
 
 func (h *FileHandler) hasDeletionRights(filename string, chatID string, userID string) bool {
