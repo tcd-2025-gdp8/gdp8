@@ -92,6 +92,27 @@ func (h *FileHandler) UploadFile(w http.ResponseWriter, r *http.Request) {
 	sendJSONResponse(w, map[string]string{"message": "File uploaded successfully"})
 }
 
+func (h *FileHandler) DeleteFile(w http.ResponseWriter, r *http.Request) {
+	chatID, userID, err := h.extractFormValues(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	filename := r.FormValue("filename")
+	canDelete := h.hasDeletionRights(filename, chatID, userID)
+
+	if !canDelete {
+		http.Error(w, "Cannot delete the file", http.StatusUnauthorized)
+	}
+
+	err = h.deleteFileByName(filename, chatID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+
+	}
+	sendJSONResponse(w, map[string]string{"message": fmt.Sprintf("the file '%s' has been deleted", filename)})
+}
+
 func (h *FileHandler) extractFormValues(r *http.Request) (string, string, error) {
 	chatID := r.FormValue("chatID")
 	if chatID == "" {
@@ -173,6 +194,19 @@ func (h *FileHandler) getFilesByID(chatID string) ([]File, error) {
 	}
 
 	return files, nil
+}
+
+func (h *FileHandler) deleteFileByName(filename string, chatID string) error {
+	file := filepath.Join("uploads", chatID, filename)
+	return os.Remove(file)
+}
+
+func (h *FileHandler) hasDeletionRights(filename string, chatID string, userID string) bool {
+	_ = h
+	_ = filename
+	_ = chatID
+	_ = userID
+	return true
 }
 
 type File struct {
