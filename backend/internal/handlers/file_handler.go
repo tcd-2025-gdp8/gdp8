@@ -107,7 +107,7 @@ func (h *FileHandler) DeleteFile(w http.ResponseWriter, r *http.Request) {
 
 	err = h.deleteFileByName(filename, chatID)
 	if err != nil {
-            http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 
 	}
 	sendJSONResponse(w, map[string]string{"message": fmt.Sprintf("the file '%s' has been deleted", filename)})
@@ -197,8 +197,8 @@ func (h *FileHandler) getFilesByID(chatID string) ([]File, error) {
 }
 
 func (h *FileHandler) deleteFileByName(filename string, chatID string) error {
-    file := filepath.Join("uploads", chatID, filename)
-    return os.Remove(file)
+	file := filepath.Join("uploads", chatID, filename)
+	return os.Remove(file)
 }
 
 func (h *FileHandler) hasDeletionRights(filename string, chatID string, userID string) bool {
