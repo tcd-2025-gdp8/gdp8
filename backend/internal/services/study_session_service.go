@@ -133,6 +133,8 @@ func (s *studySessionServiceImpl) UpsertUserAvailabilityEntries(
 	availabilityRequestID models.StudySessionAvailabilityRequestID, userID models.UserID,
 	availabilityEntries []models.AvailabilityEntry) error {
 
+	// TODO verify the entries against the availability request
+
 	err := persistence.WithTransactionNoReturnVal(s.txMgr, func(tx *sql.Tx) error {
 		return s.studySessionAvailabilityRepo.UpsertUserAvailabilityEntries(tx,
 			availabilityRequestID, userID, availabilityEntries)
