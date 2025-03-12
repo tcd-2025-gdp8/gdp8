@@ -126,3 +126,62 @@ BEGIN
         DELETE FROM notifications WHERE id = OLD.notification_id;
     END IF;
 END;
+
+CREATE TABLE IF NOT EXISTS study_session_availability_requests (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    study_group_id INT NOT NULL,
+    availability_period_start TIMESTAMP NOT NULL,
+    availability_period_end TIMESTAMP NOT NULL,
+
+    FOREIGN KEY (study_group_id) REFERENCES study_groups(id) ON DELETE CASCADE,
+
+    INDEX idx_study_session_availability_requests_period_end (availability_period_end),
+    INDEX idx_study_session_availability_requests_group_and_period_end (study_group_id, availability_period_end)
+);
+
+CREATE PROCEDURE IF NOT EXISTS delete_expired_study_session_availability_requests()
+BEGIN
+    DELETE FROM study_session_availability_requests
+    WHERE availability_period_end < NOW();
+END;
+
+CREATE EVENT IF NOT EXISTS delete_expired_study_session_availability_requests_event
+    ON SCHEDULE EVERY 1 DAY
+    DO CALL delete_expired_study_session_availability_requests();
+
+CALL delete_expired_study_session_availability_requests();
+
+CREATE VIEW IF NOT EXISTS current_study_session_availability_requests AS
+    SELECT *
+    FROM study_session_availability_requests
+    WHERE availability_period_end > NOW();
+
+CREATE TABLE IF NOT EXISTS study_session_availability_entries (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    availability_request_id INT NOT NULL,
+    user_id VARCHAR(255) NOT NULL,
+    availability_entry_start TIMESTAMP NOT NULL,
+    availability_entry_end TIMESTAMP NOT NULL,
+
+    FOREIGN KEY (availability_request_id) REFERENCES study_session_availability_requests(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+
+    INDEX idx_study_session_availability_entries_availability_request_id (availability_request_id)
+);
+
+CREATE TABLE IF NOT EXISTS study_sessions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    study_group_id INT NOT NULL,
+    creator_id VARCHAR(255) NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    start_time TIMESTAMP NOT NULL,
+    duration_minutes INT NOT NULL,
+
+    end_time TIMESTAMP GENERATED ALWAYS AS (start_time + INTERVAL duration_minutes MINUTE) STORED,
+
+    FOREIGN KEY (study_group_id) REFERENCES study_groups(id) ON DELETE CASCADE,
+    FOREIGN KEY (creator_id) REFERENCES users(id) ON DELETE RESTRICT,
+
+    INDEX idx_study_sessions_study_group_id (study_group_id),
+    INDEX idx_study_sessions_group_id_and_end_time (study_group_id, end_time)
+);
