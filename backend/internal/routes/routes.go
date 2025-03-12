@@ -16,13 +16,16 @@ func RegisterAllRoutes(firebaseAuth *auth.Client, txManager persistence.Transact
 	userRepo := repositories.SQLUserRepository{}
 	moduleRepo := repositories.SQLModuleRepository{}
 	notificationRepo := repositories.SQLNotificationRepository{}
+	studySessionRepo := repositories.SQLStudySessionRepository{}
+	studySessionAvailabilityRepo := repositories.SQLStudySessionAvailabilityRepository{}
 
 	userService := services.NewUserService(txManager, &userRepo)
 	moduleService := services.NewModuleService(txManager, &moduleRepo)
 	notificationService := services.NewNotificationService(txManager, &notificationRepo)
 	studyGroupService := services.NewStudyGroupService(txManager, &studyGroupRepo, notificationService)
+	studySessionService := services.NewStudySessionService(txManager, &studySessionAvailabilityRepo, &studySessionRepo)
 
-	RegisterStudyGroupRoutes(firebaseAuth, studyGroupService)
+	RegisterStudyGroupRoutes(firebaseAuth, studyGroupService, studySessionService)
 	RegisterModuleRoutes(firebaseAuth, moduleService)
 	RegisterNotificationRoutes(firebaseAuth, notificationService)
 	RegisterUserRoutes(firebaseAuth, userService)
