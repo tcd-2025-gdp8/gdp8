@@ -21,10 +21,10 @@ export default function Sidebar() {
     const { logout } = useAuth();
     const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
 
-    const handleLogout = () => {
-        logout();
+    const handleLogout = async () => {
+        await logout();
         setLogoutDialogOpen(false);
-    };
+    };    
 
     return (
         <>
@@ -95,10 +95,10 @@ export default function Sidebar() {
                     Are you sure you want to log out?
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setLogoutDialogOpen(false)} color="error" variant="contained">
+                    <Button onClick={() => setLogoutDialogOpen(false)} color="primary" variant="contained">
                         Cancel
                     </Button>
-                    <Button onClick={handleLogout} color="primary" variant="contained">
+                    <Button onClick={handleLogout} color="error" variant="contained">
                         Log Out
                     </Button>
                 </DialogActions>
