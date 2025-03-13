@@ -21,10 +21,10 @@ export default function Sidebar() {
     const { logout } = useAuth();
     const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
 
-    const handleLogout = async () => {
-        await logout();
+    const handleLogout = () => {
+        void logout();
         setLogoutDialogOpen(false);
-    };    
+    };      
 
     return (
         <>
