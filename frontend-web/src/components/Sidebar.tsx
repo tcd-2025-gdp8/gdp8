@@ -95,10 +95,10 @@ export default function Sidebar() {
                     Are you sure you want to log out?
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setLogoutDialogOpen(false)} color="primary">
+                    <Button onClick={() => setLogoutDialogOpen(false)} color="error" variant="contained">
                         Cancel
                     </Button>
-                    <Button onClick={handleLogout} color="secondary" variant="contained">
+                    <Button onClick={handleLogout} color="primary" variant="contained">
                         Log Out
                     </Button>
                 </DialogActions>
