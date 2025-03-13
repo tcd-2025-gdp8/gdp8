@@ -2,7 +2,9 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"gdp8-backend/internal/models"
@@ -40,6 +42,11 @@ type StudySessionAvailabilityEntryDTO struct {
 	AvailabilityStart time.Time `json:"availabilityStart"`
 	AvailabilityEnd   time.Time `json:"availabilityEnd"`
 }
+
+const (
+	minTitleLength = 3
+	maxTitleLength = 255
+)
 
 type StudySessionHandler struct {
 	service services.StudySessionService
@@ -89,6 +96,11 @@ func (h *StudySessionHandler) CreateStudySession(w http.ResponseWriter, r *http.
 		return
 	}
 
+	err := validateTitle(req.Title)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+	}
+
 	groupIDString := r.PathValue("groupID")
 	groupID, err := utils.ConvertToType[models.StudyGroupID](groupIDString)
 	if err != nil {
@@ -129,6 +141,11 @@ func (h *StudySessionHandler) UpdateStudySession(w http.ResponseWriter, r *http.
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
+	}
+
+	err = validateTitle(req.Title)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
 
 	userID, err := getUserID(r)
@@ -218,6 +235,11 @@ func (h *StudySessionHandler) CreateAvailabilityRequest(w http.ResponseWriter, r
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
+	}
+
+	err = validateTitle(req.Title)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
 
 	details := &models.StudySessionAvailabilityRequestDetails{
@@ -335,4 +357,14 @@ func toAvailabilityRequestResponse(
 		AvailabilityPeriodEnd:   request.AvailabilityPeriodEnd,
 		Entries:                 entries,
 	}
+}
+
+func validateTitle(title string) error {
+	if len(strings.TrimSpace(title)) < minTitleLength {
+		return fmt.Errorf("title must be at least %d characters long", minTitleLength)
+	}
+	if len(strings.TrimSpace(title)) > maxTitleLength {
+		return fmt.Errorf("title must be at most %d characters long", maxTitleLength)
+	}
+	return nil
 }
