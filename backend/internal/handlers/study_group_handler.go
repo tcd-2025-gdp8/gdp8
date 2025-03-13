@@ -42,8 +42,8 @@ type StudyGroupDetailsDTO struct {
 	Name        string          `json:"name"`
 	Description string          `json:"description"`
 	Type        string          `json:"type"`
-	ModuleID    models.ModuleID `json:"moduleId"`
 	MaxMembers  int             `json:"maxMembers"`
+	ModuleID    models.ModuleID `json:"moduleId"`
 }
 
 type StudyGroupWithMembersDTO struct {
