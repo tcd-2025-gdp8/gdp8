@@ -165,6 +165,81 @@ func (h *StudyGroupHandler) CreateStudyGroup(w http.ResponseWriter, r *http.Requ
 	sendJSONResponse(w, mapStudyGroupWithMembersToDTO(createdStudyGroup))
 }
 
+func (h *StudyGroupHandler) UpdateStudyGroup(w http.ResponseWriter, r *http.Request) {
+	var updateDTO StudyGroupDetailsDTO
+	if err := json.NewDecoder(r.Body).Decode(&updateDTO); err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	if err := validateStudyGroupDetailsDTO(&updateDTO); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	idString := r.PathValue("id")
+	studyGroupID, err := utils.ConvertToType[models.StudyGroupID](idString)
+	if err != nil {
+		http.Error(w, "Invalid study group ID", http.StatusBadRequest)
+		return
+	}
+
+	userID, err := getUserID(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	studyGroupDetails := models.StudyGroupDetails{
+		Name:        updateDTO.Name,
+		Description: updateDTO.Description,
+		Type:        models.StudyGroupType(updateDTO.Type),
+		ModuleID:    updateDTO.ModuleID,
+		MaxMembers:  updateDTO.MaxMembers,
+	}
+
+	updatedStudyGroup, err := h.service.UpdateStudyGroupDetails(studyGroupID, studyGroupDetails, userID)
+
+	switch {
+	case err == nil:
+		sendJSONResponse(w, mapStudyGroupWithMembersToDTO(updatedStudyGroup))
+	case errors.Is(err, services.ErrStudyGroupNotFound):
+		http.Error(w, "Study group not found", http.StatusNotFound)
+	default:
+		log.Printf("Error updating study group: %v\n", err)
+		http.Error(w, "Error updating study group", http.StatusInternalServerError)
+	}
+}
+
+func (h *StudyGroupHandler) DeleteStudyGroup(w http.ResponseWriter, r *http.Request) {
+	idString := r.PathValue("id")
+	studyGroupID, err := utils.ConvertToType[models.StudyGroupID](idString)
+	if err != nil {
+		http.Error(w, "Invalid study group ID", http.StatusBadRequest)
+		return
+	}
+
+	userID, err := getUserID(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	err = h.service.DeleteStudyGroup(studyGroupID, userID)
+
+	switch {
+	case err == nil:
+		w.WriteHeader(http.StatusNoContent)
+	case errors.Is(err, services.ErrUnauthorizedMemberOperation):
+		http.Error(w, "Unauthorized study group delete operation", http.StatusForbidden)
+	case errors.Is(err, services.ErrStudyGroupNotFound):
+		http.Error(w, "Study group not found", http.StatusNotFound)
+	default:
+		log.Printf("Error deleting study group: %v\n", err)
+		http.Error(w, "Error deleting study group", http.StatusInternalServerError)
+	}
+}
+
 func (h *StudyGroupHandler) HandleStudyMemberOperation(w http.ResponseWriter, r *http.Request) {
 	idString := r.PathValue("id")
 	studyGroupID, err := utils.ConvertToType[models.StudyGroupID](idString)
@@ -197,7 +272,7 @@ func (h *StudyGroupHandler) HandleStudyMemberOperation(w http.ResponseWriter, r 
 		http.Error(w, "Study group not found", http.StatusNotFound)
 	case errors.Is(err, services.ErrUnauthorizedMemberOperation):
 		http.Error(w, "Unauthorized study group operation", http.StatusForbidden)
-	case errors.Is(err, services.ErrStudyGroupFull): // NEW
+	case errors.Is(err, services.ErrStudyGroupFull):
 		http.Error(w, "Study group is full", http.StatusBadRequest)
 	case errors.Is(err, services.ErrInvalidMemberOperation):
 		http.Error(w, "Invalid study group operation", http.StatusBadRequest)
