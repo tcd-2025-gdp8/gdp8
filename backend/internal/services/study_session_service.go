@@ -15,8 +15,8 @@ type StudySessionService interface {
 	CreateStudySession(studyGroupID models.StudyGroupID, creatorID models.UserID,
 		studySessionDetails *models.StudySessionDetails) (*models.StudySession, error)
 	UpdateStudySession(studySessionID models.StudySessionID,
-		studySessionDetails *models.StudySessionDetails) (*models.StudySession, error)
-	DeleteStudySession(studySessionID models.StudySessionID) error
+		studySessionDetails *models.StudySessionDetails, requesterID models.UserID) (*models.StudySession, error)
+	DeleteStudySession(studySessionID models.StudySessionID, requesterID models.UserID) error
 
 	GetCurrentStudySessionAvailabilityRequests(
 		studyGroupID models.StudyGroupID) ([]models.StudySessionAvailabilityRequest, error)
@@ -86,7 +86,7 @@ func (s *studySessionServiceImpl) CreateStudySession(studyGroupID models.StudyGr
 }
 
 func (s *studySessionServiceImpl) UpdateStudySession(studySessionID models.StudySessionID,
-	studySessionDetails *models.StudySessionDetails) (*models.StudySession, error) {
+	studySessionDetails *models.StudySessionDetails, requesterID models.UserID) (*models.StudySession, error) {
 
 	// TODO validate creator
 
@@ -100,7 +100,8 @@ func (s *studySessionServiceImpl) UpdateStudySession(studySessionID models.Study
 	return studySession, err
 }
 
-func (s *studySessionServiceImpl) DeleteStudySession(studySessionID models.StudySessionID) error {
+func (s *studySessionServiceImpl) DeleteStudySession(studySessionID models.StudySessionID,
+	requesterID models.UserID) error {
 
 	// TODO validate creator
 

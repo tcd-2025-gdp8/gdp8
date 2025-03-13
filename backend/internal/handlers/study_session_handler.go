@@ -119,11 +119,15 @@ func (h *StudySessionHandler) UpdateStudySession(w http.ResponseWriter, r *http.
 		return
 	}
 
-	// TODO user validation
-
 	var req StudySessionDetailsDTO
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	userID, err := getUserID(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 
@@ -133,7 +137,7 @@ func (h *StudySessionHandler) UpdateStudySession(w http.ResponseWriter, r *http.
 		DurationMinutes: req.DurationMinutes,
 	}
 
-	session, err := h.service.UpdateStudySession(studySessionID, details)
+	session, err := h.service.UpdateStudySession(studySessionID, details, userID)
 	if err != nil {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
@@ -150,7 +154,13 @@ func (h *StudySessionHandler) DeleteStudySession(w http.ResponseWriter, r *http.
 		return
 	}
 
-	if err := h.service.DeleteStudySession(studySessionID); err != nil {
+	userID, err := getUserID(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	if err := h.service.DeleteStudySession(studySessionID, userID); err != nil {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
