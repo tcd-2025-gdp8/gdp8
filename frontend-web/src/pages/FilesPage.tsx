@@ -24,7 +24,7 @@ export default function FilesPage() {
 
             setFiles(prevFiles => [...prevFiles, ...newFiles]);
             setUploading(false);
-        }, 1000); // Simulated upload delay
+        }, 1000); 
     };
 
     const handleFileDelete = (fileUrl: string): void => {
