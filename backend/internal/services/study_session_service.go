@@ -140,6 +140,15 @@ func (s *studySessionServiceImpl) DeleteStudySession(studySessionID models.Study
 func (s *studySessionServiceImpl) GetCurrentStudySessionAvailabilityRequests(
 	studyGroupID models.StudyGroupID, requesterID models.UserID) ([]models.StudySessionAvailabilityRequest, error) {
 
+	isMember, err := isStudyGroupMember(studyGroupID, requesterID, s.studyGroupService)
+	if err != nil {
+		return nil, err
+	}
+
+	if !isMember {
+		return nil, ErrUnauthorizedStudySessionOperation
+	}
+
 	return persistence.WithTransaction(s.txMgr, func(tx *sql.Tx) ([]models.StudySessionAvailabilityRequest, error) {
 		return s.studySessionAvailabilityRepo.GetCurrentStudySessionAvailabilityRequests(tx, studyGroupID)
 	})
@@ -148,9 +157,16 @@ func (s *studySessionServiceImpl) GetCurrentStudySessionAvailabilityRequests(
 func (s *studySessionServiceImpl) CreateStudySessionAvailabilityRequest(studyGroupID models.StudyGroupID,
 	availabilityRequestDetails *models.StudySessionAvailabilityRequestDetails, requesterID models.UserID) error {
 
-	// TODO validate creator
+	isMember, err := isStudyGroupMember(studyGroupID, requesterID, s.studyGroupService)
+	if err != nil {
+		return err
+	}
 
-	err := persistence.WithTransactionNoReturnVal(s.txMgr, func(tx *sql.Tx) error {
+	if !isMember {
+		return ErrUnauthorizedStudySessionOperation
+	}
+
+	err = persistence.WithTransactionNoReturnVal(s.txMgr, func(tx *sql.Tx) error {
 		return s.studySessionAvailabilityRepo.CreateStudySessionAvailabilityRequest(tx,
 			studyGroupID, availabilityRequestDetails)
 	})
@@ -175,9 +191,22 @@ func (s *studySessionServiceImpl) UpsertUserAvailabilityEntries(
 	availabilityEntries []models.AvailabilityEntry) error {
 
 	// TODO verify the entries against the availability request
-	// TODO validate user
 
 	err := persistence.WithTransactionNoReturnVal(s.txMgr, func(tx *sql.Tx) error {
+		availReq, err := s.studySessionAvailabilityRepo.GetStudySessionAvailabilityRequest(tx, availabilityRequestID)
+		if err != nil {
+			return err
+		}
+
+		isMember, err := isStudyGroupMember(availReq.StudyGroupID, userID, s.studyGroupService)
+		if err != nil {
+			return err
+		}
+
+		if !isMember {
+			return ErrUnauthorizedStudySessionOperation
+		}
+
 		return s.studySessionAvailabilityRepo.UpsertUserAvailabilityEntries(tx,
 			availabilityRequestID, userID, availabilityEntries)
 	})
