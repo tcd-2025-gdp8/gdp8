@@ -300,20 +300,20 @@ func mapStudyGroupToDTO(studyGroup *models.StudyGroupView) StudyGroupDTO {
 
 func validateStudyGroupDetailsDTO(details *StudyGroupDetailsDTO) error {
 	if strings.TrimSpace(details.Name) == "" {
-		return fmt.Errorf("name is required")
+		return errors.New("name is required")
 	}
 	if len(strings.TrimSpace(details.Name)) < minNameLength {
 		return fmt.Errorf("name must be at least %d characters long", minNameLength)
 	}
 
 	if strings.TrimSpace(details.Description) == "" {
-		return fmt.Errorf("description is required")
+		return errors.New("description is required")
 	}
 	if len(strings.TrimSpace(details.Description)) < minDescriptionLength {
 		return fmt.Errorf("description must be at least %d characters long", minDescriptionLength)
 	}
 
-	if !slices.Contains(validGroupTypes, string(details.Type)) {
+	if !slices.Contains(validGroupTypes, details.Type) {
 		return fmt.Errorf("type must be one of: %s", strings.Join(validGroupTypes, ", "))
 	}
 
