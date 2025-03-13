@@ -64,6 +64,9 @@ export default function Sidebar() {
                     <ListItemButton component={Link} to="/module">
                         <ListItemText primary="Modules" />
                     </ListItemButton>
+                    <ListItemButton component={Link} to="/files">
+                        <ListItemText primary="Files" />
+                    </ListItemButton>
                 </List>
 
                 {/* Logout Button at the Bottom */}
