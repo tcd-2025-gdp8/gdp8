@@ -1,5 +1,6 @@
 import { useState, DragEvent } from "react";
-import { Box, Typography, CircularProgress, Paper, List, ListItem, ListItemText, IconButton } from "@mui/material";
+import { Box, Typography, CircularProgress, Paper, List, ListItem, ListItemText, IconButton, Dialog, DialogTitle, DialogContent, 
+    DialogActions, Button  } from "@mui/material";
 import { UploadFile as UploadIcon, CloudUpload as CloudUploadIcon, Delete as DeleteIcon } from "@mui/icons-material";
 
 interface LocalFile {
@@ -11,6 +12,8 @@ export default function FilesPage() {
     const [files, setFiles] = useState<LocalFile[]>([]);
     const [uploading, setUploading] = useState(false);
     const [dragging, setDragging] = useState(false);
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [fileToDelete, setFileToDelete] = useState<string | null>(null);
 
     const handleFileUpload = (selectedFiles: FileList | null): void => {
         if (!selectedFiles || selectedFiles.length === 0) return;
@@ -27,8 +30,17 @@ export default function FilesPage() {
         }, 1000); 
     };
 
-    const handleFileDelete = (fileUrl: string): void => {
-        setFiles(prevFiles => prevFiles.filter(file => file.url !== fileUrl));
+    const confirmDeleteFile = (fileUrl: string): void => {
+        setFileToDelete(fileUrl);
+        setDeleteDialogOpen(true);
+    };
+
+    const handleDeleteConfirmed = (): void => {
+        if (fileToDelete) {
+            setFiles(prevFiles => prevFiles.filter(file => file.url !== fileToDelete));
+        }
+        setDeleteDialogOpen(false);
+        setFileToDelete(null);
     };
 
     const handleDragOver = (e: DragEvent<HTMLDivElement>): void => {
@@ -117,7 +129,7 @@ export default function FilesPage() {
                             <ListItem key={index}>
                                 <UploadIcon color="primary" sx={{ mr: 1 }} />
                                 <ListItemText>{file.name}</ListItemText>
-                                <IconButton onClick={() => handleFileDelete(file.url)} sx={{ color: "red" }}>
+                                <IconButton onClick={() => confirmDeleteFile(file.url)} sx={{ color: "red" }}>
                                     <DeleteIcon />
                                 </IconButton>
                             </ListItem>
@@ -125,6 +137,21 @@ export default function FilesPage() {
                     </List>
                 </Paper>
             </Box>
+
+            {/* Delete Confirmation Dialog */}
+            <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+                <DialogTitle>Confirm Deletion</DialogTitle>
+                <DialogContent>Are you sure you want to delete this file?</DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setDeleteDialogOpen(false)} color="primary">
+                        No
+                    </Button>
+                    <Button onClick={handleDeleteConfirmed} color="error">
+                        Yes
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
         </Box>
     );
 }
