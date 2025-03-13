@@ -60,6 +60,11 @@ func (m *MockStudyGroupService) HandleSelfMemberOperation(command services.SelfM
 	return args.Error(0)
 }
 
+func (m *MockStudyGroupService) RetrieveGroupRole(studyGroupID models.StudyGroupID, userID models.UserID) (*models.StudyGroupRole, error) {
+	args := m.Called(studyGroupID, userID)
+	return args.Get(0).(*models.StudyGroupRole), args.Error(1)
+}
+
 func TestStudyGroupHandler_GetStudyGroup(t *testing.T) {
 	t.Parallel()
 
