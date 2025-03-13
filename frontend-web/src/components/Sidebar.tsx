@@ -73,9 +73,9 @@ export default function Sidebar() {
                         position: "absolute",
                         bottom: 0,
                         width: "100%",
-                        backgroundColor: "#e57373",
+                        backgroundColor: "#d32f2f",
                         color: "white",
-                        "&:hover": { backgroundColor: "#d32f2f" },
+                        "&:hover": { backgroundColor: "#e57373" },
                     }}
                 >
                     <ListItemIcon>
