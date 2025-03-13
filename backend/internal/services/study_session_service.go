@@ -30,6 +30,7 @@ type StudySessionService interface {
 }
 
 var ErrUnauthorizedStudySessionOperation = errors.New("unauthorized study session operation")
+var ErrInvalidStudySessionAvailabilityEntry = errors.New("invalid study session availability entry")
 
 type studySessionServiceImpl struct {
 	txMgr                        persistence.TransactionManager
@@ -190,8 +191,6 @@ func (s *studySessionServiceImpl) UpsertUserAvailabilityEntries(
 	availabilityRequestID models.StudySessionAvailabilityRequestID, userID models.UserID,
 	availabilityEntries []models.AvailabilityEntry) error {
 
-	// TODO verify the entries against the availability request
-
 	err := persistence.WithTransactionNoReturnVal(s.txMgr, func(tx *sql.Tx) error {
 		availReq, err := s.studySessionAvailabilityRepo.GetStudySessionAvailabilityRequest(tx, availabilityRequestID)
 		if err != nil {
@@ -205,6 +204,14 @@ func (s *studySessionServiceImpl) UpsertUserAvailabilityEntries(
 
 		if !isMember {
 			return ErrUnauthorizedStudySessionOperation
+		}
+
+		for _, entry := range availabilityEntries {
+			if entry.AvailabilityEntryStart.Before(availReq.AvailabilityPeriodStart) ||
+				entry.AvailabilityEntryEnd.After(availReq.AvailabilityPeriodEnd) {
+
+				return ErrInvalidStudySessionAvailabilityEntry
+			}
 		}
 
 		return s.studySessionAvailabilityRepo.UpsertUserAvailabilityEntries(tx,
