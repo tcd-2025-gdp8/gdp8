@@ -54,6 +54,15 @@ func NewStudySessionService(txMgr persistence.TransactionManager,
 func (s *studySessionServiceImpl) GetAllStudySessionsByStudyGroup(
 	studyGroupID models.StudyGroupID, requesterID models.UserID) ([]models.StudySession, error) {
 
+	isMember, err := isStudyGroupMember(studyGroupID, requesterID, s.studyGroupService)
+	if err != nil {
+		return nil, err
+	}
+
+	if !isMember {
+		return nil, ErrUnauthorizedStudySessionOperation
+	}
+
 	return persistence.WithTransaction(s.txMgr, func(tx *sql.Tx) ([]models.StudySession, error) {
 		return s.studySessionRepository.GetAllStudySessionsByStudyGroup(tx, studyGroupID)
 	})
@@ -89,9 +98,15 @@ func (s *studySessionServiceImpl) CreateStudySession(studyGroupID models.StudyGr
 func (s *studySessionServiceImpl) UpdateStudySession(studySessionID models.StudySessionID,
 	studySessionDetails *models.StudySessionDetails, requesterID models.UserID) (*models.StudySession, error) {
 
-	// TODO validate creator
-
 	studySession, err := persistence.WithTransaction(s.txMgr, func(tx *sql.Tx) (*models.StudySession, error) {
+		studySession, err := s.studySessionRepository.GetStudySession(tx, studySessionID)
+		if err != nil {
+			return nil, err
+		}
+		if studySession.CreatorID != requesterID {
+			return nil, ErrUnauthorizedStudySessionOperation
+		}
+
 		return s.studySessionRepository.UpdateStudySession(tx, studySessionID, studySessionDetails)
 	})
 
@@ -104,9 +119,15 @@ func (s *studySessionServiceImpl) UpdateStudySession(studySessionID models.Study
 func (s *studySessionServiceImpl) DeleteStudySession(studySessionID models.StudySessionID,
 	requesterID models.UserID) error {
 
-	// TODO validate creator
-
 	err := persistence.WithTransactionNoReturnVal(s.txMgr, func(tx *sql.Tx) error {
+		studySession, err := s.studySessionRepository.GetStudySession(tx, studySessionID)
+		if err != nil {
+			return err
+		}
+		if studySession.CreatorID != requesterID {
+			return ErrUnauthorizedStudySessionOperation
+		}
+
 		return s.studySessionRepository.DeleteStudySession(tx, studySessionID)
 	})
 
