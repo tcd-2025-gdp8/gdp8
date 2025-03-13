@@ -57,11 +57,11 @@ export async function fetchStudyGroupById(token: string | null, studyGroupId: nu
 export async function updateStudyGroup(
     token: string | null,
     studyGroupId: number,
-    updates: Partial<StudyGroupCreationDetails>
+    studyGroupDetails: StudyGroupCreationDetails
 ): Promise<StudyGroup> {
     return await fetchApiToJson<StudyGroup>(`/api/study-groups/${studyGroupId}`, token, {
-        method: "PUT", // Adjust method if needed by your backend
-        body: JSON.stringify(updates),
+        method: "PUT",
+        body: JSON.stringify(studyGroupDetails),
     });
 }
 
