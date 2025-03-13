@@ -2,6 +2,7 @@ package services
 
 import (
 	"database/sql"
+	"errors"
 
 	"gdp8-backend/internal/models"
 	"gdp8-backend/internal/persistence"
@@ -27,20 +28,25 @@ type StudySessionService interface {
 		userID models.UserID, availabilityEntries []models.AvailabilityEntry) error
 }
 
+var ErrUnauthorizedStudySessionOperation = errors.New("unauthorized study session operation")
+
 type studySessionServiceImpl struct {
 	txMgr                        persistence.TransactionManager
 	studySessionAvailabilityRepo repositories.StudySessionAvailabilityRepository
 	studySessionRepository       repositories.StudySessionRepository
+	studyGroupService            StudyGroupService
 }
 
 func NewStudySessionService(txMgr persistence.TransactionManager,
 	studySessionAvailabilityRepo repositories.StudySessionAvailabilityRepository,
-	studySessionRepository repositories.StudySessionRepository) StudySessionService {
+	studySessionRepository repositories.StudySessionRepository,
+	studyGroupService StudyGroupService) StudySessionService {
 
 	return &studySessionServiceImpl{
 		txMgr:                        txMgr,
 		studySessionAvailabilityRepo: studySessionAvailabilityRepo,
 		studySessionRepository:       studySessionRepository,
+		studyGroupService:            studyGroupService,
 	}
 }
 
@@ -60,7 +66,14 @@ func (s *studySessionServiceImpl) GetAllStudySessionsByUser(_ models.UserID) ([]
 func (s *studySessionServiceImpl) CreateStudySession(studyGroupID models.StudyGroupID,
 	creatorID models.UserID, studySessionDetails *models.StudySessionDetails) (*models.StudySession, error) {
 
-	// TODO validate creator
+	isMember, err := isStudyGroupMember(studyGroupID, creatorID, s.studyGroupService)
+	if err != nil {
+		return nil, err
+	}
+
+	if !isMember {
+		return nil, ErrUnauthorizedStudySessionOperation
+	}
 
 	studySession, err := persistence.WithTransaction(s.txMgr, func(tx *sql.Tx) (*models.StudySession, error) {
 		return s.studySessionRepository.CreateStudySession(tx, studyGroupID, creatorID, studySessionDetails)
@@ -144,4 +157,24 @@ func (s *studySessionServiceImpl) UpsertUserAvailabilityEntries(
 	// TODO send a notification
 
 	return err
+}
+
+func isStudyGroupMember(studyGroupID models.StudyGroupID, userID models.UserID,
+	studyGroupService StudyGroupService) (bool, error) {
+
+	creatorStudyGroupRole, err := studyGroupService.RetrieveGroupRole(studyGroupID, userID)
+
+	if err != nil {
+		return false, err
+	}
+
+	if creatorStudyGroupRole == nil {
+		return false, nil
+	}
+
+	if *creatorStudyGroupRole == models.RoleAdmin || *creatorStudyGroupRole == models.RoleMember {
+		return true, nil
+	}
+
+	return false, nil
 }
