@@ -57,7 +57,7 @@ func (s *SQLFileRepository) GetAllFilesByGroupID(tx *sql.Tx, groupID models.Stud
 
 func (s *SQLFileRepository) CreateFile(tx *sql.Tx, file models.File) (*models.File, error) {
 	var count int
-	err := tx.QueryRow("SELECT COUNT(1) FROM files WHERE name = ?", file.Name).Scan(&count)
+	err := tx.QueryRow("SELECT COUNT(1) FROM files WHERE name = ? AND study_group_id = ?", file.Name, file.GroupID).Scan(&count)
 	if err != nil {
 		return nil, err
 	}
