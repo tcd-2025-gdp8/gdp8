@@ -17,13 +17,20 @@ import (
 
 const fileSizeLimitMb = 20
 
-type FileHandler struct {
-	studyGroupService services.StudyGroupService
+type File struct {
+	Name    string
+	Content []byte
 }
 
-func NewFileHandler(studyGroupService services.StudyGroupService) *FileHandler {
+type FileHandler struct {
+	studyGroupService services.StudyGroupService
+	fileService       services.FileService
+}
+
+func NewFileHandler(studyGroupService services.StudyGroupService, fileService services.FileService) *FileHandler {
 	return &FileHandler{
 		studyGroupService: studyGroupService,
+		fileService:       fileService,
 	}
 }
 
@@ -84,8 +91,16 @@ func (h *FileHandler) UploadFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.saveFile(file, header.Filename, chatID); err != nil {
+	err = h.saveFile(file, header.Filename, chatID)
+	if err != nil {
 		http.Error(w, "Error saving file", http.StatusInternalServerError)
+		return
+	}
+
+	err = h.createFile(header.Filename, chatID, userID)
+
+	if err != nil {
+		http.Error(w, "Error storing the file", http.StatusInternalServerError)
 		return
 	}
 
@@ -102,7 +117,8 @@ func (h *FileHandler) DeleteFile(w http.ResponseWriter, r *http.Request) {
 	canDelete := h.hasDeletionRights(filename, chatID, userID)
 
 	if !canDelete {
-		http.Error(w, "Cannot delete the file", http.StatusUnauthorized)
+		http.Error(w, "Cannot delete the file", http.StatusForbidden)
+		return
 	}
 
 	err = h.deleteFileByName(filename, chatID)
@@ -202,14 +218,29 @@ func (h *FileHandler) deleteFileByName(filename string, chatID string) error {
 }
 
 func (h *FileHandler) hasDeletionRights(filename string, chatID string, userID string) bool {
-	_ = h
-	_ = filename
-	_ = chatID
-	_ = userID
-	return true
+	groupID, err := strconv.Atoi(chatID)
+	if err != nil {
+		return false
+	}
+	rights, err := h.fileService.HasDeletionRights(filename, models.StudyGroupID(groupID), models.UserID(userID))
+	if err != nil {
+		return false
+	}
+	return rights
 }
 
-type File struct {
-	Name    string
-	Content []byte
+func (h *FileHandler) createFile(filename string, chatID string, userID string) error {
+	groupID, err := strconv.Atoi(chatID)
+	if err != nil {
+		return err
+	}
+
+	newFile := models.File{
+		Name:    filename,
+		UserID:  models.UserID(userID),
+		GroupID: models.StudyGroupID(groupID),
+	}
+
+	_, err = h.fileService.CreateFile(newFile)
+	return err
 }

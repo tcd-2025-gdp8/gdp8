@@ -185,3 +185,12 @@ CREATE TABLE IF NOT EXISTS study_sessions (
     INDEX idx_study_sessions_study_group_id (study_group_id),
     INDEX idx_study_sessions_group_id_and_end_time (study_group_id, end_time)
 );
+
+CREATE TABLE IF NOT EXISTS files (
+    name VARCHAR(255) NOT NULL,
+    file_owner_id VARCHAR(255) NOT NULL,
+    study_group_id INT NOT NULL,
+    PRIMARY KEY (name, study_group_id),
+    FOREIGN KEY (study_group_id) REFERENCES study_groups(id) ON DELETE CASCADE,
+    FOREIGN KEY (file_owner_id) REFERENCES users(id) ON DELETE RESTRICT
+);
