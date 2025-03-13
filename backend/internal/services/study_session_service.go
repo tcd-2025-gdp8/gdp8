@@ -10,7 +10,8 @@ import (
 )
 
 type StudySessionService interface {
-	GetAllStudySessionsByStudyGroup(studyGroupID models.StudyGroupID) ([]models.StudySession, error)
+	GetAllStudySessionsByStudyGroup(studyGroupID models.StudyGroupID,
+		requesterID models.UserID) ([]models.StudySession, error)
 	GetAllStudySessionsByUser(userID models.UserID) ([]models.StudySession, error)
 	CreateStudySession(studyGroupID models.StudyGroupID, creatorID models.UserID,
 		studySessionDetails *models.StudySessionDetails) (*models.StudySession, error)
@@ -19,11 +20,11 @@ type StudySessionService interface {
 	DeleteStudySession(studySessionID models.StudySessionID, requesterID models.UserID) error
 
 	GetCurrentStudySessionAvailabilityRequests(
-		studyGroupID models.StudyGroupID) ([]models.StudySessionAvailabilityRequest, error)
+		studyGroupID models.StudyGroupID, requesterID models.UserID) ([]models.StudySessionAvailabilityRequest, error)
 	CreateStudySessionAvailabilityRequest(studyGroupID models.StudyGroupID,
-		availabilityRequestDetails *models.StudySessionAvailabilityRequestDetails) error
+		availabilityRequestDetails *models.StudySessionAvailabilityRequestDetails, requesterID models.UserID) error
 	DeleteStudySessionAvailabilityRequest(
-		availabilityRequestID models.StudySessionAvailabilityRequestID) error
+		availabilityRequestID models.StudySessionAvailabilityRequestID, requesterID models.UserID) error
 	UpsertUserAvailabilityEntries(availabilityRequestID models.StudySessionAvailabilityRequestID,
 		userID models.UserID, availabilityEntries []models.AvailabilityEntry) error
 }
@@ -51,7 +52,7 @@ func NewStudySessionService(txMgr persistence.TransactionManager,
 }
 
 func (s *studySessionServiceImpl) GetAllStudySessionsByStudyGroup(
-	studyGroupID models.StudyGroupID) ([]models.StudySession, error) {
+	studyGroupID models.StudyGroupID, requesterID models.UserID) ([]models.StudySession, error) {
 
 	return persistence.WithTransaction(s.txMgr, func(tx *sql.Tx) ([]models.StudySession, error) {
 		return s.studySessionRepository.GetAllStudySessionsByStudyGroup(tx, studyGroupID)
@@ -116,7 +117,7 @@ func (s *studySessionServiceImpl) DeleteStudySession(studySessionID models.Study
 }
 
 func (s *studySessionServiceImpl) GetCurrentStudySessionAvailabilityRequests(
-	studyGroupID models.StudyGroupID) ([]models.StudySessionAvailabilityRequest, error) {
+	studyGroupID models.StudyGroupID, requesterID models.UserID) ([]models.StudySessionAvailabilityRequest, error) {
 
 	return persistence.WithTransaction(s.txMgr, func(tx *sql.Tx) ([]models.StudySessionAvailabilityRequest, error) {
 		return s.studySessionAvailabilityRepo.GetCurrentStudySessionAvailabilityRequests(tx, studyGroupID)
@@ -124,7 +125,9 @@ func (s *studySessionServiceImpl) GetCurrentStudySessionAvailabilityRequests(
 }
 
 func (s *studySessionServiceImpl) CreateStudySessionAvailabilityRequest(studyGroupID models.StudyGroupID,
-	availabilityRequestDetails *models.StudySessionAvailabilityRequestDetails) error {
+	availabilityRequestDetails *models.StudySessionAvailabilityRequestDetails, requesterID models.UserID) error {
+
+	// TODO validate creator
 
 	err := persistence.WithTransactionNoReturnVal(s.txMgr, func(tx *sql.Tx) error {
 		return s.studySessionAvailabilityRepo.CreateStudySessionAvailabilityRequest(tx,
@@ -137,7 +140,9 @@ func (s *studySessionServiceImpl) CreateStudySessionAvailabilityRequest(studyGro
 }
 
 func (s *studySessionServiceImpl) DeleteStudySessionAvailabilityRequest(
-	availabilityRequestID models.StudySessionAvailabilityRequestID) error {
+	availabilityRequestID models.StudySessionAvailabilityRequestID, requesterID models.UserID) error {
+
+	// TODO validate creator
 
 	return persistence.WithTransactionNoReturnVal(s.txMgr, func(tx *sql.Tx) error {
 		return s.studySessionAvailabilityRepo.DeleteStudySessionAvailabilityRequest(tx, availabilityRequestID)
@@ -149,6 +154,7 @@ func (s *studySessionServiceImpl) UpsertUserAvailabilityEntries(
 	availabilityEntries []models.AvailabilityEntry) error {
 
 	// TODO verify the entries against the availability request
+	// TODO validate user
 
 	err := persistence.WithTransactionNoReturnVal(s.txMgr, func(tx *sql.Tx) error {
 		return s.studySessionAvailabilityRepo.UpsertUserAvailabilityEntries(tx,

@@ -57,7 +57,13 @@ func (h *StudySessionHandler) GetStudySessionsByGroup(w http.ResponseWriter, r *
 		return
 	}
 
-	sessions, err := h.service.GetAllStudySessionsByStudyGroup(groupID)
+	userID, err := getUserID(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	sessions, err := h.service.GetAllStudySessionsByStudyGroup(groupID, userID)
 	if err != nil {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
@@ -176,7 +182,13 @@ func (h *StudySessionHandler) GetCurrentAvailabilityRequests(w http.ResponseWrit
 		return
 	}
 
-	requests, err := h.service.GetCurrentStudySessionAvailabilityRequests(groupID)
+	userID, err := getUserID(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	requests, err := h.service.GetCurrentStudySessionAvailabilityRequests(groupID, userID)
 	if err != nil {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
@@ -214,7 +226,13 @@ func (h *StudySessionHandler) CreateAvailabilityRequest(w http.ResponseWriter, r
 		AvailabilityPeriodEnd:   req.AvailabilityPeriodEnd,
 	}
 
-	if err := h.service.CreateStudySessionAvailabilityRequest(groupID, details); err != nil {
+	userID, err := getUserID(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	if err := h.service.CreateStudySessionAvailabilityRequest(groupID, details, userID); err != nil {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
@@ -230,7 +248,13 @@ func (h *StudySessionHandler) DeleteAvailabilityRequest(w http.ResponseWriter, r
 		return
 	}
 
-	if err := h.service.DeleteStudySessionAvailabilityRequest(requestID); err != nil {
+	userID, err := getUserID(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	if err := h.service.DeleteStudySessionAvailabilityRequest(requestID, userID); err != nil {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
