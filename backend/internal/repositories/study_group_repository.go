@@ -18,6 +18,7 @@ type StudyGroupRepository interface {
 		details models.StudyGroupDetails) (*models.StudyGroupView, error)
 	DeleteStudyGroup(tx *sql.Tx, id models.StudyGroupID) error
 	UpdateStudyGroupMember(tx *sql.Tx, id models.StudyGroupID, userID models.UserID, role *models.StudyGroupRole) error
+	RetrieveGroupRole(tx *sql.Tx, id models.StudyGroupID, userID models.UserID) (*models.StudyGroupRole, error)
 }
 
 var ErrStudyGroupNotFound = errors.New("study group not found")
@@ -254,6 +255,29 @@ func (s *SQLStudyGroupRepository) UpdateStudyGroupMember(tx *sql.Tx,
 	`
 	_, err = tx.Exec(upsertQuery, userID, id, role)
 	return err
+}
+
+func (s *SQLStudyGroupRepository) RetrieveGroupRole(tx *sql.Tx,
+	id models.StudyGroupID, userID models.UserID) (*models.StudyGroupRole, error) {
+
+	query := `
+		SELECT type
+		FROM user_study_groups
+		WHERE study_group_id = ? AND user_id = ?
+	`
+
+	var roleStr string
+	err := tx.QueryRow(query, id, userID).Scan(&roleStr)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil // User is not a member of the group
+		}
+		return nil, err
+	}
+
+	role := models.StudyGroupRole(roleStr)
+	return &role, nil
 }
 
 func readStudyGroup(s scanner) (*models.StudyGroupView, error) {

@@ -53,6 +53,8 @@ type StudyGroupService interface {
 		command SelfMemberOperationCommand,
 		studyGroupID models.StudyGroupID,
 		memberID models.UserID) error
+
+	RetrieveGroupRole(studyGroupID models.StudyGroupID, userID models.UserID) (*models.StudyGroupRole, error)
 }
 
 var ErrStudyGroupNotFound = errors.New("study group not found")
@@ -291,6 +293,14 @@ func (s *studyGroupServiceImpl) HandleSelfMemberOperation(command SelfMemberOper
 	}
 
 	return err
+}
+
+func (s *studyGroupServiceImpl) RetrieveGroupRole(studyGroupID models.StudyGroupID,
+	userID models.UserID) (*models.StudyGroupRole, error) {
+
+	return persistence.WithTransaction(s.txMgr, func(tx *sql.Tx) (*models.StudyGroupRole, error) {
+		return s.studyGroupRepo.RetrieveGroupRole(tx, studyGroupID, userID)
+	})
 }
 
 func resolveError(err error, operation string) error {
