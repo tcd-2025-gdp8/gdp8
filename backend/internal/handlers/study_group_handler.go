@@ -3,14 +3,25 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"slices"
+	"strings"
 
 	"gdp8-backend/internal/models"
 	"gdp8-backend/internal/services"
 	"gdp8-backend/internal/utils"
 )
+
+const (
+	minNameLength        = 3
+	minDescriptionLength = 3
+	minMembers           = 2
+	maxMembers           = 100
+)
+
+var validGroupTypes = []string{"public", "closed", "invite-only"}
 
 type StudyGroupHandler struct {
 	service services.StudyGroupService
@@ -23,12 +34,16 @@ type StudyGroupMemberDTO struct {
 }
 
 type StudyGroupDTO struct {
-	ID          models.StudyGroupID `json:"id"`
-	Name        string              `json:"name"`
-	Description string              `json:"description"`
-	Type        string              `json:"type"`
-	MaxMembers  int                 `json:"maxMembers"`
-	ModuleID    models.ModuleID     `json:"moduleId"`
+	ID models.StudyGroupID `json:"id"`
+	StudyGroupDetailsDTO
+}
+
+type StudyGroupDetailsDTO struct {
+	Name        string          `json:"name"`
+	Description string          `json:"description"`
+	Type        string          `json:"type"`
+	ModuleID    models.ModuleID `json:"moduleId"`
+	MaxMembers  int             `json:"maxMembers"`
 }
 
 type StudyGroupWithMembersDTO struct {
@@ -115,15 +130,14 @@ func (h *StudyGroupHandler) GetRelevantStudyGroups(w http.ResponseWriter, r *htt
 }
 
 func (h *StudyGroupHandler) CreateStudyGroup(w http.ResponseWriter, r *http.Request) {
-	var createDTO struct {
-		Name        string          `json:"name"`
-		Description string          `json:"description"`
-		Type        string          `json:"type"`
-		ModuleID    models.ModuleID `json:"moduleId"`
-		MaxMembers  int             `json:"maxMembers"`
-	}
+	var createDTO StudyGroupDetailsDTO
 	if err := json.NewDecoder(r.Body).Decode(&createDTO); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	if err := validateStudyGroupDetailsDTO(&createDTO); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -133,7 +147,6 @@ func (h *StudyGroupHandler) CreateStudyGroup(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	// TODO implement validation (group type in particular)
 	studyGroupDetails := models.StudyGroupDetails{
 		Name:        createDTO.Name,
 		Description: createDTO.Description,
@@ -274,11 +287,40 @@ func mapStudyGroupWithMembersToDTO(studyGroup *models.StudyGroupView) StudyGroup
 
 func mapStudyGroupToDTO(studyGroup *models.StudyGroupView) StudyGroupDTO {
 	return StudyGroupDTO{
-		ID:          studyGroup.ID,
-		Name:        studyGroup.Name,
-		Description: studyGroup.Description,
-		Type:        string(studyGroup.Type),
-		ModuleID:    studyGroup.ModuleID,
-		MaxMembers:  studyGroup.MaxMembers,
+		ID: studyGroup.ID,
+		StudyGroupDetailsDTO: StudyGroupDetailsDTO{
+			Name:        studyGroup.Name,
+			Description: studyGroup.Description,
+			Type:        string(studyGroup.Type),
+			ModuleID:    studyGroup.ModuleID,
+			MaxMembers:  studyGroup.MaxMembers,
+		},
 	}
+}
+
+func validateStudyGroupDetailsDTO(details *StudyGroupDetailsDTO) error {
+	if strings.TrimSpace(details.Name) == "" {
+		return fmt.Errorf("name is required")
+	}
+	if len(strings.TrimSpace(details.Name)) < minNameLength {
+		return fmt.Errorf("name must be at least %d characters long", minNameLength)
+	}
+
+	if strings.TrimSpace(details.Description) == "" {
+		return fmt.Errorf("description is required")
+	}
+	if len(strings.TrimSpace(details.Description)) < minDescriptionLength {
+		return fmt.Errorf("description must be at least %d characters long", minDescriptionLength)
+	}
+
+	if !slices.Contains(validGroupTypes, string(details.Type)) {
+		return fmt.Errorf("type must be one of: %s", strings.Join(validGroupTypes, ", "))
+	}
+
+	if details.MaxMembers < minMembers || details.MaxMembers > maxMembers {
+		return fmt.Errorf("maxMembers must be between %d and %d", minMembers, maxMembers)
+	}
+
+	return nil
+
 }
