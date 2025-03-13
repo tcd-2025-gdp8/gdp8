@@ -2,7 +2,9 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"gdp8-backend/internal/models"
@@ -41,6 +43,11 @@ type StudySessionAvailabilityEntryDTO struct {
 	AvailabilityEnd   time.Time `json:"availabilityEnd"`
 }
 
+const (
+	minTitleLength = 3
+	maxTitleLength = 255
+)
+
 type StudySessionHandler struct {
 	service services.StudySessionService
 }
@@ -57,7 +64,13 @@ func (h *StudySessionHandler) GetStudySessionsByGroup(w http.ResponseWriter, r *
 		return
 	}
 
-	sessions, err := h.service.GetAllStudySessionsByStudyGroup(groupID)
+	userID, err := getUserID(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	sessions, err := h.service.GetAllStudySessionsByStudyGroup(groupID, userID)
 	if err != nil {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
@@ -81,6 +94,11 @@ func (h *StudySessionHandler) CreateStudySession(w http.ResponseWriter, r *http.
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
+	}
+
+	err := validateTitle(req.Title)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
 
 	groupIDString := r.PathValue("groupID")
@@ -119,11 +137,20 @@ func (h *StudySessionHandler) UpdateStudySession(w http.ResponseWriter, r *http.
 		return
 	}
 
-	// TODO user validation
-
 	var req StudySessionDetailsDTO
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	err = validateTitle(req.Title)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+	}
+
+	userID, err := getUserID(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 
@@ -133,7 +160,7 @@ func (h *StudySessionHandler) UpdateStudySession(w http.ResponseWriter, r *http.
 		DurationMinutes: req.DurationMinutes,
 	}
 
-	session, err := h.service.UpdateStudySession(studySessionID, details)
+	session, err := h.service.UpdateStudySession(studySessionID, details, userID)
 	if err != nil {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
@@ -150,7 +177,13 @@ func (h *StudySessionHandler) DeleteStudySession(w http.ResponseWriter, r *http.
 		return
 	}
 
-	if err := h.service.DeleteStudySession(studySessionID); err != nil {
+	userID, err := getUserID(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	if err := h.service.DeleteStudySession(studySessionID, userID); err != nil {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
@@ -166,7 +199,13 @@ func (h *StudySessionHandler) GetCurrentAvailabilityRequests(w http.ResponseWrit
 		return
 	}
 
-	requests, err := h.service.GetCurrentStudySessionAvailabilityRequests(groupID)
+	userID, err := getUserID(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	requests, err := h.service.GetCurrentStudySessionAvailabilityRequests(groupID, userID)
 	if err != nil {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
@@ -198,13 +237,24 @@ func (h *StudySessionHandler) CreateAvailabilityRequest(w http.ResponseWriter, r
 		return
 	}
 
+	err = validateTitle(req.Title)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+	}
+
 	details := &models.StudySessionAvailabilityRequestDetails{
 		Title:                   req.Title,
 		AvailabilityPeriodStart: req.AvailabilityPeriodStart,
 		AvailabilityPeriodEnd:   req.AvailabilityPeriodEnd,
 	}
 
-	if err := h.service.CreateStudySessionAvailabilityRequest(groupID, details); err != nil {
+	userID, err := getUserID(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	if err := h.service.CreateStudySessionAvailabilityRequest(groupID, details, userID); err != nil {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
@@ -220,7 +270,13 @@ func (h *StudySessionHandler) DeleteAvailabilityRequest(w http.ResponseWriter, r
 		return
 	}
 
-	if err := h.service.DeleteStudySessionAvailabilityRequest(requestID); err != nil {
+	userID, err := getUserID(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	if err := h.service.DeleteStudySessionAvailabilityRequest(requestID, userID); err != nil {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
@@ -301,4 +357,14 @@ func toAvailabilityRequestResponse(
 		AvailabilityPeriodEnd:   request.AvailabilityPeriodEnd,
 		Entries:                 entries,
 	}
+}
+
+func validateTitle(title string) error {
+	if len(strings.TrimSpace(title)) < minTitleLength {
+		return fmt.Errorf("title must be at least %d characters long", minTitleLength)
+	}
+	if len(strings.TrimSpace(title)) > maxTitleLength {
+		return fmt.Errorf("title must be at most %d characters long", maxTitleLength)
+	}
+	return nil
 }

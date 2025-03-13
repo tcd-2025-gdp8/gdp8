@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"gdp8-backend/internal/models"
@@ -10,6 +11,8 @@ import (
 type StudySessionAvailabilityRepository interface {
 	GetCurrentStudySessionAvailabilityRequests(tx *sql.Tx,
 		studyGroupID models.StudyGroupID) ([]models.StudySessionAvailabilityRequest, error)
+	GetStudySessionAvailabilityRequest(tx *sql.Tx,
+		id models.StudySessionAvailabilityRequestID) (*models.StudySessionAvailabilityRequest, error)
 	CreateStudySessionAvailabilityRequest(tx *sql.Tx, studyGroupID models.StudyGroupID,
 		availabilityRequestDetails *models.StudySessionAvailabilityRequestDetails) error
 	DeleteStudySessionAvailabilityRequest(tx *sql.Tx,
@@ -65,6 +68,37 @@ func (s *SQLStudySessionAvailabilityRepository) GetCurrentStudySessionAvailabili
 	}
 
 	return requests, nil
+}
+
+func (s *SQLStudySessionAvailabilityRepository) GetStudySessionAvailabilityRequest(tx *sql.Tx,
+	id models.StudySessionAvailabilityRequestID) (*models.StudySessionAvailabilityRequest, error) {
+
+	query := `
+		SELECT id, study_group_id, availability_period_start, availability_period_end
+		FROM study_session_availability_requests
+		WHERE id = ?`
+
+	var request models.StudySessionAvailabilityRequest
+	err := tx.QueryRow(query, id).Scan(
+		&request.ID,
+		&request.StudyGroupID,
+		&request.AvailabilityPeriodStart,
+		&request.AvailabilityPeriodEnd,
+	)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to scan availability request: %w", err)
+	}
+
+	entries, err := s.getEntriesForRequest(tx, request.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	request.Entries = entries
+	return &request, nil
 }
 
 func (s *SQLStudySessionAvailabilityRepository) CreateStudySessionAvailabilityRequest(tx *sql.Tx,
