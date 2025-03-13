@@ -8,6 +8,7 @@ import StudyGroupsPage from "./pages/StudyGroupsPage";
 import IndividualStudyGroup from "./pages/IndividualStudyGroup";
 import ModuleSettingsPage from "./pages/moduleSettings";
 import ChatPage from "./pages/ChatPage";
+import FilesPage from "./pages/FilesPage";
 
 const App: React.FC = () => {
   return (
@@ -44,6 +45,10 @@ const App: React.FC = () => {
             element={<ChatPage />}
           />
         </Route>
+        <Route
+            path="/files"
+            element={<FilesPage />}
+          />
 
       </Routes>
     </BrowserRouter>
