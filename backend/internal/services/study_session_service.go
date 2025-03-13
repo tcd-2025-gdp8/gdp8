@@ -178,9 +178,9 @@ func (s *studySessionServiceImpl) CreateStudySessionAvailabilityRequest(studyGro
 }
 
 func (s *studySessionServiceImpl) DeleteStudySessionAvailabilityRequest(
-	availabilityRequestID models.StudySessionAvailabilityRequestID, requesterID models.UserID) error {
+	availabilityRequestID models.StudySessionAvailabilityRequestID, _ models.UserID) error {
 
-	// TODO validate creator
+	// TODO validate user
 
 	return persistence.WithTransactionNoReturnVal(s.txMgr, func(tx *sql.Tx) error {
 		return s.studySessionAvailabilityRepo.DeleteStudySessionAvailabilityRequest(tx, availabilityRequestID)
