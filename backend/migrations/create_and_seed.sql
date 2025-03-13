@@ -189,8 +189,8 @@ CREATE TABLE IF NOT EXISTS study_sessions (
 CREATE TABLE IF NOT EXISTS files (
     name VARCHAR(255) PRIMARY KEY,
     file_owner_id VARCHAR(255) UNIQUE NOT NULL,
-    study_group_id INT not null
+    study_group_id INT not null,
 
     FOREIGN KEY (study_group_id) REFERENCES study_groups(id) ON DELETE CASCADE,
-    FOREIGN KEY (file_owner_id) REFERENCES users(id) ON DELETE RESTRICT,
+    FOREIGN KEY (file_owner_id) REFERENCES users(id) ON DELETE RESTRICT
 );
