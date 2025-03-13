@@ -92,17 +92,17 @@ func (h *FileHandler) UploadFile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = h.saveFile(file, header.Filename, chatID)
-    if err != nil {
+	if err != nil {
 		http.Error(w, "Error saving file", http.StatusInternalServerError)
 		return
 	}
 
-        err = h.createFile(header.Filename, chatID, userID)
+	err = h.createFile(header.Filename, chatID, userID)
 
-    if err != nil {
-        http.Error(w, "Error saving the file", http.StatusInternalServerError)
-        return
-    }
+	if err != nil {
+		http.Error(w, "Error storing the file", http.StatusInternalServerError)
+		return
+	}
 
 	sendJSONResponse(w, map[string]string{"message": "File uploaded successfully"})
 }
@@ -118,7 +118,7 @@ func (h *FileHandler) DeleteFile(w http.ResponseWriter, r *http.Request) {
 
 	if !canDelete {
 		http.Error(w, "Cannot delete the file", http.StatusForbidden)
-                return
+		return
 	}
 
 	err = h.deleteFileByName(filename, chatID)
@@ -229,19 +229,18 @@ func (h *FileHandler) hasDeletionRights(filename string, chatID string, userID s
 	return rights
 }
 
-
 func (h *FileHandler) createFile(filename string, chatID string, userID string) error {
-    groupID, err := strconv.Atoi(chatID)
-    if err != nil {
-        return err
-    }
+	groupID, err := strconv.Atoi(chatID)
+	if err != nil {
+		return err
+	}
 
-    newFile := models.File{
-        Name:    filename,
-        UserID:  models.UserID(userID),
-        GroupID: models.StudyGroupID(groupID),
-    }
+	newFile := models.File{
+		Name:    filename,
+		UserID:  models.UserID(userID),
+		GroupID: models.StudyGroupID(groupID),
+	}
 
-    _, err = h.fileService.CreateFile(newFile)
-    return err
+	_, err = h.fileService.CreateFile(newFile)
+	return err
 }
