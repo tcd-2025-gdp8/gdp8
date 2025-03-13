@@ -60,7 +60,7 @@ export default function FilesPage() {
             }}
         >
             <Typography variant="h4" fontWeight="bold" color="primary" gutterBottom>
-                File Upload Center
+                File Upload
             </Typography>
 
             <Paper
