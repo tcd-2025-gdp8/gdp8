@@ -4,10 +4,12 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
 
 	"gdp8-backend/internal/models"
 )
 
+// Existing interface declarations...
 type StudySessionRepository interface {
 	GetAllStudySessionsByStudyGroup(tx *sql.Tx, studyGroupID models.StudyGroupID) ([]models.StudySession, error)
 	GetAllStudySessionsByUser(tx *sql.Tx, userID models.UserID) ([]models.StudySession, error)
@@ -17,6 +19,9 @@ type StudySessionRepository interface {
 	UpdateStudySession(tx *sql.Tx, studySessionID models.StudySessionID,
 		studySessionDetails *models.StudySessionDetails) (*models.StudySession, error)
 	DeleteStudySession(tx *sql.Tx, studySessionID models.StudySessionID) error
+
+	// NEW: Get upcoming study sessions between windowStart (inclusive) and windowEnd (exclusive)
+	GetUpcomingSessions(tx *sql.Tx, windowStart time.Time, windowEnd time.Time) ([]models.StudySession, error)
 }
 
 var ErrStudySessionNotFound = errors.New("study session not found")
@@ -159,4 +164,41 @@ func (s *SQLStudySessionRepository) DeleteStudySession(tx *sql.Tx, studySessionI
 	}
 
 	return nil
+}
+
+func (s *SQLStudySessionRepository) GetUpcomingSessions(tx *sql.Tx, windowStart time.Time, windowEnd time.Time) ([]models.StudySession, error) {
+	query := `
+        SELECT id, study_group_id, creator_id, title, start_time, duration_minutes, end_time
+        FROM study_sessions
+        WHERE start_time >= ? AND start_time < ?`
+
+	rows, err := tx.Query(query, windowStart, windowEnd)
+	if err != nil {
+		return nil, fmt.Errorf("error querying upcoming sessions: %w", err)
+	}
+	defer rows.Close()
+
+	var sessions []models.StudySession
+	for rows.Next() {
+		var session models.StudySession
+		err := rows.Scan(
+			&session.ID,
+			&session.StudyGroupID,
+			&session.CreatorID,
+			&session.Title,
+			&session.StartTime,
+			&session.DurationMinutes,
+			&session.EndTime,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("error scanning session: %w", err)
+		}
+		sessions = append(sessions, session)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating sessions: %w", err)
+	}
+
+	return sessions, nil
 }

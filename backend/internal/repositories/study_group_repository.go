@@ -12,13 +12,14 @@ type StudyGroupRepository interface {
 	GetStudyGroupByID(tx *sql.Tx, id models.StudyGroupID) (*models.StudyGroupView, error)
 	GetAllStudyGroups(tx *sql.Tx) ([]models.StudyGroupView, error)
 	GetAllRelevantStudyGroups(tx *sql.Tx, userID models.UserID) ([]models.StudyGroupView, error)
-	CreateStudyGroup(tx *sql.Tx, studyGroupDetails models.StudyGroupDetails,
-		adminUserID models.UserID) (*models.StudyGroupView, error)
-	UpdateStudyGroupDetails(tx *sql.Tx, id models.StudyGroupID,
-		details models.StudyGroupDetails) (*models.StudyGroupView, error)
+	CreateStudyGroup(tx *sql.Tx, studyGroupDetails models.StudyGroupDetails, adminUserID models.UserID) (*models.StudyGroupView, error)
+	UpdateStudyGroupDetails(tx *sql.Tx, id models.StudyGroupID, details models.StudyGroupDetails) (*models.StudyGroupView, error)
 	DeleteStudyGroup(tx *sql.Tx, id models.StudyGroupID) error
 	UpdateStudyGroupMember(tx *sql.Tx, id models.StudyGroupID, userID models.UserID, role *models.StudyGroupRole) error
 	RetrieveGroupRole(tx *sql.Tx, id models.StudyGroupID, userID models.UserID) (*models.StudyGroupRole, error)
+
+	// NEW: GetMembers returns the members of the study group.
+	GetMembers(tx *sql.Tx, studyGroupID models.StudyGroupID) ([]models.StudyGroupMemberView, error)
 }
 
 var ErrStudyGroupNotFound = errors.New("study group not found")
@@ -322,4 +323,12 @@ func readStudyGroups(rows *sql.Rows) ([]models.StudyGroupView, error) {
 	}
 
 	return studyGroups, nil
+}
+
+func (s *SQLStudyGroupRepository) GetMembers(tx *sql.Tx, studyGroupID models.StudyGroupID) ([]models.StudyGroupMemberView, error) {
+	studyGroup, err := s.GetStudyGroupByID(tx, studyGroupID)
+	if err != nil {
+		return nil, err
+	}
+	return studyGroup.Members, nil
 }

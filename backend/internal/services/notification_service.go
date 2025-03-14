@@ -11,12 +11,11 @@ import (
 
 type NotificationService interface {
 	GetUserNotifications(userID models.UserID) ([]models.NotificationView, error)
-
 	MarkNotificationAsRead(userID models.UserID, notificationID models.NotificationID) error
+	AddStudyGroupEventNotification(notificationType models.NotificationType, triggeringUserID models.UserID, targetUserID *models.UserID, studyGroupID models.StudyGroupID, studyGroupMembers []models.StudyGroupMemberView) error
 
-	AddStudyGroupEventNotification(notificationType models.NotificationType,
-		triggeringUserID models.UserID, targetUserID *models.UserID,
-		studyGroupID models.StudyGroupID, studyGroupMembers []models.StudyGroupMemberView) error
+	// NEW: AddStudySessionReminderNotification sends a reminder for a study session.
+	AddStudySessionReminderNotification(session models.StudySession, studyGroupMembers []models.StudyGroupMemberView) error
 }
 
 var ErrInvalidNotificationType = errors.New("invalid notification type")
@@ -46,6 +45,29 @@ func (s *notificationServiceImpl) MarkNotificationAsRead(userID models.UserID,
 
 	return persistence.WithTransactionNoReturnVal(s.txMgr, func(tx *sql.Tx) error {
 		return s.notificationRepo.DeleteUserNotification(tx, notificationID, userID)
+	})
+}
+
+func (s *notificationServiceImpl) AddStudySessionReminderNotification(
+	session models.StudySession,
+	studyGroupMembers []models.StudyGroupMemberView,
+) error {
+	notification := models.NotificationDetails{
+		Type:             models.NotificationTypeStudySessionReminder,
+		TriggeringUserID: session.CreatorID,
+		StudyGroupID:     session.StudyGroupID,
+		MessageID:        nil,
+	}
+
+	var usersToBeNotified []models.UserID
+	for _, member := range studyGroupMembers {
+		if member.Role == models.RoleMember || member.Role == models.RoleAdmin {
+			usersToBeNotified = append(usersToBeNotified, member.UserID)
+		}
+	}
+
+	return persistence.WithTransactionNoReturnVal(s.txMgr, func(tx *sql.Tx) error {
+		return s.notificationRepo.AddNotification(tx, notification, usersToBeNotified)
 	})
 }
 
