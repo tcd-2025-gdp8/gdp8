@@ -64,12 +64,16 @@ export default function StudyGroupCard({ group, module, currentUserId, onUpdate 
       }}>
         {/* Study group name wrapped in a Link */}
         <Typography variant="h6" sx={{ fontWeight: 600 }}>
-          <Link
-            to={`/study-groups/${group.id}`}
-            style={{ textDecoration: "none", color: "inherit" }}
-          >
-            {group.name}
-          </Link>
+          {isMember ? (
+            <Link
+              to={`/study-groups/${group.id}`}
+              style={{ textDecoration: "none", color: "inherit" }}
+            >
+              {group.name}
+            </Link>
+          ) : (
+            <span>{group.name}</span>
+          )}
         </Typography>
 
         <Divider />
