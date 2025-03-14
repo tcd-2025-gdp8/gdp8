@@ -10,7 +10,7 @@ import {
   FormControl,
   InputLabel,
 } from "@mui/material";
-import { Link } from "react-router-dom";
+//import { Link } from "react-router-dom";
 import { Module } from "../api/modules";
 import { fetchStudyGroups, StudyGroup } from "../api/studyGroups";
 import { getUserModules } from "../api/users";
@@ -93,17 +93,17 @@ export default function StudyGroupsPage() {
         {filteredGroups.map((group) => {
           const module = modulesList.find((module) => module.id === group.moduleId);
           if (!module) return <Fragment key={group.id}></Fragment>;
+          //const isMember = group.members?.some(
+          //(member) => member.id === currentUserId
+          //);
           return (
             <Grid item xs={12} sm={6} md={4} key={group.id} style={{ minWidth: "280px" }}>
-              {/* Wrapping the entire StudyGroupCard in a Link */}
-              <Link to={`/study-groups/${group.id}`} style={{ textDecoration: "none", color: "inherit" }}>
-                <StudyGroupCard
-                  group={group}
-                  module={module}
-                  currentUserId={currentUserId!}
-                  onUpdate={() => void fetchData()}
-                />
-              </Link>
+              <StudyGroupCard
+                group={group}
+                module={module}
+                currentUserId={currentUserId!}
+                onUpdate={() => void fetchData()}
+              />
             </Grid>
           );
         })}
