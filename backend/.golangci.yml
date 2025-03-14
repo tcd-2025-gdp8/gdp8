@@ -70,7 +70,7 @@ linters:
     - nestif
     - nilerr
     #- nilnesserr
-    - nilnil
+    #- nilnil
     #- nlreturn
     - noctx
     - nolintlint

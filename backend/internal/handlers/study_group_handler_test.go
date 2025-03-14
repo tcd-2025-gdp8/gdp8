@@ -60,6 +60,11 @@ func (m *MockStudyGroupService) HandleSelfMemberOperation(command services.SelfM
 	return args.Error(0)
 }
 
+func (m *MockStudyGroupService) RetrieveGroupRole(studyGroupID models.StudyGroupID, userID models.UserID) (*models.StudyGroupRole, error) {
+	args := m.Called(studyGroupID, userID)
+	return args.Get(0).(*models.StudyGroupRole), args.Error(1)
+}
+
 func TestStudyGroupHandler_GetStudyGroup(t *testing.T) {
 	t.Parallel()
 
@@ -488,7 +493,7 @@ func TestStudyGroupHandler_CreateStudyGroup(t *testing.T) {
 		},
 		{
 			name:         "Missing user context",
-			body:         `{"name":"Group B","description":"Desc B","type":"closed"}`,
+			body:         `{"name":"Group B","description":"Desc B","type":"closed","maxMembers":7,"moduleId":5}`,
 			mockSetup:    func(_ *MockStudyGroupService) {},
 			ctxSetup:     func(r *http.Request) *http.Request { return r },
 			expectedCode: http.StatusUnauthorized,
@@ -506,13 +511,15 @@ func TestStudyGroupHandler_CreateStudyGroup(t *testing.T) {
 		},
 		{
 			name: "Service error during creation",
-			body: `{"name":"Group C","description":"Desc C","type":"closed"}`,
+			body: `{"name":"Group C","description":"Desc C","type":"closed", "moduleId":5, "maxMembers":7}`,
 			mockSetup: func(service *MockStudyGroupService) {
 				service.
 					On("CreateStudyGroup", models.StudyGroupDetails{
 						Name:        "Group C",
 						Description: "Desc C",
 						Type:        models.TypeClosed,
+						ModuleID:    5,
+						MaxMembers:  7,
 					}, models.UserID("123")).
 					Return((*models.StudyGroupView)(nil), errors.New("service error"))
 			},

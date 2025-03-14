@@ -8,6 +8,7 @@ import StudyGroupsPage from "./pages/StudyGroupsPage";
 import IndividualStudyGroup from "./pages/IndividualStudyGroup";
 import ModuleSettingsPage from "./pages/moduleSettings";
 import ChatPage from "./pages/ChatPage";
+import FilesPage from "./pages/FilesPage";
 import GroupDetailsPage from "./pages/groupDetailsPage";
 
 
@@ -49,8 +50,10 @@ const App: React.FC = () => {
             path="/chat/:groupId"
             element={<ChatPage />}
           />
+          <Route path="/study-groups/:groupId/files"
+            element={<FilesPage />}
+          />
         </Route>
-
       </Routes>
     </BrowserRouter>
   );

@@ -1,22 +1,5 @@
 const BASE_URL = "http://localhost:8080/api";
 
-export async function uploadFile(
-  file: File,
-  chatID: string,
-  userId: string,
-  token: string | null
-): Promise<{ message: string; chatID: string; file: string; userId: string }> {
-  const formData = new FormData();
-  formData.append("file", file);
-  formData.append("chatID", chatID);
-  formData.append("userID", userId);
-
-  return fetchApiToJson<{ message: string; chatID: string; file: string; userId: string }>("/file", token, {
-    method: "POST",
-    body: formData,
-  });
-}
-
 export async function fetchApiToJson<T>(
     url: string,
     token: string | null,
@@ -34,7 +17,7 @@ export async function fetchApi(
     await makeRequest(url, token, options);
 }
 
-async function makeRequest(
+export async function makeRequest(
     url: string,
     token: string | null,
     options: RequestInit = {}

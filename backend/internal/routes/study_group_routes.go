@@ -18,7 +18,9 @@ func RegisterStudyGroupRoutes(firebaseAuth *auth.Client, studyGroupService servi
 	http.HandleFunc("GET /api/study-groups/{id}", middleware.WithFirebaseAuth(firebaseAuth, handler.GetStudyGroup))
 	http.HandleFunc("POST /api/study-groups", middleware.WithFirebaseAuth(firebaseAuth, handler.CreateStudyGroup))
 	http.HandleFunc("POST /api/study-groups/", middleware.WithFirebaseAuth(firebaseAuth, handler.CreateStudyGroup))
-	// TODO endpoint for deleting and updating study groups
+	http.HandleFunc("PUT /api/study-groups/{id}", middleware.WithFirebaseAuth(firebaseAuth, handler.UpdateStudyGroup))
+	http.HandleFunc("DELETE /api/study-groups/{id}", middleware.WithFirebaseAuth(firebaseAuth, handler.DeleteStudyGroup))
+
 	http.HandleFunc("POST /api/study-groups/{id}/{command}", middleware.WithFirebaseAuth(firebaseAuth,
 		handler.HandleStudyMemberOperation))
 }

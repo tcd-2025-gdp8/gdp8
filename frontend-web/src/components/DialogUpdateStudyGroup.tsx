@@ -29,13 +29,11 @@ export default function DialogUpdateStudyGroup({
 }: DialogUpdateStudyGroupProps) {
     const { token } = useAuth();
 
-    // Local state for form fields
     const [name, setName] = useState(groupData.name);
     const [description, setDescription] = useState(groupData.description);
     const [type, setType] = useState<"public" | "closed" | "invite-only">(groupData.type);
     const [maxMembers, setMaxMembers] = useState<number>(groupData.maxMembers);
 
-    // Update form fields if groupData changes
     useEffect(() => {
         setName(groupData.name);
         setDescription(groupData.description);
@@ -45,13 +43,13 @@ export default function DialogUpdateStudyGroup({
 
     const handleSave = async () => {
         try {
-            const updates: Partial<StudyGroupCreationDetails> = {
+            const updates: StudyGroupCreationDetails = {
                 name,
                 description,
                 type,
                 maxMembers,
+                moduleId: groupData.moduleId
             };
-            // Call the API update function
             const updatedGroup = await updateStudyGroup(token, groupData.id, updates);
             onUpdated(updatedGroup);
         } catch (error) {

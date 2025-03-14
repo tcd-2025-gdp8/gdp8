@@ -3,14 +3,25 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"slices"
+	"strings"
 
 	"gdp8-backend/internal/models"
 	"gdp8-backend/internal/services"
 	"gdp8-backend/internal/utils"
 )
+
+const (
+	minNameLength        = 3
+	minDescriptionLength = 3
+	minMembers           = 2
+	maxMembers           = 100
+)
+
+var validGroupTypes = []string{"public", "closed", "invite-only"}
 
 type StudyGroupHandler struct {
 	service services.StudyGroupService
@@ -23,12 +34,16 @@ type StudyGroupMemberDTO struct {
 }
 
 type StudyGroupDTO struct {
-	ID          models.StudyGroupID `json:"id"`
-	Name        string              `json:"name"`
-	Description string              `json:"description"`
-	Type        string              `json:"type"`
-	MaxMembers  int                 `json:"maxMembers"`
-	ModuleID    models.ModuleID     `json:"moduleId"`
+	ID models.StudyGroupID `json:"id"`
+	StudyGroupDetailsDTO
+}
+
+type StudyGroupDetailsDTO struct {
+	Name        string          `json:"name"`
+	Description string          `json:"description"`
+	Type        string          `json:"type"`
+	MaxMembers  int             `json:"maxMembers"`
+	ModuleID    models.ModuleID `json:"moduleId"`
 }
 
 type StudyGroupWithMembersDTO struct {
@@ -115,15 +130,14 @@ func (h *StudyGroupHandler) GetRelevantStudyGroups(w http.ResponseWriter, r *htt
 }
 
 func (h *StudyGroupHandler) CreateStudyGroup(w http.ResponseWriter, r *http.Request) {
-	var createDTO struct {
-		Name        string          `json:"name"`
-		Description string          `json:"description"`
-		Type        string          `json:"type"`
-		ModuleID    models.ModuleID `json:"moduleId"`
-		MaxMembers  int             `json:"maxMembers"`
-	}
+	var createDTO StudyGroupDetailsDTO
 	if err := json.NewDecoder(r.Body).Decode(&createDTO); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	if err := validateStudyGroupDetailsDTO(&createDTO); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -133,7 +147,6 @@ func (h *StudyGroupHandler) CreateStudyGroup(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	// TODO implement validation (group type in particular)
 	studyGroupDetails := models.StudyGroupDetails{
 		Name:        createDTO.Name,
 		Description: createDTO.Description,
@@ -150,6 +163,81 @@ func (h *StudyGroupHandler) CreateStudyGroup(w http.ResponseWriter, r *http.Requ
 	}
 
 	sendJSONResponse(w, mapStudyGroupWithMembersToDTO(createdStudyGroup))
+}
+
+func (h *StudyGroupHandler) UpdateStudyGroup(w http.ResponseWriter, r *http.Request) {
+	var updateDTO StudyGroupDetailsDTO
+	if err := json.NewDecoder(r.Body).Decode(&updateDTO); err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	if err := validateStudyGroupDetailsDTO(&updateDTO); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	idString := r.PathValue("id")
+	studyGroupID, err := utils.ConvertToType[models.StudyGroupID](idString)
+	if err != nil {
+		http.Error(w, "Invalid study group ID", http.StatusBadRequest)
+		return
+	}
+
+	userID, err := getUserID(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	studyGroupDetails := models.StudyGroupDetails{
+		Name:        updateDTO.Name,
+		Description: updateDTO.Description,
+		Type:        models.StudyGroupType(updateDTO.Type),
+		ModuleID:    updateDTO.ModuleID,
+		MaxMembers:  updateDTO.MaxMembers,
+	}
+
+	updatedStudyGroup, err := h.service.UpdateStudyGroupDetails(studyGroupID, studyGroupDetails, userID)
+
+	switch {
+	case err == nil:
+		sendJSONResponse(w, mapStudyGroupWithMembersToDTO(updatedStudyGroup))
+	case errors.Is(err, services.ErrStudyGroupNotFound):
+		http.Error(w, "Study group not found", http.StatusNotFound)
+	default:
+		log.Printf("Error updating study group: %v\n", err)
+		http.Error(w, "Error updating study group", http.StatusInternalServerError)
+	}
+}
+
+func (h *StudyGroupHandler) DeleteStudyGroup(w http.ResponseWriter, r *http.Request) {
+	idString := r.PathValue("id")
+	studyGroupID, err := utils.ConvertToType[models.StudyGroupID](idString)
+	if err != nil {
+		http.Error(w, "Invalid study group ID", http.StatusBadRequest)
+		return
+	}
+
+	userID, err := getUserID(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	err = h.service.DeleteStudyGroup(studyGroupID, userID)
+
+	switch {
+	case err == nil:
+		w.WriteHeader(http.StatusNoContent)
+	case errors.Is(err, services.ErrUnauthorizedMemberOperation):
+		http.Error(w, "Unauthorized study group delete operation", http.StatusForbidden)
+	case errors.Is(err, services.ErrStudyGroupNotFound):
+		http.Error(w, "Study group not found", http.StatusNotFound)
+	default:
+		log.Printf("Error deleting study group: %v\n", err)
+		http.Error(w, "Error deleting study group", http.StatusInternalServerError)
+	}
 }
 
 func (h *StudyGroupHandler) HandleStudyMemberOperation(w http.ResponseWriter, r *http.Request) {
@@ -184,7 +272,7 @@ func (h *StudyGroupHandler) HandleStudyMemberOperation(w http.ResponseWriter, r 
 		http.Error(w, "Study group not found", http.StatusNotFound)
 	case errors.Is(err, services.ErrUnauthorizedMemberOperation):
 		http.Error(w, "Unauthorized study group operation", http.StatusForbidden)
-	case errors.Is(err, services.ErrStudyGroupFull): // NEW
+	case errors.Is(err, services.ErrStudyGroupFull):
 		http.Error(w, "Study group is full", http.StatusBadRequest)
 	case errors.Is(err, services.ErrInvalidMemberOperation):
 		http.Error(w, "Invalid study group operation", http.StatusBadRequest)
@@ -274,11 +362,40 @@ func mapStudyGroupWithMembersToDTO(studyGroup *models.StudyGroupView) StudyGroup
 
 func mapStudyGroupToDTO(studyGroup *models.StudyGroupView) StudyGroupDTO {
 	return StudyGroupDTO{
-		ID:          studyGroup.ID,
-		Name:        studyGroup.Name,
-		Description: studyGroup.Description,
-		Type:        string(studyGroup.Type),
-		ModuleID:    studyGroup.ModuleID,
-		MaxMembers:  studyGroup.MaxMembers,
+		ID: studyGroup.ID,
+		StudyGroupDetailsDTO: StudyGroupDetailsDTO{
+			Name:        studyGroup.Name,
+			Description: studyGroup.Description,
+			Type:        string(studyGroup.Type),
+			ModuleID:    studyGroup.ModuleID,
+			MaxMembers:  studyGroup.MaxMembers,
+		},
 	}
+}
+
+func validateStudyGroupDetailsDTO(details *StudyGroupDetailsDTO) error {
+	if strings.TrimSpace(details.Name) == "" {
+		return errors.New("name is required")
+	}
+	if len(strings.TrimSpace(details.Name)) < minNameLength {
+		return fmt.Errorf("name must be at least %d characters long", minNameLength)
+	}
+
+	if strings.TrimSpace(details.Description) == "" {
+		return errors.New("description is required")
+	}
+	if len(strings.TrimSpace(details.Description)) < minDescriptionLength {
+		return fmt.Errorf("description must be at least %d characters long", minDescriptionLength)
+	}
+
+	if !slices.Contains(validGroupTypes, details.Type) {
+		return fmt.Errorf("type must be one of: %s", strings.Join(validGroupTypes, ", "))
+	}
+
+	if details.MaxMembers < minMembers || details.MaxMembers > maxMembers {
+		return fmt.Errorf("maxMembers must be between %d and %d", minMembers, maxMembers)
+	}
+
+	return nil
+
 }

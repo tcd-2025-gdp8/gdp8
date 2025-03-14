@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"archive/zip"
 	"errors"
 	"fmt"
 	"io"
@@ -16,13 +17,20 @@ import (
 
 const fileSizeLimitMb = 20
 
-type FileHandler struct {
-	studyGroupService services.StudyGroupService
+type File struct {
+	Name    string
+	Content []byte
 }
 
-func NewFileHandler(studyGroupService services.StudyGroupService) *FileHandler {
+type FileHandler struct {
+	studyGroupService services.StudyGroupService
+	fileService       services.FileService
+}
+
+func NewFileHandler(studyGroupService services.StudyGroupService, fileService services.FileService) *FileHandler {
 	return &FileHandler{
 		studyGroupService: studyGroupService,
+		fileService:       fileService,
 	}
 }
 
@@ -33,14 +41,30 @@ func (h *FileHandler) GetFiles(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	chatID := parts[3]
-	fmt.Println("GetFiles called with chatID:", chatID)
 
-	// TODO: integrate with SCRUM 110
-	response := map[string]string{
-		"message": "Fetched files for chatID " + chatID,
+	files, err := h.getFilesByID(chatID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
 	}
 
-	sendJSONResponse(w, response)
+	w.Header().Set("Content-Type", "application/zip")
+	w.Header().Set("Content-Disposition", "attachment; filename=\"files.zip\"")
+	zipWriter := zip.NewWriter(w)
+	defer zipWriter.Close()
+
+	for _, file := range files {
+		f, err := zipWriter.Create(file.Name)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		_, err = f.Write(file.Content)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
 }
 
 func (h *FileHandler) UploadFile(w http.ResponseWriter, r *http.Request) {
@@ -67,12 +91,42 @@ func (h *FileHandler) UploadFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.saveFile(file, header.Filename); err != nil {
+	err = h.saveFile(file, header.Filename, chatID)
+	if err != nil {
 		http.Error(w, "Error saving file", http.StatusInternalServerError)
 		return
 	}
 
+	err = h.createFile(header.Filename, chatID, userID)
+
+	if err != nil {
+		http.Error(w, "Error storing the file", http.StatusInternalServerError)
+		return
+	}
+
 	sendJSONResponse(w, map[string]string{"message": "File uploaded successfully"})
+}
+
+func (h *FileHandler) DeleteFile(w http.ResponseWriter, r *http.Request) {
+	chatID, userID, err := h.extractFormValues(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	filename := r.FormValue("filename")
+	canDelete := h.hasDeletionRights(filename, chatID, userID)
+
+	if !canDelete {
+		http.Error(w, "Cannot delete the file", http.StatusForbidden)
+		return
+	}
+
+	err = h.deleteFileByName(filename, chatID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+
+	}
+	sendJSONResponse(w, map[string]string{"message": fmt.Sprintf("the file '%s' has been deleted", filename)})
 }
 
 func (h *FileHandler) extractFormValues(r *http.Request) (string, string, error) {
@@ -103,13 +157,18 @@ func (h *FileHandler) isUserMember(chatID string, userID string) bool {
 	return isUserMemberOfStudyGroup(models.UserID(userID), studyGroup)
 }
 
-func (h *FileHandler) saveFile(file io.Reader, filename string) error {
-	uploadDir := "uploads"
-	if err := os.MkdirAll(uploadDir, os.ModePerm); err != nil {
+func (h *FileHandler) saveFile(file io.Reader, filename string, chatID string) error {
+	filename = filepath.Base(filename)
+	if filename == "." || filename == "" {
+		return errors.New("invalid filename")
+	}
+
+	dirPath := filepath.Join("uploads", chatID)
+	if err := os.MkdirAll(dirPath, os.ModePerm); err != nil {
 		return err
 	}
 
-	dstPath := filepath.Join(uploadDir, filename)
+	dstPath := filepath.Join(dirPath, filename)
 	dst, err := os.Create(dstPath)
 	if err != nil {
 		return err
@@ -127,4 +186,61 @@ func isUserMemberOfStudyGroup(userID models.UserID, studyGroup *models.StudyGrou
 		}
 	}
 	return false
+}
+func (h *FileHandler) getFilesByID(chatID string) ([]File, error) {
+	dirPath := filepath.Join("uploads", chatID)
+	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
+		return nil, fmt.Errorf("directory %s does not exist", dirPath)
+	}
+
+	entries, err := os.ReadDir(dirPath)
+	if err != nil {
+		return nil, err
+	}
+
+	var files []File
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			content, err := os.ReadFile(filepath.Join(dirPath, entry.Name()))
+			if err != nil {
+				return nil, err
+			}
+			files = append(files, File{Name: entry.Name(), Content: content})
+		}
+	}
+
+	return files, nil
+}
+
+func (h *FileHandler) deleteFileByName(filename string, chatID string) error {
+	file := filepath.Join("uploads", chatID, filename)
+	return os.Remove(file)
+}
+
+func (h *FileHandler) hasDeletionRights(filename string, chatID string, userID string) bool {
+	groupID, err := strconv.Atoi(chatID)
+	if err != nil {
+		return false
+	}
+	rights, err := h.fileService.HasDeletionRights(filename, models.StudyGroupID(groupID), models.UserID(userID))
+	if err != nil {
+		return false
+	}
+	return rights
+}
+
+func (h *FileHandler) createFile(filename string, chatID string, userID string) error {
+	groupID, err := strconv.Atoi(chatID)
+	if err != nil {
+		return err
+	}
+
+	newFile := models.File{
+		Name:    filename,
+		UserID:  models.UserID(userID),
+		GroupID: models.StudyGroupID(groupID),
+	}
+
+	_, err = h.fileService.CreateFile(newFile)
+	return err
 }
