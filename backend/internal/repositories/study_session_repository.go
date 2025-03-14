@@ -168,12 +168,15 @@ func (s *SQLStudySessionRepository) DeleteStudySession(tx *sql.Tx, studySessionI
 	return nil
 }
 
-func (s *SQLStudySessionRepository) GetUpcomingSessions(tx *sql.Tx, windowStart time.Time, windowEnd time.Time) ([]models.StudySession, error) {
+func (s *SQLStudySessionRepository) GetUpcomingSessions(
+	tx *sql.Tx,
+	windowStart time.Time,
+	windowEnd time.Time,
+) ([]models.StudySession, error) {
 	query := `
         SELECT id, study_group_id, creator_id, title, start_time, duration_minutes, end_time
         FROM study_sessions
         WHERE start_time >= ? AND start_time < ?`
-
 	rows, err := tx.Query(query, windowStart, windowEnd)
 	if err != nil {
 		return nil, fmt.Errorf("error querying upcoming sessions: %w", err)
