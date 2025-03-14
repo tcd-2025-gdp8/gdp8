@@ -12,7 +12,13 @@ import (
 type NotificationService interface {
 	GetUserNotifications(userID models.UserID) ([]models.NotificationView, error)
 	MarkNotificationAsRead(userID models.UserID, notificationID models.NotificationID) error
-	AddStudyGroupEventNotification(notificationType models.NotificationType, triggeringUserID models.UserID, targetUserID *models.UserID, studyGroupID models.StudyGroupID, studyGroupMembers []models.StudyGroupMemberView) error
+	AddStudyGroupEventNotification(
+		notificationType models.NotificationType,
+		triggeringUserID models.UserID,
+		targetUserID *models.UserID,
+		studyGroupID models.StudyGroupID,
+		studyGroupMembers []models.StudyGroupMemberView,
+	) error
 
 	// NEW: AddStudySessionReminderNotification sends a reminder for a study session.
 	AddStudySessionReminderNotification(session models.StudySession, studyGroupMembers []models.StudyGroupMemberView) error
@@ -113,6 +119,9 @@ func (s *notificationServiceImpl) AddStudyGroupEventNotification(
 	case models.NotificationTypeStudyGroupRemovedMember:
 		usersToBeNotified = append([]models.UserID{triggeringUserID}, actualStudyGroupMembers...)
 	case models.NotificationTypeStudyGroupChatMessage:
+		return ErrInvalidNotificationType
+	case models.NotificationTypeStudySessionReminder:
+		// This type is handled separately via AddStudySessionReminderNotification.
 		return ErrInvalidNotificationType
 	default:
 		return ErrInvalidNotificationType
