@@ -19,9 +19,11 @@ type StudySessionRepository interface {
 	UpdateStudySession(tx *sql.Tx, studySessionID models.StudySessionID,
 		studySessionDetails *models.StudySessionDetails) (*models.StudySession, error)
 	DeleteStudySession(tx *sql.Tx, studySessionID models.StudySessionID) error
-
-	// NEW: Get upcoming study sessions between windowStart (inclusive) and windowEnd (exclusive)
-	GetUpcomingSessions(tx *sql.Tx, windowStart time.Time, windowEnd time.Time) ([]models.StudySession, error)
+	GetUpcomingSessions(
+		tx *sql.Tx,
+		windowStart time.Time,
+		windowEnd time.Time,
+	) ([]models.StudySession, error)
 }
 
 var ErrStudySessionNotFound = errors.New("study session not found")
