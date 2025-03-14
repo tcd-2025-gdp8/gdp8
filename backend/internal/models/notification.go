@@ -18,6 +18,7 @@ const (
 	NotificationTypeStudyGroupRejectedJoinRequest NotificationType = "study-group-rejected-join-request"
 	NotificationTypeStudyGroupRemovedMember       NotificationType = "study-group-removed-member"
 	NotificationTypeStudyGroupChatMessage         NotificationType = "study-group-chat-message"
+	NotificationTypeStudySessionReminder          NotificationType = "study-session-reminder"
 )
 
 type NotificationDetails struct {

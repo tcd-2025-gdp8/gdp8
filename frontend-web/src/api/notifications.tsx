@@ -11,7 +11,8 @@ export type NotificationType =
     | "study-group-accepted-join-request"
     | "study-group-rejected-join-request"
     | "study-group-removed-member"
-    | "study-group-chat-message";
+    | "study-group-chat-message"
+    | "study-session-reminder";
 
 
 export interface NotificationDto {
@@ -80,10 +81,10 @@ function augmentNotification(notification: NotificationDto, userId: string): Not
                         `${notification.triggeringUser.name} has rejected the invitation to join the study group "${notification.studyGroup.name}".`;
             break;
         case "study-group-invited":
-           content = (userId === notification.triggeringUser.id) ? 
-                       `You have invited ${notification.targetUser?.name} to join the study group "${notification.studyGroup.name}".` : 
-                       `${notification.triggeringUser.name} has invited ${notification.targetUser?.name} to join the study group "${notification.studyGroup.name}".`;
-           break;
+            content = (userId === notification.triggeringUser.id) ? 
+                        `You have invited ${notification.targetUser?.name} to join the study group "${notification.studyGroup.name}".` : 
+                        `${notification.triggeringUser.name} has invited ${notification.targetUser?.name} to join the study group "${notification.studyGroup.name}".`;
+            break;
         case "study-group-accepted-join-request":
             content = (userId === notification.triggeringUser.id) ? 
                         `You have accepted ${notification.targetUser?.name}'s request to join the study group "${notification.studyGroup.name}".` : 
@@ -102,10 +103,12 @@ function augmentNotification(notification: NotificationDto, userId: string): Not
         case "study-group-chat-message":
             content = `You have a new message in the study group "${notification.studyGroup.name}" from ${notification.triggeringUser.name}.`;
             break;
+        case "study-session-reminder":
+            content = `Reminder: Your study session for "${notification.studyGroup.name}" is starting soon.`;
+            break;
         default:
             content = "You have a new notification.";
     }
 
     return { ...notification, content };
 }
-
