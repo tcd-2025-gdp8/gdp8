@@ -16,10 +16,8 @@ type StudyGroupRepository interface {
 	UpdateStudyGroupDetails(tx *sql.Tx, id models.StudyGroupID, details models.StudyGroupDetails) (*models.StudyGroupView, error)
 	DeleteStudyGroup(tx *sql.Tx, id models.StudyGroupID) error
 	UpdateStudyGroupMember(tx *sql.Tx, id models.StudyGroupID, userID models.UserID, role *models.StudyGroupRole) error
-	RetrieveGroupRole(tx *sql.Tx, id models.StudyGroupID, userID models.UserID) (*models.StudyGroupRole, error)
-
-	// NEW: GetMembers returns the members of the study group.
 	GetMembers(tx *sql.Tx, studyGroupID models.StudyGroupID) ([]models.StudyGroupMemberView, error)
+	RetrieveGroupRole(tx *sql.Tx, id models.StudyGroupID, userID models.UserID) (*models.StudyGroupRole, error)
 }
 
 var ErrStudyGroupNotFound = errors.New("study group not found")
