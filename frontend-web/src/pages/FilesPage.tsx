@@ -235,7 +235,7 @@ export default function FilesPage() {
                         <Button onClick={() => setDeleteDialogOpen(false)} color="primary">
                             No
                         </Button>
-                        <Button onClick={void handleDeleteConfirmed()} color="error">
+                        <Button onClick={() => void handleDeleteConfirmed()} color="error">
                             Yes
                         </Button>
                     </DialogActions>
