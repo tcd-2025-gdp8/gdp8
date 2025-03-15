@@ -23,6 +23,18 @@ import ChatbotChat from "../components/ChatbotChat";
 import { BackendFile, apiFetchFiles, apiUploadFiles, apiDeleteFiles} from "../utils/apiFile"
 import { useAuth } from "../auth/useAuth";
 
+const getChatID = () => {
+  const parts = window.location.toString().split("/");
+  for (let i = 0; i < parts.length; i++) {
+    if (parts[i] === "study-groups" && i + 1 < parts.length) {
+      const candidate = parts[i + 1];
+      if (!isNaN(Number(candidate))) {
+        return candidate;
+      }
+    }
+  }
+  return "invalid";
+}
 
 
 export default function FilesPage() {
@@ -33,7 +45,7 @@ export default function FilesPage() {
     const [fileToDelete, setFileToDelete] = useState<string | null>(null);
     const [chatbotOpen, setChatbotOpen] = useState(false);
 
-    const chatID = "1"
+    const chatID = getChatID()
     const { token, user } = useAuth();
 
     const fetchFiles = async () => {
