@@ -1,4 +1,4 @@
-import { useState, DragEvent, useEffect } from "react";
+import { useState, DragEvent, useEffect, useCallback } from "react";
 import {
     Box,
     Typography,
@@ -48,7 +48,7 @@ export default function FilesPage() {
     const chatID = getChatID()
     const { token } = useAuth();
 
-    const fetchFiles = async () => {
+    const fetchFiles = useCallback(async () => {
         if (!chatID) return;
         try {
             const fetchedFiles = await apiFetchFiles(chatID, token);
@@ -56,19 +56,19 @@ export default function FilesPage() {
         } catch (error) {
             console.error("Error fetching files:", error);
         }
-    };
+    }, [chatID, token]);
 
     useEffect(() => {
-        fetchFiles();
-    }, [chatID, token]);
+        void fetchFiles();
+    }, [chatID, token, fetchFiles]);
 
 
     const handleFileUpload = async (selectedFiles: FileList | null): Promise<void> => {
         if (!selectedFiles || selectedFiles.length === 0 || !chatID) return;
         setUploading(true);
         try {
-            for (let i = 0; i < selectedFiles.length; i++) {
-                await apiUploadFiles(selectedFiles[i], chatID, token);
+            for (const file of Array.from(selectedFiles)) {
+                await apiUploadFiles(file, chatID, token);
             }
             await fetchFiles();
         } catch (error) {
@@ -110,14 +110,13 @@ export default function FilesPage() {
     const handleDrop = (e: DragEvent<HTMLDivElement>): void => {
         e.preventDefault();
         setDragging(false);
-        handleFileUpload(e.dataTransfer.files);
+        void handleFileUpload(e.dataTransfer.files);
     };
 
     return (
         <>
             <Box
                 sx={{
-                    // Removed "height: 100vh" so the page does not force a scrollbar.
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "center",
@@ -168,7 +167,7 @@ export default function FilesPage() {
                         type="file"
                         multiple
                         style={{ display: "none" }}
-                        onChange={(e) => handleFileUpload(e.target.files)}
+                        onChange={(e) => void handleFileUpload(e.target.files)}
                     />
                 </Paper>
 
@@ -189,7 +188,6 @@ export default function FilesPage() {
                             p: 2,
                             bgcolor: "#3b5998",
                             borderRadius: "8px",
-                            // Keep scroll only for the blue box if there are too many files:
                             maxHeight: "220px",
                             overflowY: "auto",
                         }}
@@ -237,7 +235,7 @@ export default function FilesPage() {
                         <Button onClick={() => setDeleteDialogOpen(false)} color="primary">
                             No
                         </Button>
-                        <Button onClick={handleDeleteConfirmed} color="error">
+                        <Button onClick={void handleDeleteConfirmed()} color="error">
                             Yes
                         </Button>
                     </DialogActions>
