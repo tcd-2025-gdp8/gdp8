@@ -41,13 +41,11 @@ export async function apiFetchFiles(chatID: string, token: string | null): Promi
 export async function apiUploadFiles(
   file: File,
   chatID: string,
-  userId: string,
   token: string | null
 ): Promise<{ message: string; chatID: string; file: string; userId: string }> {
   const formData = new FormData();
   formData.append("file", file);
   formData.append("chatID", chatID);
-  formData.append("userID", userId);
 
   return fetchApiToJson<{ message: string; chatID: string; file: string; userId: string }>("/file", token, {
     method: "POST",
@@ -58,13 +56,11 @@ export async function apiUploadFiles(
 export async function apiDeleteFiles(
   filename: string,
   chatID: string,
-  userId: string,
   token: string | null
 ): Promise<{ message: string; chatID: string; file: string; userId: string }> {
   const formData = new FormData();
   formData.append("filename", filename);
   formData.append("chatID", chatID);
-  formData.append("userID", userId);
 
   return fetchApiToJson<{ message: string; chatID: string; file: string; userId: string }>("/file/delete", token, {
     method: "POST",

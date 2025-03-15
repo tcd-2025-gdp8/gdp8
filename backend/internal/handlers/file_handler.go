@@ -48,6 +48,23 @@ func (h *FileHandler) GetFiles(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	userID, err := getUserID(r)
+	if err != nil {
+		http.Error(w, "Unabe to retrieve userID", http.StatusForbidden)
+		return
+	}
+
+	groupID, err := parseGroupID(chatID)
+	if err != nil {
+		http.Error(w, "Unabe to retrieve groupID", http.StatusForbidden)
+		return
+	}
+
+	if !h.isUserMember(groupID, userID) {
+		http.Error(w, "User not a member of the study group", http.StatusForbidden)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/zip")
 	w.Header().Set("Content-Disposition", "attachment; filename=\"files.zip\"")
 	zipWriter := zip.NewWriter(w)
@@ -129,41 +146,36 @@ func (h *FileHandler) DeleteFile(w http.ResponseWriter, r *http.Request) {
 	sendJSONResponse(w, map[string]string{"message": fmt.Sprintf("the file '%s' has been deleted", filename)})
 }
 
-func (h *FileHandler) extractFormValues(r *http.Request) (string, string, error) {
+func (h *FileHandler) extractFormValues(r *http.Request) (models.StudyGroupID, models.UserID, error) {
 	chatID := r.FormValue("chatID")
-	if chatID == "" {
-		return "", "", errors.New("Missing chatID")
+	groupID, err := parseGroupID(chatID)
+	if err != nil {
+		return models.StudyGroupID(0), models.UserID(""), errors.New("Invalid chatID")
 	}
 
-	userID := r.FormValue("userID")
-	if userID == "" {
-		return "", "", errors.New("Missing userID")
+	userID, err := getUserID(r)
+	if err != nil {
+		return models.StudyGroupID(0), models.UserID(""), errors.New("Invalid user")
 	}
 
-	return chatID, userID, nil
+	return groupID, userID, nil
 }
 
-func (h *FileHandler) isUserMember(chatID string, userID string) bool {
-	studyGroupID, err := strconv.Atoi(chatID)
+func (h *FileHandler) isUserMember(studyGroupID models.StudyGroupID, userID models.UserID) bool {
+	studyGroup, err := h.studyGroupService.GetStudyGroupByID(studyGroupID)
 	if err != nil {
 		return false
 	}
-
-	studyGroup, err := h.studyGroupService.GetStudyGroupByID(models.StudyGroupID(studyGroupID))
-	if err != nil {
-		return false
-	}
-
-	return isUserMemberOfStudyGroup(models.UserID(userID), studyGroup)
+	return isUserMemberOfStudyGroup(userID, studyGroup)
 }
 
-func (h *FileHandler) saveFile(file io.Reader, filename string, chatID string) error {
+func (h *FileHandler) saveFile(file io.Reader, filename string, chatID models.StudyGroupID) error {
 	filename = filepath.Base(filename)
 	if filename == "." || filename == "" {
 		return errors.New("invalid filename")
 	}
 
-	dirPath := filepath.Join("uploads", chatID)
+	dirPath := fmt.Sprintf("uploads/%d", chatID)
 	if err := os.MkdirAll(dirPath, os.ModePerm); err != nil {
 		return err
 	}
@@ -212,35 +224,34 @@ func (h *FileHandler) getFilesByID(chatID string) ([]File, error) {
 	return files, nil
 }
 
-func (h *FileHandler) deleteFileByName(filename string, chatID string) error {
-	file := filepath.Join("uploads", chatID, filename)
+func (h *FileHandler) deleteFileByName(filename string, groupID models.StudyGroupID) error {
+	file := fmt.Sprintf("uploads/%d/%s", groupID, filename)
 	return os.Remove(file)
 }
 
-func (h *FileHandler) hasDeletionRights(filename string, chatID string, userID string) bool {
-	groupID, err := strconv.Atoi(chatID)
-	if err != nil {
-		return false
-	}
-	rights, err := h.fileService.HasDeletionRights(filename, models.StudyGroupID(groupID), models.UserID(userID))
+func (h *FileHandler) hasDeletionRights(filename string, groupID models.StudyGroupID, userID models.UserID) bool {
+	rights, err := h.fileService.HasDeletionRights(filename, groupID, userID)
 	if err != nil {
 		return false
 	}
 	return rights
 }
 
-func (h *FileHandler) createFile(filename string, chatID string, userID string) error {
-	groupID, err := strconv.Atoi(chatID)
-	if err != nil {
-		return err
-	}
-
+func (h *FileHandler) createFile(filename string, groupID models.StudyGroupID, userID models.UserID) error {
 	newFile := models.File{
 		Name:    filename,
-		UserID:  models.UserID(userID),
-		GroupID: models.StudyGroupID(groupID),
+		UserID:  userID,
+		GroupID: groupID,
 	}
 
-	_, err = h.fileService.CreateFile(newFile)
+	_, err := h.fileService.CreateFile(newFile)
 	return err
+}
+
+func parseGroupID(chatID string) (models.StudyGroupID, error) {
+	id, err := strconv.Atoi(chatID)
+	if err != nil {
+		return models.StudyGroupID(0), err
+	}
+	return models.StudyGroupID(id), nil
 }

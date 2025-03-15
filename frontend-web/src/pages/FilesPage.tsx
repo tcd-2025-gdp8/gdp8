@@ -1,4 +1,4 @@
-import { useState, DragEvent } from "react";
+import { useState, DragEvent, useEffect, useCallback } from "react";
 import {
     Box,
     Typography,
@@ -20,46 +20,82 @@ import {
     Delete as DeleteIcon
 } from "@mui/icons-material";
 import ChatbotChat from "../components/ChatbotChat";
+import { BackendFile, apiFetchFiles, apiUploadFiles, apiDeleteFiles} from "../utils/apiFile"
+import { useAuth } from "../auth/useAuth";
 
-interface LocalFile {
-    name: string;
-    url: string;
+const getChatID = () => {
+  const parts = window.location.toString().split("/");
+  for (let i = 0; i < parts.length; i++) {
+    if (parts[i] === "study-groups" && i + 1 < parts.length) {
+      const candidate = parts[i + 1];
+      if (!isNaN(Number(candidate))) {
+        return candidate;
+      }
+    }
+  }
+  return "invalid";
 }
 
+
 export default function FilesPage() {
-    const [files, setFiles] = useState<LocalFile[]>([]);
+    const [files, setFiles] = useState<BackendFile[]>([]);
     const [uploading, setUploading] = useState(false);
     const [dragging, setDragging] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [fileToDelete, setFileToDelete] = useState<string | null>(null);
     const [chatbotOpen, setChatbotOpen] = useState(false);
 
-    const handleFileUpload = (selectedFiles: FileList | null): void => {
-        if (!selectedFiles || selectedFiles.length === 0) return;
+    const chatID = getChatID()
+    const { token } = useAuth();
 
+    const fetchFiles = useCallback(async () => {
+        if (!chatID) return;
+        try {
+            const fetchedFiles = await apiFetchFiles(chatID, token);
+            setFiles(fetchedFiles);
+        } catch (error) {
+            console.error("Error fetching files:", error);
+        }
+    }, [chatID, token]);
+
+    useEffect(() => {
+        void fetchFiles();
+    }, [chatID, token, fetchFiles]);
+
+
+    const handleFileUpload = async (selectedFiles: FileList | null): Promise<void> => {
+        if (!selectedFiles || selectedFiles.length === 0 || !chatID) return;
         setUploading(true);
-        setTimeout(() => {
-            const newFiles = Array.from(selectedFiles).map(file => ({
-                name: file.name,
-                url: URL.createObjectURL(file),
-            }));
-
-            setFiles(prevFiles => [...prevFiles, ...newFiles]);
-            setUploading(false);
-        }, 1000);
+        try {
+            for (const file of Array.from(selectedFiles)) {
+                await apiUploadFiles(file, chatID, token);
+            }
+            await fetchFiles();
+        } catch (error) {
+            console.error("Error uploading file(s):", error);
+        }
+        setUploading(false);
     };
 
-    const confirmDeleteFile = (fileUrl: string): void => {
-        setFileToDelete(fileUrl);
-        setDeleteDialogOpen(true);
-    };
 
-    const handleDeleteConfirmed = (): void => {
-        if (fileToDelete) {
-            setFiles(prevFiles => prevFiles.filter(file => file.url !== fileToDelete));
+    const handleDeleteConfirmed = async (): Promise<void> => {
+        if (fileToDelete && chatID) {
+            try {
+                await apiDeleteFiles(fileToDelete, chatID, token);
+                await fetchFiles();
+            } catch (error) {
+                console.error("Error deleting file:", error);
+            }
         }
         setDeleteDialogOpen(false);
         setFileToDelete(null);
+    };
+
+
+
+    const confirmDeleteFile = (filename: string): void => {
+        setFileToDelete(filename);
+        setDeleteDialogOpen(true);
     };
 
     const handleDragOver = (e: DragEvent<HTMLDivElement>): void => {
@@ -74,14 +110,13 @@ export default function FilesPage() {
     const handleDrop = (e: DragEvent<HTMLDivElement>): void => {
         e.preventDefault();
         setDragging(false);
-        handleFileUpload(e.dataTransfer.files);
+        void handleFileUpload(e.dataTransfer.files);
     };
 
     return (
         <>
             <Box
                 sx={{
-                    // Removed "height: 100vh" so the page does not force a scrollbar.
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "center",
@@ -132,7 +167,7 @@ export default function FilesPage() {
                         type="file"
                         multiple
                         style={{ display: "none" }}
-                        onChange={(e) => handleFileUpload(e.target.files)}
+                        onChange={(e) => void handleFileUpload(e.target.files)}
                     />
                 </Paper>
 
@@ -153,7 +188,6 @@ export default function FilesPage() {
                             p: 2,
                             bgcolor: "#3b5998",
                             borderRadius: "8px",
-                            // Keep scroll only for the blue box if there are too many files:
                             maxHeight: "220px",
                             overflowY: "auto",
                         }}
@@ -171,6 +205,7 @@ export default function FilesPage() {
                                             backgroundColor: "#f5f5f5",
                                         },
                                     }}
+                                    onClick={() => file.download()}
                                 >
                                     <UploadIcon color="primary" sx={{ mr: 1 }} />
                                     <ListItemText
@@ -178,7 +213,10 @@ export default function FilesPage() {
                                         primaryTypographyProps={{ color: "text.primary" }}
                                     />
                                     <IconButton
-                                        onClick={() => confirmDeleteFile(file.url)}
+                                        onClick={(e) => {
+                                        e.stopPropagation();
+                                        confirmDeleteFile(file.name);
+                                        }}
                                         sx={{ color: "error.main" }}
                                     >
                                         <DeleteIcon />
@@ -197,7 +235,7 @@ export default function FilesPage() {
                         <Button onClick={() => setDeleteDialogOpen(false)} color="primary">
                             No
                         </Button>
-                        <Button onClick={handleDeleteConfirmed} color="error">
+                        <Button onClick={() => void handleDeleteConfirmed()} color="error">
                             Yes
                         </Button>
                     </DialogActions>
