@@ -1,4 +1,4 @@
-import { useState, DragEvent } from "react";
+import { useState, DragEvent, useEffect } from "react";
 import {
     Box,
     Typography,
@@ -20,46 +20,70 @@ import {
     Delete as DeleteIcon
 } from "@mui/icons-material";
 import ChatbotChat from "../components/ChatbotChat";
+import { BackendFile, apiFetchFiles, apiUploadFiles, apiDeleteFiles} from "../utils/apiFile"
+import { useAuth } from "../auth/useAuth";
 
-interface LocalFile {
-    name: string;
-    url: string;
-}
+
 
 export default function FilesPage() {
-    const [files, setFiles] = useState<LocalFile[]>([]);
+    const [files, setFiles] = useState<BackendFile[]>([]);
     const [uploading, setUploading] = useState(false);
     const [dragging, setDragging] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [fileToDelete, setFileToDelete] = useState<string | null>(null);
     const [chatbotOpen, setChatbotOpen] = useState(false);
 
-    const handleFileUpload = (selectedFiles: FileList | null): void => {
-        if (!selectedFiles || selectedFiles.length === 0) return;
+    const chatID = "1"
+    const { token, user } = useAuth();
 
+    const fetchFiles = async () => {
+        if (!chatID) return;
+        try {
+            const fetchedFiles = await apiFetchFiles(chatID, token);
+            setFiles(fetchedFiles);
+        } catch (error) {
+            console.error("Error fetching files:", error);
+        }
+    };
+
+    useEffect(() => {
+        fetchFiles();
+    }, [chatID, token]);
+
+
+    const handleFileUpload = async (selectedFiles: FileList | null): Promise<void> => {
+        if (!selectedFiles || selectedFiles.length === 0 || !chatID || !user) return;
         setUploading(true);
-        setTimeout(() => {
-            const newFiles = Array.from(selectedFiles).map(file => ({
-                name: file.name,
-                url: URL.createObjectURL(file),
-            }));
-
-            setFiles(prevFiles => [...prevFiles, ...newFiles]);
-            setUploading(false);
-        }, 1000);
+        try {
+            for (let i = 0; i < selectedFiles.length; i++) {
+                await apiUploadFiles(selectedFiles[i], chatID, user.uid, token);
+            }
+            await fetchFiles();
+        } catch (error) {
+            console.error("Error uploading file(s):", error);
+        }
+        setUploading(false);
     };
 
-    const confirmDeleteFile = (fileUrl: string): void => {
-        setFileToDelete(fileUrl);
-        setDeleteDialogOpen(true);
-    };
 
-    const handleDeleteConfirmed = (): void => {
-        if (fileToDelete) {
-            setFiles(prevFiles => prevFiles.filter(file => file.url !== fileToDelete));
+    const handleDeleteConfirmed = async (): Promise<void> => {
+        if (fileToDelete && chatID && user) {
+            try {
+                await apiDeleteFiles(fileToDelete, chatID, user.uid, token);
+                await fetchFiles();
+            } catch (error) {
+                console.error("Error deleting file:", error);
+            }
         }
         setDeleteDialogOpen(false);
         setFileToDelete(null);
+    };
+
+
+
+    const confirmDeleteFile = (filename: string): void => {
+        setFileToDelete(filename);
+        setDeleteDialogOpen(true);
     };
 
     const handleDragOver = (e: DragEvent<HTMLDivElement>): void => {
@@ -171,6 +195,7 @@ export default function FilesPage() {
                                             backgroundColor: "#f5f5f5",
                                         },
                                     }}
+                                    onClick={() => file.download()}
                                 >
                                     <UploadIcon color="primary" sx={{ mr: 1 }} />
                                     <ListItemText
@@ -178,7 +203,7 @@ export default function FilesPage() {
                                         primaryTypographyProps={{ color: "text.primary" }}
                                     />
                                     <IconButton
-                                        onClick={() => confirmDeleteFile(file.url)}
+                                        onClick={() => confirmDeleteFile(file.name)}
                                         sx={{ color: "error.main" }}
                                     >
                                         <DeleteIcon />
