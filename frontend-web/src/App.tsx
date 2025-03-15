@@ -50,12 +50,10 @@ const App: React.FC = () => {
             path="/chat/:groupId"
             element={<ChatPage />}
           />
-        </Route>
-        <Route
-            path="/files"
+          <Route path="/study-groups/:groupId/files"
             element={<FilesPage />}
           />
-
+        </Route>
       </Routes>
     </BrowserRouter>
   );
