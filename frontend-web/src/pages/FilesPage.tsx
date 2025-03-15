@@ -203,7 +203,10 @@ export default function FilesPage() {
                                         primaryTypographyProps={{ color: "text.primary" }}
                                     />
                                     <IconButton
-                                        onClick={() => confirmDeleteFile(file.name)}
+                                        onClick={(e) => {
+                                        e.stopPropagation();
+                                        confirmDeleteFile(file.name);
+                                        }}
                                         sx={{ color: "error.main" }}
                                     >
                                         <DeleteIcon />
