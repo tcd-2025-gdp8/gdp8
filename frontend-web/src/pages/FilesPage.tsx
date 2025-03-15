@@ -46,7 +46,7 @@ export default function FilesPage() {
     const [chatbotOpen, setChatbotOpen] = useState(false);
 
     const chatID = getChatID()
-    const { token, user } = useAuth();
+    const { token } = useAuth();
 
     const fetchFiles = async () => {
         if (!chatID) return;
@@ -64,11 +64,11 @@ export default function FilesPage() {
 
 
     const handleFileUpload = async (selectedFiles: FileList | null): Promise<void> => {
-        if (!selectedFiles || selectedFiles.length === 0 || !chatID || !user) return;
+        if (!selectedFiles || selectedFiles.length === 0 || !chatID) return;
         setUploading(true);
         try {
             for (let i = 0; i < selectedFiles.length; i++) {
-                await apiUploadFiles(selectedFiles[i], chatID, user.uid, token);
+                await apiUploadFiles(selectedFiles[i], chatID, token);
             }
             await fetchFiles();
         } catch (error) {
@@ -79,9 +79,9 @@ export default function FilesPage() {
 
 
     const handleDeleteConfirmed = async (): Promise<void> => {
-        if (fileToDelete && chatID && user) {
+        if (fileToDelete && chatID) {
             try {
-                await apiDeleteFiles(fileToDelete, chatID, user.uid, token);
+                await apiDeleteFiles(fileToDelete, chatID, token);
                 await fetchFiles();
             } catch (error) {
                 console.error("Error deleting file:", error);
