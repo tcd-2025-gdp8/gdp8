@@ -48,6 +48,23 @@ func (h *FileHandler) GetFiles(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	userID, err := getUserID(r)
+	if err != nil {
+		http.Error(w, "Unabe to retrieve userID", http.StatusForbidden)
+		return
+	}
+
+	groupID, err := parseGroupID(chatID)
+	if err != nil {
+		http.Error(w, "Unabe to retrieve groupID", http.StatusForbidden)
+		return
+	}
+
+	if !h.isUserMember(groupID, userID) {
+		http.Error(w, "User not a member of the study group", http.StatusForbidden)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/zip")
 	w.Header().Set("Content-Disposition", "attachment; filename=\"files.zip\"")
 	zipWriter := zip.NewWriter(w)
@@ -131,9 +148,9 @@ func (h *FileHandler) DeleteFile(w http.ResponseWriter, r *http.Request) {
 
 func (h *FileHandler) extractFormValues(r *http.Request) (models.StudyGroupID, models.UserID, error) {
 	chatID := r.FormValue("chatID")
-	groupID, err := strconv.Atoi(chatID)
+	groupID, err := parseGroupID(chatID)
 	if err != nil {
-		return models.StudyGroupID(0), models.UserID(""), errors.New("Missing chatID")
+		return models.StudyGroupID(0), models.UserID(""), errors.New("Invalid chatID")
 	}
 
 	userID, err := getUserID(r)
@@ -141,7 +158,7 @@ func (h *FileHandler) extractFormValues(r *http.Request) (models.StudyGroupID, m
 		return models.StudyGroupID(0), models.UserID(""), errors.New("Invalid user")
 	}
 
-	return models.StudyGroupID(groupID), userID, nil
+	return groupID, userID, nil
 }
 
 func (h *FileHandler) isUserMember(studyGroupID models.StudyGroupID, userID models.UserID) bool {
@@ -229,4 +246,12 @@ func (h *FileHandler) createFile(filename string, groupID models.StudyGroupID, u
 
 	_, err := h.fileService.CreateFile(newFile)
 	return err
+}
+
+func parseGroupID(chatID string) (models.StudyGroupID, error) {
+	id, err := strconv.Atoi(chatID)
+	if err != nil {
+		return models.StudyGroupID(0), err
+	}
+	return models.StudyGroupID(id), nil
 }
