@@ -10,6 +10,9 @@ import ModuleSettingsPage from "./pages/moduleSettings";
 import ChatPage from "./pages/ChatPage";
 import FilesPage from "./pages/FilesPage";
 import GroupDetailsPage from "./pages/groupDetailsPage";
+import SchedulePage from "./pages/SchedulePage";
+import AvailabilitySelection from "./pages/Availability";
+
 
 
 const App: React.FC = () => {
@@ -53,7 +56,12 @@ const App: React.FC = () => {
           <Route path="/study-groups/:groupId/files"
             element={<FilesPage />}
           />
+          <Route path="/study-groups/:groupId/schedule"
+            element={<SchedulePage />}
+          />
         </Route>
+        <Route path="/availability" element={<AvailabilitySelection />} />
+        
       </Routes>
     </BrowserRouter>
   );
