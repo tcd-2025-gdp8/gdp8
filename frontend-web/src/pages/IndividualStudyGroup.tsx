@@ -11,6 +11,7 @@ export default function IndividualStudyGroup() {
     const navigate = useNavigate();
     const { groupId } = useParams();
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+    const [, setShowSchedule] = useState(false);
 
     const handleMenuOpen = (event: React.MouseEvent<HTMLButtonElement>) => {
         setAnchorEl(event.currentTarget);
@@ -68,7 +69,14 @@ export default function IndividualStudyGroup() {
                             Chats
                         </MenuItem>
                         <MenuItem onClick={handleMenuClose}>Files</MenuItem>
-                        <MenuItem onClick={handleMenuClose}>Schedule</MenuItem>
+                        <MenuItem
+                            onClick={() => {
+                                handleMenuClose();
+                                setShowSchedule(true); // Show schedule page
+                            }}
+                        >
+                            Schedule
+                        </MenuItem>
                         <MenuItem onClick={handleMenuClose}>Leadership Board</MenuItem>
 
                         {/* New: Navigate to our Group Details page */}
