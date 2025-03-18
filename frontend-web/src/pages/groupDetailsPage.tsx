@@ -1,42 +1,57 @@
-// frontend-web/pages/GroupDetailsPage.tsx
-
-import { useState } from "react";
-import { Box, Typography, Button } from "@mui/material";
+import { useState, useEffect } from "react";
+import { Box, Typography, Button, CircularProgress, Alert } from "@mui/material";
 import { useNavigate, useParams } from "react-router-dom";
 
 import Sidebar from "../components/Sidebar";
 import CustomAppBar from "../components/CustomAppBar";
 import DialogEditStudyGroup, { EditStudyGroupData } from "../components/DialogEditStudyGroup";
+import { fetchStudyGroupById } from "../api/studyGroups";
+import { useAuth } from "../auth/useAuth";
 
 export default function GroupDetailsPage() {
     const navigate = useNavigate();
     const { groupId } = useParams();
-    console.log("GroupID:", groupId);
+    const { token } = useAuth();
+
+    const [studyGroupData, setStudyGroupData] = useState<EditStudyGroupData | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [openEditDialog, setOpenEditDialog] = useState(false);
 
-    // Example data for demonstration (no real API calls yet)
-    const [studyGroupData, setStudyGroupData] = useState<EditStudyGroupData>({
-        name: "Sample Study Group",
-        description: "This is a sample group for demonstration.",
-        type: "public",
-        moduleId: 101,
-        maxMembers: 5,
-    });
+    useEffect(() => {
+        const fetchStudyGroup = async () => {
+            if (!groupId || !token) return;
 
-    const handleDelete = () => {
+            try {
+                const data = await fetchStudyGroupById(token, Number(groupId));
+                console.log("Fetched Study Group Data:", data);
+                setStudyGroupData(data);
+            } catch (err) {
+                console.error("Error fetching study group:", err);
+                setError("Failed to load study group details.");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchStudyGroup();
+    }, [groupId, token]);
+
+    const handleDelete = async () => {
+        if (!groupId || !token) return;
         const confirmDelete = window.confirm("Are you sure you want to delete this study group?");
-        if (confirmDelete) {
-            // Simulate deletion
-            void navigate("/study-groups");
+        if (!confirmDelete) return;
+
+        try {
+            await fetch(`/api/study-groups/${groupId}`, {
+                method: "DELETE",
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            navigate("/study-groups");
+        } catch (err) {
+            console.error("Error deleting study group:", err);
+            setError("Failed to delete study group.");
         }
-    };
-
-    const handleSaveUpdates = (updatedData: typeof studyGroupData) => {
-        alert("Study group updated (frontend simulation).");
-        console.log("Updated data:", updatedData);
-
-        setStudyGroupData(updatedData);
-        setOpenEditDialog(false);
     };
 
     return (
@@ -45,49 +60,37 @@ export default function GroupDetailsPage() {
             <Box sx={{ flexGrow: 1, ml: "300px" }}>
                 <CustomAppBar />
                 <Box sx={{ p: 2, mt: 10, position: 'relative', paddingLeft: '80px' }}>
-                    <Typography variant="h4" sx={{ mb: 2 }}>
-                        {studyGroupData.name}
-                    </Typography>
+                    
+                    {loading && <CircularProgress />}
+                    {error && <Alert severity="error">{error}</Alert>}
+                    
+                    {studyGroupData && (
+                        <>
+                            <Typography variant="h4" sx={{ mb: 2 }}>{studyGroupData.name}</Typography>
+                            <Typography variant="body1" sx={{ mb: 1 }}>Description: {studyGroupData.description}</Typography>
+                            <Typography variant="body1" sx={{ mb: 1 }}>Type: {studyGroupData.type}</Typography>
+                            <Typography variant="body1" sx={{ mb: 1 }}>Module ID: {studyGroupData.moduleId}</Typography>
+                            <Typography variant="body1" sx={{ mb: 3 }}>Max Members: {studyGroupData.maxMembers}</Typography>
 
-                    <Typography variant="body1" sx={{ mb: 1 }}>
-                        Description: {studyGroupData.description}
-                    </Typography>
-                    <Typography variant="body1" sx={{ mb: 1 }}>
-                        Type: {studyGroupData.type}
-                    </Typography>
-                    <Typography variant="body1" sx={{ mb: 1 }}>
-                        Module ID: {studyGroupData.moduleId}
-                    </Typography>
-                    <Typography variant="body1" sx={{ mb: 3 }}>
-                        Max Members: {studyGroupData.maxMembers}
-                    </Typography>
+                            <Button variant="contained" color="primary" onClick={() => setOpenEditDialog(true)} sx={{ mr: 2 }}>
+                                Edit Study Group
+                            </Button>
+                            <Button variant="contained" color="error" onClick={handleDelete}>
+                                Delete Study Group
+                            </Button>
 
-                    <Button
-                        variant="contained"
-                        color="primary"
-                        onClick={() => setOpenEditDialog(true)}
-                        sx={{ mr: 2 }}
-                    >
-                        Edit Study Group
-                    </Button>
-                    <Button
-                        variant="contained"
-                        color="error"
-                        onClick={handleDelete}
-                    >
-                        Delete Study Group
-                    </Button>
-
-                    <DialogEditStudyGroup
-                        open={openEditDialog}
-                        onClose={() => setOpenEditDialog(false)}
-                        existingData={studyGroupData}
-                        modules={[
-                            { id: 101, code: "MATH101", name: "Algebra" },
-                            { id: 102, code: "BIO102", name: "Biology" },
-                        ]}
-                        onSave={handleSaveUpdates}
-                    />
+                            <DialogEditStudyGroup
+                                open={openEditDialog}
+                                onClose={() => setOpenEditDialog(false)}
+                                existingData={studyGroupData}
+                                modules={[
+                                    { id: 101, code: "MATH101", name: "Algebra" },
+                                    { id: 102, code: "BIO102", name: "Biology" },
+                                ]}
+                                onSave={setStudyGroupData}
+                            />
+                        </>
+                    )}
                 </Box>
             </Box>
         </Box>
