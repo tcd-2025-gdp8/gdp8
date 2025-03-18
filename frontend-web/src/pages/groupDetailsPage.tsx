@@ -60,13 +60,14 @@ export default function GroupDetailsPage() {
 
         try {
             await deleteStudyGroup(token, Number(groupId));
-            navigate("/study-groups");
+            void navigate("/study-groups");
         } catch (err) {
             console.error("Error deleting study group:", err);
             setError("Failed to delete study group.");
         }
     };
 
+    // Handle async delete click, but return void in the event handler
     const handleDeleteClick = () => {
         handleDelete().catch((error) => console.error("Error handling delete:", error));
     };
@@ -82,6 +83,14 @@ export default function GroupDetailsPage() {
             console.error("Error updating study group:", err);
             setError("Failed to update study group.");
         }
+    };
+
+    // Create a wrapper function that calls the async function without returning a Promise
+    const handleSaveWrapper = (updatedData: EditStudyGroupData) => {
+        handleUpdateStudyGroup(updatedData).catch((err) => {
+            console.error("Error updating study group:", err);
+            setError("Failed to update study group.");
+        });
     };
 
     const module = modulesList.find(module => module.id === studyGroupData?.moduleId);
@@ -117,7 +126,7 @@ export default function GroupDetailsPage() {
                                 onClose={() => setOpenEditDialog(false)}
                                 existingData={studyGroupData}
                                 modules={modulesList}
-                                onSave={handleUpdateStudyGroup}
+                                onSave={handleSaveWrapper}
                             />
                         </>
                     )}
