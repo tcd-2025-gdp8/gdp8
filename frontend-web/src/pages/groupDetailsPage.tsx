@@ -5,7 +5,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import CustomAppBar from "../components/CustomAppBar";
 import DialogEditStudyGroup, { EditStudyGroupData } from "../components/DialogEditStudyGroup";
-import { fetchStudyGroupById } from "../api/studyGroups";
+import { fetchStudyGroupById, updateStudyGroup } from "../api/studyGroups"; // ✅ Import updateStudyGroup
 import { Module } from "../api/modules";
 import { useAuth } from "../auth/useAuth";
 import { getUserModules } from "../api/users";
@@ -17,7 +17,7 @@ export default function GroupDetailsPage() {
     const currentUserId = user?.uid;
 
     const [studyGroupData, setStudyGroupData] = useState<EditStudyGroupData | null>(null);
-    const [modulesList, setModulesList] = useState<Module[]>([]); // Modules state
+    const [modulesList, setModulesList] = useState<Module[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [openEditDialog, setOpenEditDialog] = useState(false);
@@ -79,8 +79,17 @@ export default function GroupDetailsPage() {
         handleDelete().catch((error) => console.error("Error handling delete:", error));
     };
 
-    const handleSaveUpdates = (updatedData: EditStudyGroupData) => {
-        setStudyGroupData(updatedData);
+    const handleUpdateStudyGroup = async (updatedData: EditStudyGroupData) => {
+        if (!token || !groupId) return;
+        
+        try {
+            const updatedGroup = await updateStudyGroup(token, Number(groupId), updatedData);
+            setStudyGroupData(updatedGroup);
+            setOpenEditDialog(false); // Close dialog after successful update
+        } catch (err) {
+            console.error("Error updating study group:", err);
+            setError("Failed to update study group.");
+        }
     };
 
     return (
@@ -113,7 +122,7 @@ export default function GroupDetailsPage() {
                                 onClose={() => setOpenEditDialog(false)}
                                 existingData={studyGroupData}
                                 modules={modulesList}
-                                onSave={handleSaveUpdates}
+                                onSave={handleUpdateStudyGroup} // ✅ Use update function
                             />
                         </>
                     )}
