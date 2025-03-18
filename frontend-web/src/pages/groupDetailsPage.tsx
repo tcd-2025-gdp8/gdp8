@@ -96,7 +96,7 @@ export default function GroupDetailsPage() {
                                     { id: 101, code: "MATH101", name: "Algebra" },
                                     { id: 102, code: "BIO102", name: "Biology" },
                                 ]}
-                                onSave={() => handleSaveUpdates}
+                                onSave={handleSaveUpdates}
                             />
                         </>
                     )}
