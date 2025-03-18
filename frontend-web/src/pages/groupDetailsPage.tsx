@@ -34,25 +34,34 @@ export default function GroupDetailsPage() {
             }
         };
 
-        fetchStudyGroup();
+        void fetchStudyGroup();
     }, [groupId, token]);
 
     const handleDelete = async () => {
         if (!groupId || !token) return;
         const confirmDelete = window.confirm("Are you sure you want to delete this study group?");
         if (!confirmDelete) return;
-
+    
         try {
             await fetch(`/api/study-groups/${groupId}`, {
                 method: "DELETE",
                 headers: { Authorization: `Bearer ${token}` },
+            }).then(response => {
+                if (!response.ok) {
+                    throw new Error("Failed to delete study group.");
+                }
             });
+    
             navigate("/study-groups");
         } catch (err) {
             console.error("Error deleting study group:", err);
             setError("Failed to delete study group.");
         }
-    };
+    };    
+
+    const handleSaveUpdates = (updatedData: EditStudyGroupData) => {
+        setStudyGroupData(updatedData);
+    };    
 
     return (
         <Box sx={{ display: "flex" }}>
@@ -87,7 +96,7 @@ export default function GroupDetailsPage() {
                                     { id: 101, code: "MATH101", name: "Algebra" },
                                     { id: 102, code: "BIO102", name: "Biology" },
                                 ]}
-                                onSave={setStudyGroupData}
+                                onSave={() => handleSaveUpdates}
                             />
                         </>
                     )}
