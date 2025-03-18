@@ -5,7 +5,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import CustomAppBar from "../components/CustomAppBar";
 import DialogEditStudyGroup, { EditStudyGroupData } from "../components/DialogEditStudyGroup";
-import { fetchStudyGroupById, updateStudyGroup } from "../api/studyGroups"; // ✅ Import updateStudyGroup
+import { fetchStudyGroupById, updateStudyGroup, deleteStudyGroup } from "../api/studyGroups";
 import { Module } from "../api/modules";
 import { useAuth } from "../auth/useAuth";
 import { getUserModules } from "../api/users";
@@ -59,16 +59,8 @@ export default function GroupDetailsPage() {
         if (!confirmDelete) return;
 
         try {
-            const response = await fetch(`/api/study-groups/${groupId}`, {
-                method: "DELETE",
-                headers: { Authorization: `Bearer ${token}` },
-            });
-
-            if (!response.ok) {
-                throw new Error("Failed to delete study group.");
-            }
-
-            void navigate("/study-groups");
+            await deleteStudyGroup(token, Number(groupId));
+            navigate("/study-groups");
         } catch (err) {
             console.error("Error deleting study group:", err);
             setError("Failed to delete study group.");
@@ -85,7 +77,7 @@ export default function GroupDetailsPage() {
         try {
             const updatedGroup = await updateStudyGroup(token, Number(groupId), updatedData);
             setStudyGroupData(updatedGroup);
-            setOpenEditDialog(false); // Close dialog after successful update
+            setOpenEditDialog(false);
         } catch (err) {
             console.error("Error updating study group:", err);
             setError("Failed to update study group.");
@@ -122,7 +114,7 @@ export default function GroupDetailsPage() {
                                 onClose={() => setOpenEditDialog(false)}
                                 existingData={studyGroupData}
                                 modules={modulesList}
-                                onSave={handleUpdateStudyGroup} // ✅ Use update function
+                                onSave={handleUpdateStudyGroup}
                             />
                         </>
                     )}
