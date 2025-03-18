@@ -21,7 +21,7 @@ export default function GroupDetailsPage() {
     useEffect(() => {
         const fetchStudyGroup = async () => {
             if (!groupId || !token) return;
-
+    
             try {
                 const data = await fetchStudyGroupById(token, Number(groupId));
                 console.log("Fetched Study Group Data:", data);
@@ -33,46 +33,51 @@ export default function GroupDetailsPage() {
                 setLoading(false);
             }
         };
-
+    
         void fetchStudyGroup();
     }, [groupId, token]);
+    
 
     const handleDelete = async () => {
         if (!groupId || !token) return;
         const confirmDelete = window.confirm("Are you sure you want to delete this study group?");
         if (!confirmDelete) return;
-    
+
         try {
-            await fetch(`/api/study-groups/${groupId}`, {
+            const response = await fetch(`/api/study-groups/${groupId}`, {
                 method: "DELETE",
                 headers: { Authorization: `Bearer ${token}` },
-            }).then(response => {
-                if (!response.ok) {
-                    throw new Error("Failed to delete study group.");
-                }
             });
-    
+
+            if (!response.ok) {
+                throw new Error("Failed to delete study group.");
+            }
+
             navigate("/study-groups");
         } catch (err) {
             console.error("Error deleting study group:", err);
             setError("Failed to delete study group.");
         }
-    };    
+    };
+
+    const handleDeleteClick = () => {
+        handleDelete().catch((error) => console.error("Error handling delete:", error));
+    };
 
     const handleSaveUpdates = (updatedData: EditStudyGroupData) => {
         setStudyGroupData(updatedData);
-    };    
+    };
 
     return (
         <Box sx={{ display: "flex" }}>
             <Sidebar />
             <Box sx={{ flexGrow: 1, ml: "300px" }}>
                 <CustomAppBar />
-                <Box sx={{ p: 2, mt: 10, position: 'relative', paddingLeft: '80px' }}>
-                    
+                <Box sx={{ p: 2, mt: 10, position: "relative", paddingLeft: "80px" }}>
+
                     {loading && <CircularProgress />}
                     {error && <Alert severity="error">{error}</Alert>}
-                    
+
                     {studyGroupData && (
                         <>
                             <Typography variant="h4" sx={{ mb: 2 }}>{studyGroupData.name}</Typography>
@@ -84,7 +89,7 @@ export default function GroupDetailsPage() {
                             <Button variant="contained" color="primary" onClick={() => setOpenEditDialog(true)} sx={{ mr: 2 }}>
                                 Edit Study Group
                             </Button>
-                            <Button variant="contained" color="error" onClick={handleDelete}>
+                            <Button variant="contained" color="error" onClick={handleDeleteClick}>
                                 Delete Study Group
                             </Button>
 
