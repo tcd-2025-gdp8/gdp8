@@ -51,7 +51,7 @@ export async function removeMemberFromStudyGroup(token: string | null, studyGrou
 }
 
 export async function fetchStudyGroupById(token: string | null, studyGroupId: number): Promise<StudyGroup> {
-    return await fetchApiToJson<StudyGroup>(`/api/study-groups/${studyGroupId}`, token);
+    return await fetchApiToJson<StudyGroup>(`/study-groups/${studyGroupId}`, token);
 }
 
 export async function updateStudyGroup(
@@ -59,14 +59,14 @@ export async function updateStudyGroup(
     studyGroupId: number,
     studyGroupDetails: StudyGroupCreationDetails
 ): Promise<StudyGroup> {
-    return await fetchApiToJson<StudyGroup>(`/api/study-groups/${studyGroupId}`, token, {
+    return await fetchApiToJson<StudyGroup>(`/study-groups/${studyGroupId}`, token, {
         method: "PUT",
         body: JSON.stringify(studyGroupDetails),
     });
 }
 
 export async function deleteStudyGroup(token: string | null, studyGroupId: number): Promise<void> {
-    await fetchApi(`/api/study-groups/${studyGroupId}`, token, {
+    await fetchApi(`/study-groups/${studyGroupId}`, token, {
         method: "DELETE",
     });
 }
