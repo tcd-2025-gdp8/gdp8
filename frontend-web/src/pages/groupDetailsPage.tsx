@@ -53,7 +53,7 @@ export default function GroupDetailsPage() {
                 throw new Error("Failed to delete study group.");
             }
 
-            navigate("/study-groups");
+            void navigate("/study-groups");
         } catch (err) {
             console.error("Error deleting study group:", err);
             setError("Failed to delete study group.");
