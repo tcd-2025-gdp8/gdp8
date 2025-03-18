@@ -5,7 +5,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import CustomAppBar from "../components/CustomAppBar";
 import DialogEditStudyGroup, { EditStudyGroupData } from "../components/DialogEditStudyGroup";
-import { fetchStudyGroupById } from "../api/studyGroups";
+import { fetchStudyGroupById, updateStudyGroup, deleteStudyGroup } from "../api/studyGroups";
 import { Module } from "../api/modules";
 import { useAuth } from "../auth/useAuth";
 import { getUserModules } from "../api/users";
@@ -17,7 +17,7 @@ export default function GroupDetailsPage() {
     const currentUserId = user?.uid;
 
     const [studyGroupData, setStudyGroupData] = useState<EditStudyGroupData | null>(null);
-    const [modulesList, setModulesList] = useState<Module[]>([]); // Modules state
+    const [modulesList, setModulesList] = useState<Module[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [openEditDialog, setOpenEditDialog] = useState(false);
@@ -59,15 +59,7 @@ export default function GroupDetailsPage() {
         if (!confirmDelete) return;
 
         try {
-            const response = await fetch(`/api/study-groups/${groupId}`, {
-                method: "DELETE",
-                headers: { Authorization: `Bearer ${token}` },
-            });
-
-            if (!response.ok) {
-                throw new Error("Failed to delete study group.");
-            }
-
+            await deleteStudyGroup(token, Number(groupId));
             void navigate("/study-groups");
         } catch (err) {
             console.error("Error deleting study group:", err);
@@ -75,13 +67,34 @@ export default function GroupDetailsPage() {
         }
     };
 
+    // Handle async delete click, but return void in the event handler
     const handleDeleteClick = () => {
         handleDelete().catch((error) => console.error("Error handling delete:", error));
     };
 
-    const handleSaveUpdates = (updatedData: EditStudyGroupData) => {
-        setStudyGroupData(updatedData);
+    const handleUpdateStudyGroup = async (updatedData: EditStudyGroupData) => {
+        if (!token || !groupId) return;
+        
+        try {
+            const updatedGroup = await updateStudyGroup(token, Number(groupId), updatedData);
+            setStudyGroupData(updatedGroup);
+            setOpenEditDialog(false);
+        } catch (err) {
+            console.error("Error updating study group:", err);
+            setError("Failed to update study group.");
+        }
     };
+
+    // Create a wrapper function that calls the async function without returning a Promise
+    const handleSaveWrapper = (updatedData: EditStudyGroupData) => {
+        handleUpdateStudyGroup(updatedData).catch((err) => {
+            console.error("Error updating study group:", err);
+            setError("Failed to update study group.");
+        });
+    };
+
+    const module = modulesList.find(module => module.id === studyGroupData?.moduleId);
+    const moduleDisplay = module ? `Module: ${module.code} ${module.name}` : "Module: Unknown Module";
 
     return (
         <Box sx={{ display: "flex" }}>
@@ -98,7 +111,7 @@ export default function GroupDetailsPage() {
                             <Typography variant="h4" sx={{ mb: 2 }}>{studyGroupData.name}</Typography>
                             <Typography variant="body1" sx={{ mb: 1 }}>Description: {studyGroupData.description}</Typography>
                             <Typography variant="body1" sx={{ mb: 1 }}>Type: {studyGroupData.type}</Typography>
-                            <Typography variant="body1" sx={{ mb: 1 }}>Module ID: {studyGroupData.moduleId}</Typography>
+                            <Typography variant="body1" sx={{ mb: 1 }}>{moduleDisplay}</Typography>
                             <Typography variant="body1" sx={{ mb: 3 }}>Max Members: {studyGroupData.maxMembers}</Typography>
 
                             <Button variant="contained" color="primary" onClick={() => setOpenEditDialog(true)} sx={{ mr: 2 }}>
@@ -113,7 +126,7 @@ export default function GroupDetailsPage() {
                                 onClose={() => setOpenEditDialog(false)}
                                 existingData={studyGroupData}
                                 modules={modulesList}
-                                onSave={handleSaveUpdates}
+                                onSave={handleSaveWrapper}
                             />
                         </>
                     )}
