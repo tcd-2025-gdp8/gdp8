@@ -84,6 +84,9 @@ export default function GroupDetailsPage() {
         }
     };
 
+    const module = modulesList.find(module => module.id === studyGroupData?.moduleId);
+    const moduleDisplay = module ? `Module: ${module.code} ${module.name}` : "Module: Unknown Module";
+
     return (
         <Box sx={{ display: "flex" }}>
             <Sidebar />
@@ -99,7 +102,7 @@ export default function GroupDetailsPage() {
                             <Typography variant="h4" sx={{ mb: 2 }}>{studyGroupData.name}</Typography>
                             <Typography variant="body1" sx={{ mb: 1 }}>Description: {studyGroupData.description}</Typography>
                             <Typography variant="body1" sx={{ mb: 1 }}>Type: {studyGroupData.type}</Typography>
-                            <Typography variant="body1" sx={{ mb: 1 }}>Module ID: {studyGroupData.moduleId}</Typography>
+                            <Typography variant="body1" sx={{ mb: 1 }}>{moduleDisplay}</Typography>
                             <Typography variant="body1" sx={{ mb: 3 }}>Max Members: {studyGroupData.maxMembers}</Typography>
 
                             <Button variant="contained" color="primary" onClick={() => setOpenEditDialog(true)} sx={{ mr: 2 }}>
