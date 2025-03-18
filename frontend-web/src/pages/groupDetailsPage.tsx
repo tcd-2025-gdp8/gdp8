@@ -6,14 +6,18 @@ import Sidebar from "../components/Sidebar";
 import CustomAppBar from "../components/CustomAppBar";
 import DialogEditStudyGroup, { EditStudyGroupData } from "../components/DialogEditStudyGroup";
 import { fetchStudyGroupById } from "../api/studyGroups";
+import { Module } from "../api/modules";
 import { useAuth } from "../auth/useAuth";
+import { getUserModules } from "../api/users";
 
 export default function GroupDetailsPage() {
     const navigate = useNavigate();
     const { groupId } = useParams();
-    const { token } = useAuth();
+    const { token, user } = useAuth();
+    const currentUserId = user?.uid;
 
     const [studyGroupData, setStudyGroupData] = useState<EditStudyGroupData | null>(null);
+    const [modulesList, setModulesList] = useState<Module[]>([]); // Modules state
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [openEditDialog, setOpenEditDialog] = useState(false);
@@ -33,10 +37,21 @@ export default function GroupDetailsPage() {
                 setLoading(false);
             }
         };
-    
+
+        const fetchModules = async () => {
+            if (!currentUserId || !token) return;
+
+            try {
+                const data = await getUserModules(token, currentUserId);
+                setModulesList(data || []);
+            } catch (err) {
+                console.error("Error fetching modules:", err);
+            }
+        };
+
         void fetchStudyGroup();
-    }, [groupId, token]);
-    
+        void fetchModules();
+    }, [groupId, token, currentUserId]);
 
     const handleDelete = async () => {
         if (!groupId || !token) return;
@@ -97,10 +112,7 @@ export default function GroupDetailsPage() {
                                 open={openEditDialog}
                                 onClose={() => setOpenEditDialog(false)}
                                 existingData={studyGroupData}
-                                modules={[
-                                    { id: 101, code: "MATH101", name: "Algebra" },
-                                    { id: 102, code: "BIO102", name: "Biology" },
-                                ]}
+                                modules={modulesList}
                                 onSave={handleSaveUpdates}
                             />
                         </>
