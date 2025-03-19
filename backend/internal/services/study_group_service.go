@@ -55,6 +55,7 @@ type StudyGroupService interface {
 		memberID models.UserID) error
 
 	RetrieveGroupRole(studyGroupID models.StudyGroupID, userID models.UserID) (*models.StudyGroupRole, error)
+	IsGroupMember(studyGroupID models.StudyGroupID, userID models.UserID) (bool, error)
 }
 
 var ErrStudyGroupNotFound = errors.New("study group not found")
@@ -301,6 +302,24 @@ func (s *studyGroupServiceImpl) RetrieveGroupRole(studyGroupID models.StudyGroup
 	return persistence.WithTransaction(s.txMgr, func(tx *sql.Tx) (*models.StudyGroupRole, error) {
 		return s.studyGroupRepo.RetrieveGroupRole(tx, studyGroupID, userID)
 	})
+}
+
+func (s *studyGroupServiceImpl) IsGroupMember(studyGroupID models.StudyGroupID, userID models.UserID) (bool, error) {
+	role, err := s.RetrieveGroupRole(studyGroupID, userID)
+
+	if err != nil {
+		return false, err
+	}
+
+	if role == nil {
+		return false, nil
+	}
+
+	if *role == models.RoleAdmin || *role == models.RoleMember {
+		return true, nil
+	}
+
+	return false, nil
 }
 
 func resolveError(err error, operation string) error {

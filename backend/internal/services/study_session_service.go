@@ -55,7 +55,7 @@ func NewStudySessionService(txMgr persistence.TransactionManager,
 func (s *studySessionServiceImpl) GetAllStudySessionsByStudyGroup(
 	studyGroupID models.StudyGroupID, requesterID models.UserID) ([]models.StudySession, error) {
 
-	isMember, err := isStudyGroupMember(studyGroupID, requesterID, s.studyGroupService)
+	isMember, err := s.studyGroupService.IsGroupMember(studyGroupID, requesterID)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +77,7 @@ func (s *studySessionServiceImpl) GetAllStudySessionsByUser(_ models.UserID) ([]
 func (s *studySessionServiceImpl) CreateStudySession(studyGroupID models.StudyGroupID,
 	creatorID models.UserID, studySessionDetails *models.StudySessionDetails) (*models.StudySession, error) {
 
-	isMember, err := isStudyGroupMember(studyGroupID, creatorID, s.studyGroupService)
+	isMember, err := s.studyGroupService.IsGroupMember(studyGroupID, creatorID)
 	if err != nil {
 		return nil, err
 	}
@@ -141,7 +141,7 @@ func (s *studySessionServiceImpl) DeleteStudySession(studySessionID models.Study
 func (s *studySessionServiceImpl) GetCurrentStudySessionAvailabilityRequests(
 	studyGroupID models.StudyGroupID, requesterID models.UserID) ([]models.StudySessionAvailabilityRequest, error) {
 
-	isMember, err := isStudyGroupMember(studyGroupID, requesterID, s.studyGroupService)
+	isMember, err := s.studyGroupService.IsGroupMember(studyGroupID, requesterID)
 	if err != nil {
 		return nil, err
 	}
@@ -158,7 +158,7 @@ func (s *studySessionServiceImpl) GetCurrentStudySessionAvailabilityRequests(
 func (s *studySessionServiceImpl) CreateStudySessionAvailabilityRequest(studyGroupID models.StudyGroupID,
 	availabilityRequestDetails *models.StudySessionAvailabilityRequestDetails, requesterID models.UserID) error {
 
-	isMember, err := isStudyGroupMember(studyGroupID, requesterID, s.studyGroupService)
+	isMember, err := s.studyGroupService.IsGroupMember(studyGroupID, requesterID)
 	if err != nil {
 		return err
 	}
@@ -197,7 +197,7 @@ func (s *studySessionServiceImpl) UpsertUserAvailabilityEntries(
 			return err
 		}
 
-		isMember, err := isStudyGroupMember(availReq.StudyGroupID, userID, s.studyGroupService)
+		isMember, err := s.studyGroupService.IsGroupMember(availReq.StudyGroupID, userID)
 		if err != nil {
 			return err
 		}
@@ -221,24 +221,4 @@ func (s *studySessionServiceImpl) UpsertUserAvailabilityEntries(
 	// TODO send a notification
 
 	return err
-}
-
-func isStudyGroupMember(studyGroupID models.StudyGroupID, userID models.UserID,
-	studyGroupService StudyGroupService) (bool, error) {
-
-	creatorStudyGroupRole, err := studyGroupService.RetrieveGroupRole(studyGroupID, userID)
-
-	if err != nil {
-		return false, err
-	}
-
-	if creatorStudyGroupRole == nil {
-		return false, nil
-	}
-
-	if *creatorStudyGroupRole == models.RoleAdmin || *creatorStudyGroupRole == models.RoleMember {
-		return true, nil
-	}
-
-	return false, nil
 }

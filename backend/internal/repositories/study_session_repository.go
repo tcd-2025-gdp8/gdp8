@@ -9,7 +9,6 @@ import (
 	"gdp8-backend/internal/models"
 )
 
-// Existing interface declarations...
 type StudySessionRepository interface {
 	GetAllStudySessionsByStudyGroup(tx *sql.Tx, studyGroupID models.StudyGroupID) ([]models.StudySession, error)
 	GetAllStudySessionsByUser(tx *sql.Tx, userID models.UserID) ([]models.StudySession, error)
