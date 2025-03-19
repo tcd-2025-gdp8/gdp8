@@ -3,6 +3,7 @@ import { Send } from "@mui/icons-material";
 import { Card, CardContent, TextField, Button, AppBar, Toolbar, Typography, Box } from "@mui/material";
 import { useAuth } from "../auth/useAuth";
 import { fetchApiToJson } from "../utils/apiFetch";
+import { fetchPastChatMessagesByGroupId } from "../api/chat";
 //import ChatbotChat from "../components/ChatbotChat";
 
 interface Message {
@@ -20,6 +21,19 @@ interface User {
     id: string;
     name: string;
     modules: Module[];
+}
+
+function formatDate(date: Date): string {
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    let hours = date.getHours();
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+
+    const amPm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12 || 12;
+
+    return `${day}/${month}/${year} ${hours}:${minutes} ${amPm}`;
 }
 
 export default function ChatPage() {
@@ -44,12 +58,21 @@ export default function ChatPage() {
         }
     }, [token, user]);
 
+    const fetchPastMessages = useCallback(async () => {
+        const pastChatMessages = await fetchPastChatMessagesByGroupId(token, Number(chatID));
+        setMessages(() => pastChatMessages.map(message => ({
+            text: message.text,
+            sender: message.userName,
+            timestamp: formatDate(message.timestamp)
+        })))
+    }, [token, chatID])
+
     const getTime = () => new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
     useEffect(() => {
         void fetchUserDetails();
-    }, [token, user, fetchUserDetails]);
-
+        void fetchPastMessages();
+    }, [token, user, fetchUserDetails, fetchPastMessages]);
 
     useEffect(() => {
         if (ws.current?.readyState !== WebSocket.OPEN) {
