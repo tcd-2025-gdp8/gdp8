@@ -65,6 +65,11 @@ func (m *MockStudyGroupService) RetrieveGroupRole(studyGroupID models.StudyGroup
 	return args.Get(0).(*models.StudyGroupRole), args.Error(1)
 }
 
+func (m *MockStudyGroupService) IsGroupMember(studyGroupID models.StudyGroupID, userID models.UserID) (bool, error) {
+	args := m.Called(studyGroupID, userID)
+	return args.Get(0).(bool), args.Error(1)
+}
+
 func TestStudyGroupHandler_GetStudyGroup(t *testing.T) {
 	t.Parallel()
 
