@@ -2,6 +2,7 @@ package services
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"gdp8-backend/internal/models"
@@ -10,11 +11,11 @@ import (
 )
 
 type ChatService interface {
-	GetChatMessagesByGroupId(studyGroupID models.StudyGroupID, userID models.UserID) ([]models.ChatMessageView, error)
+	GetChatMessagesByGroupID(studyGroupID models.StudyGroupID, userID models.UserID) ([]models.ChatMessageView, error)
 	InsertMessage(studyGroupID models.StudyGroupID, message *models.ChatMessageDetails) error
 }
 
-var ErrUnauthorizedChatOperation = fmt.Errorf("unauthorized chat operation")
+var ErrUnauthorizedChatOperation = errors.New("unauthorized chat operation")
 
 type chatServiceImpl struct {
 	txMgr             persistence.TransactionManager
@@ -35,7 +36,7 @@ func NewChatService(
 	}
 }
 
-func (s chatServiceImpl) GetChatMessagesByGroupId(studyGroupID models.StudyGroupID,
+func (s chatServiceImpl) GetChatMessagesByGroupID(studyGroupID models.StudyGroupID,
 	userID models.UserID) ([]models.ChatMessageView, error) {
 
 	isStudyGroupMember, err := s.studyGroupService.IsGroupMember(studyGroupID, userID)
@@ -47,7 +48,7 @@ func (s chatServiceImpl) GetChatMessagesByGroupId(studyGroupID models.StudyGroup
 	}
 
 	messages, err := persistence.WithTransaction(s.txMgr, func(tx *sql.Tx) ([]models.ChatMessageView, error) {
-		return s.chatRepo.GetChatMessagesByGroupId(tx, studyGroupID)
+		return s.chatRepo.GetChatMessagesByGroupID(tx, studyGroupID)
 	})
 
 	if err != nil {

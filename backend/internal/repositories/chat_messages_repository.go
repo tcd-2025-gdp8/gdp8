@@ -7,14 +7,14 @@ import (
 )
 
 type ChatMessagesRepository interface {
-	GetChatMessagesByGroupId(tx *sql.Tx, studyGroupID models.StudyGroupID) ([]models.ChatMessageView, error)
+	GetChatMessagesByGroupID(tx *sql.Tx, studyGroupID models.StudyGroupID) ([]models.ChatMessageView, error)
 	InsertMessage(tx *sql.Tx, studyGroupID models.StudyGroupID, message *models.ChatMessageDetails) error
 }
 
 type SQLChatMessagesRepository struct {
 }
 
-func (s *SQLChatMessagesRepository) GetChatMessagesByGroupId(tx *sql.Tx,
+func (s *SQLChatMessagesRepository) GetChatMessagesByGroupID(tx *sql.Tx,
 	studyGroupID models.StudyGroupID) ([]models.ChatMessageView, error) {
 
 	rows, err := tx.Query(

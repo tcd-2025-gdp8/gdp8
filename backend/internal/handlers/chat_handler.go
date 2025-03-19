@@ -165,7 +165,7 @@ func (h *ChatHandler) GetStudyGroup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	messages, err := h.chatService.GetChatMessagesByGroupId(studyGroupID, userID)
+	messages, err := h.chatService.GetChatMessagesByGroupID(studyGroupID, userID)
 	switch {
 	case errors.Is(err, services.ErrUnauthorizedChatOperation):
 		http.Error(w, "Forbidden", http.StatusForbidden)
