@@ -18,8 +18,9 @@ func (s *SQLChatMessagesRepository) GetChatMessagesByGroupID(tx *sql.Tx,
 	studyGroupID models.StudyGroupID) ([]models.ChatMessageView, error) {
 
 	rows, err := tx.Query(
-		`SELECT id, user_id, text, timestamp
-		FROM study_group_chat_messages
+		`SELECT m.id, m.user_id, u.name as user_name, m.text, m.timestamp
+		FROM study_group_chat_messages m
+		JOIN users u ON m.user_id = u.id
 		WHERE study_group_id = ?
 		ORDER BY timestamp ASC
 		LIMIT 1000`, studyGroupID)
@@ -33,7 +34,7 @@ func (s *SQLChatMessagesRepository) GetChatMessagesByGroupID(tx *sql.Tx,
 	var messages []models.ChatMessageView
 	for rows.Next() {
 		var message models.ChatMessageView
-		if err := rows.Scan(&message.ID, &message.UserID, &message.Text, &message.Timestamp); err != nil {
+		if err := rows.Scan(&message.ID, &message.UserID, &message.UserName, &message.Text, &message.Timestamp); err != nil {
 			return nil, err
 		}
 		messages = append(messages, message)
