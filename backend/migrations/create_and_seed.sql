@@ -127,6 +127,20 @@ BEGIN
     END IF;
 END;
 
+CREATE TABLE IF NOT EXISTS study_group_chat_messages (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    study_group_id INT NOT NULL,
+    user_id VARCHAR(255) NOT NULL,
+    text TEXT NOT NULL,
+    timestamp TIMESTAMP NOT NULL,
+
+    FOREIGN KEY (study_group_id) REFERENCES study_groups(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT,
+
+    INDEX idx_study_group_chat_messages_timestamp (timestamp),
+    INDEX idx_study_group_chat_messages_study_group_id_and_timestamp (study_group_id, timestamp)
+);
+
 CREATE TABLE IF NOT EXISTS study_session_availability_requests (
     id INT AUTO_INCREMENT PRIMARY KEY,
     study_group_id INT NOT NULL,
