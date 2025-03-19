@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"time"
@@ -148,4 +149,50 @@ func (h *ChatHandler) ServeWs(w http.ResponseWriter, r *http.Request) {
 
 	h.hub.unregister <- RoomRegistration{room: chatID, conn: conn}
 	log.Printf("DEBUG: Unregistered connection for chatID: %s", chatID)
+}
+
+func (h *ChatHandler) GetStudyGroup(w http.ResponseWriter, r *http.Request) {
+	chatID := r.PathValue("chatID")
+	studyGroupID, err := utils.ConvertToType[models.StudyGroupID](chatID)
+	if chatID == "" || err != nil {
+		http.Error(w, "Invalid chatID", http.StatusBadRequest)
+		return
+	}
+
+	userID, err := getUserID(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	messages, err := h.chatService.GetChatMessagesByGroupId(studyGroupID, userID)
+	switch {
+	case errors.Is(err, services.ErrUnauthorizedChatOperation):
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	case err != nil:
+		http.Error(w, "Failed to fetch chat messages", http.StatusInternalServerError)
+		return
+	}
+
+	type MessageDTO struct {
+		ID        int64     `json:"id"`
+		UserID    string    `json:"userId"`
+		UserName  string    `json:"userName"`
+		Text      string    `json:"text"`
+		Timestamp time.Time `json:"timestamp"`
+	}
+
+	mappedMessages := make([]MessageDTO, len(messages))
+	for i, message := range messages {
+		mappedMessages[i] = MessageDTO{
+			ID:        int64(message.ID),
+			UserID:    string(message.UserID),
+			UserName:  message.UserName,
+			Text:      message.Text,
+			Timestamp: message.Timestamp,
+		}
+	}
+
+	sendJSONResponse(w, mappedMessages)
 }

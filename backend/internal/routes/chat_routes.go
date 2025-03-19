@@ -17,4 +17,5 @@ func RegisterChatRoutes(firebaseAuth *auth.Client, chatService services.ChatServ
 	handler := handlers.NewChatHandler(hub, chatService)
 
 	http.HandleFunc("GET /api/chat/{chatID}", middleware.WithWebSocketAuth(firebaseAuth, handler.ServeWs))
+	http.HandleFunc("GET /api/chat/{chatID}/past", middleware.WithFirebaseAuth(firebaseAuth, handler.GetStudyGroup))
 }
