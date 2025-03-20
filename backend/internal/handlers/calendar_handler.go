@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"time"
 
-	"gdp8-backend/internal/services"
-
 	"google.golang.org/api/calendar/v3"
+
+	"gdp8-backend/internal/services"
 )
 
 type CalendarHandler struct {
