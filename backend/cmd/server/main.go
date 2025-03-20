@@ -45,7 +45,6 @@ func main() {
 
 	txManager := persistence.NewSQLTransactionManager(db)
 
-	// Register all existing routes.
 	routes.RegisterAllRoutes(firebaseAuth, txManager)
 
 	// Initialize and register Google Calendar routes.

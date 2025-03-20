@@ -18,9 +18,7 @@ func NewCalendarHandler(calendarService services.GoogleCalendarService) *Calenda
 	return &CalendarHandler{calendarService: calendarService}
 }
 
-// CreateInviteHandler handles HTTP requests to create a Google Calendar invite.
 func (h *CalendarHandler) CreateInviteHandler(w http.ResponseWriter, r *http.Request) {
-	// Parse request payload (for simplicity, using a struct with hard-coded fields)
 	var req struct {
 		Summary        string   `json:"summary"`
 		Location       string   `json:"location"`
@@ -52,7 +50,7 @@ func (h *CalendarHandler) CreateInviteHandler(w http.ResponseWriter, r *http.Req
 		Description: req.Description,
 		Start: &calendar.EventDateTime{
 			DateTime: startTime.Format(time.RFC3339),
-			TimeZone: "UTC", // Adjust as needed.
+			TimeZone: "UTC",
 		},
 		End: &calendar.EventDateTime{
 			DateTime: endTime.Format(time.RFC3339),
@@ -70,7 +68,6 @@ func (h *CalendarHandler) CreateInviteHandler(w http.ResponseWriter, r *http.Req
 		},
 	}
 
-	// Choose your calendar ID (e.g., "primary" for the primary calendar)
 	calendarID := "primary"
 
 	createdEvent, err := h.calendarService.CreateEvent(calendarID, event)
