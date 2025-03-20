@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"log"
 	"net/http"
@@ -8,9 +9,11 @@ import (
 	"time"
 
 	"gdp8-backend/internal/firebase"
+	"gdp8-backend/internal/handlers"
 	"gdp8-backend/internal/middleware"
 	"gdp8-backend/internal/persistence"
 	"gdp8-backend/internal/routes"
+	"gdp8-backend/internal/services"
 )
 
 func main() {
@@ -42,7 +45,17 @@ func main() {
 
 	txManager := persistence.NewSQLTransactionManager(db)
 
+	// Register all existing routes.
 	routes.RegisterAllRoutes(firebaseAuth, txManager)
+
+	// Initialize and register Google Calendar routes.
+	ctx := context.Background()
+	calendarService, err := services.NewGoogleCalendarService(ctx, credentialsPath)
+	if err != nil {
+		log.Fatalf("Failed to initialize Google Calendar service: %v", err)
+	}
+	calendarHandler := handlers.NewCalendarHandler(calendarService)
+	routes.RegisterCalendarRoutes(firebaseAuth, calendarHandler)
 
 	corsHandler := middleware.SimpleCORS(http.DefaultServeMux)
 
@@ -58,5 +71,4 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
 }
