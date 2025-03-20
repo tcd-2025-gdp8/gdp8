@@ -18,6 +18,7 @@ func NewCalendarHandler(calendarService services.GoogleCalendarService) *Calenda
 	return &CalendarHandler{calendarService: calendarService}
 }
 
+// CreateInviteHandler handles HTTP requests for creating a Google Calendar invite.
 func (h *CalendarHandler) CreateInviteHandler(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Summary        string   `json:"summary"`
@@ -27,6 +28,7 @@ func (h *CalendarHandler) CreateInviteHandler(w http.ResponseWriter, r *http.Req
 		EndTime        string   `json:"endTime"`   // ISO8601 formatted
 		AttendeeEmails []string `json:"attendeeEmails"`
 	}
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request", http.StatusBadRequest)
 		return
@@ -43,14 +45,13 @@ func (h *CalendarHandler) CreateInviteHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	// Build the calendar event.
 	event := &calendar.Event{
 		Summary:     req.Summary,
 		Location:    req.Location,
 		Description: req.Description,
 		Start: &calendar.EventDateTime{
 			DateTime: startTime.Format(time.RFC3339),
-			TimeZone: "UTC",
+			TimeZone: "UTC", // Adjust as needed.
 		},
 		End: &calendar.EventDateTime{
 			DateTime: endTime.Format(time.RFC3339),
@@ -77,5 +78,8 @@ func (h *CalendarHandler) CreateInviteHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(createdEvent)
+	if err := json.NewEncoder(w).Encode(createdEvent); err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
 }

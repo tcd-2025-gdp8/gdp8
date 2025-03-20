@@ -4,10 +4,8 @@ import (
 	"net/http"
 
 	"gdp8-backend/internal/handlers"
-
-	"firebase.google.com/go/v4/auth"
 )
 
-func RegisterCalendarRoutes(firebaseAuth *auth.Client, calendarHandler *handlers.CalendarHandler) {
+func RegisterCalendarRoutes(calendarHandler *handlers.CalendarHandler) {
 	http.HandleFunc("/api/calendar/invite", calendarHandler.CreateInviteHandler)
 }
