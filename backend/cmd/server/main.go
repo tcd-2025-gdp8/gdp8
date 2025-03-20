@@ -47,14 +47,13 @@ func main() {
 
 	routes.RegisterAllRoutes(firebaseAuth, txManager)
 
-	// Initialize and register Google Calendar routes.
 	ctx := context.Background()
 	calendarService, err := services.NewGoogleCalendarService(ctx, credentialsPath)
 	if err != nil {
 		log.Fatalf("Failed to initialize Google Calendar service: %v", err)
 	}
 	calendarHandler := handlers.NewCalendarHandler(calendarService)
-	routes.RegisterCalendarRoutes(firebaseAuth, calendarHandler)
+	routes.RegisterCalendarRoutes(calendarHandler)
 
 	corsHandler := middleware.SimpleCORS(http.DefaultServeMux)
 
