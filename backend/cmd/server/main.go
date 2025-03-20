@@ -48,10 +48,11 @@ func main() {
 	routes.RegisterAllRoutes(firebaseAuth, txManager)
 
 	ctx := context.Background()
-	calendarService, err := services.NewGoogleCalendarService(ctx, credentialsPath)
+	calendarService, err := services.NewGoogleCalendarService(ctx, credentialsPath, "user@example.com")
 	if err != nil {
 		log.Fatalf("Failed to initialize Google Calendar service: %v", err)
 	}
+
 	calendarHandler := handlers.NewCalendarHandler(calendarService)
 	routes.RegisterCalendarRoutes(calendarHandler)
 
