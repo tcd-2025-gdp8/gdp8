@@ -44,7 +44,6 @@ export default function ChatPage() {
     const chatID = currentPath[currentPath.length - 1];
     const ws = useRef<WebSocket | null>(null);
     const { token, user } = useAuth();
-    //const [chatbotOpen, setChatbotOpen] = useState(false);
     const [userDetails, setUserDetails] = useState<User | null>(null);
 
     const fetchUserDetails = useCallback(async () => {

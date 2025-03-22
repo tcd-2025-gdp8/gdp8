@@ -13,8 +13,6 @@ import GroupDetailsPage from "./pages/groupDetailsPage";
 import SchedulePage from "./pages/SchedulePage";
 import AvailabilitySelection from "./pages/Availability";
 
-
-
 const App: React.FC = () => {
   return (
     <BrowserRouter>
@@ -60,8 +58,9 @@ const App: React.FC = () => {
             element={<SchedulePage />}
           />
         </Route>
-        <Route path="/availability" element={<AvailabilitySelection />} />
-        
+        <Route path="/study-groups/:groupId/availability"
+          element={<AvailabilitySelection />}
+        />
       </Routes>
     </BrowserRouter>
   );
