@@ -26,11 +26,19 @@ func RegisterAllRoutes(firebaseAuth *auth.Client, txManager persistence.Transact
 	moduleService := services.NewModuleService(txManager, &moduleRepo)
 	notificationService := services.NewNotificationService(txManager, &notificationRepo)
 	studyGroupService := services.NewStudyGroupService(txManager, &studyGroupRepo, notificationService)
-	studySessionService := services.NewStudySessionService(txManager,
-		&studySessionAvailabilityRepo, &studySessionRepo, studyGroupService)
+	studySessionService := services.NewStudySessionService(
+		txManager,
+		&studySessionAvailabilityRepo,
+		&studySessionRepo,
+		studyGroupService,
+	)
 	fileService := services.NewFileService(txManager, &fileRepo, studyGroupService)
 	chatService := services.NewChatService(txManager, &chatRepo, studyGroupService)
-	calendarService, _ := services.NewGoogleCalendarService(context.Background(), "credentials/serviceAccountKey.json", "")
+	calendarService, _ := services.NewGoogleCalendarService(
+		context.Background(),
+		"credentials/serviceAccountKey.json",
+		"",
+	)
 	calendarHandler := handlers.NewCalendarHandler(calendarService)
 	RegisterCalendarRoutes(calendarHandler)
 	RegisterStudyGroupRoutes(firebaseAuth, studyGroupService)
@@ -40,7 +48,6 @@ func RegisterAllRoutes(firebaseAuth *auth.Client, txManager persistence.Transact
 	RegisterUserRoutes(firebaseAuth, userService)
 	RegisterChatRoutes(firebaseAuth, chatService)
 	RegisterFileRoutes(firebaseAuth, studyGroupService, fileService)
-
 	authHandler := handlers.NewAuthHandler(firebaseAuth)
 	http.HandleFunc("/api/auth/verify", authHandler.VerifyHandler)
 }
