@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"context"
 	"net/http"
 
 	"firebase.google.com/go/v4/auth"
@@ -29,7 +30,9 @@ func RegisterAllRoutes(firebaseAuth *auth.Client, txManager persistence.Transact
 		&studySessionAvailabilityRepo, &studySessionRepo, studyGroupService)
 	fileService := services.NewFileService(txManager, &fileRepo, studyGroupService)
 	chatService := services.NewChatService(txManager, &chatRepo, studyGroupService)
-
+	calendarService, _ := services.NewGoogleCalendarService(context.Background(), "credentials/serviceAccountKey.json", "")
+	calendarHandler := handlers.NewCalendarHandler(calendarService)
+	RegisterCalendarRoutes(calendarHandler)
 	RegisterStudyGroupRoutes(firebaseAuth, studyGroupService)
 	RegisterStudySessionRoutes(firebaseAuth, studySessionService)
 	RegisterModuleRoutes(firebaseAuth, moduleService)
