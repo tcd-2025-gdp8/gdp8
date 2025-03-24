@@ -124,7 +124,7 @@ interface StudySessionAvailabilityRequestResponse {
     title: string;
     availabilityPeriodStart: string;
     availabilityPeriodEnd: string;
-    availabilityEntries: StudySessionAvailabilityEntryResponse[];
+    entries: StudySessionAvailabilityEntryResponse[];
 }
 
 interface StudySessionAvailabilityEntryResponse {
@@ -146,7 +146,7 @@ function toStudySessionAvailabilityRequest(response: StudySessionAvailabilityReq
         ...response,
         availabilityPeriodStart: new Date(response.availabilityPeriodStart),
         availabilityPeriodEnd: new Date(response.availabilityPeriodEnd),
-        availabilityEntries: response.availabilityEntries.map(toStudySessionAvailabilityEntry),
+        availabilityEntries: response.entries.map(toStudySessionAvailabilityEntry),
     };
 }
 

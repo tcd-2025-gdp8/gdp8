@@ -19,7 +19,14 @@ import {
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import { useNavigate, useParams } from "react-router-dom";
-import { createStudySession, fetchStudySessions, deleteStudySession } from "../api/studySessions"; // Still used for "Create Study Session"
+import {
+  createStudySession,
+  fetchStudySessions,
+  deleteStudySession,
+  updateStudySession,
+  createAvailabilityRequest,
+  fetchCurrentAvailabilityRequestsByGroupId
+} from "../api/studySessions"; // Still used for "Create Study Session"
 import { useAuth } from "../auth/useAuth";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -49,6 +56,14 @@ export default function SchedulingUI() {
   const [sessionDate, setSessionDate] = useState<Date | null>(null);
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("17:00");
+
+  // State for Edit Study Session dialog
+  const [openEditDialog, setOpenEditDialog] = useState(false);
+  const [editSessionId, setEditSessionId] = useState<number | null>(null);
+  const [editSessionTitle, setEditSessionTitle] = useState("");
+  const [editSessionDate, setEditSessionDate] = useState<Date | null>(null);
+  const [editStartTime, setEditStartTime] = useState("09:00");
+  const [editEndTime, setEditEndTime] = useState("17:00");
 
   const navigate = useNavigate();
   const { token } = useAuth();
@@ -80,8 +95,31 @@ export default function SchedulingUI() {
     }
   }
 
+  // Load current availability requests from backend
+  async function loadAvailabilityRequests() {
+    if (!token || isNaN(numericGroupId)) return;
+    try {
+      const backendRequests = await fetchCurrentAvailabilityRequestsByGroupId(token, numericGroupId);
+      // Map the backend availability request to our local Session type.
+      const mapped: Session[] = backendRequests.map((req) => ({
+        id: req.id,
+        name: req.title, // Assuming API returns a "title"
+        date: new Date(req.availabilityPeriodStart),
+        earliestTime: formatTime(new Date(req.availabilityPeriodStart)),
+        latestTime: formatTime(new Date(req.availabilityPeriodEnd)),
+      }));
+      setAvailabilityRequests(mapped);
+    } catch (err) {
+      console.error("Error fetching availability requests:", err);
+    }
+  }
+
   useEffect(() => {
     loadSessions();
+  }, [token, numericGroupId]);
+
+  useEffect(() => {
+    loadAvailabilityRequests();
   }, [token, numericGroupId]);
 
   /**
@@ -136,55 +174,103 @@ export default function SchedulingUI() {
       console.error("Error deleting study session:", error);
     }
   };
+
   const handleEditSession = (index: number) => {
-    //TO DO implement Backend for updating sessions
-    console.log("Edit session:", sessions[index]);
+    const sess = sessions[index];
+    setEditSessionId(sess.id);
+    setEditSessionTitle(sess.name);
+    setEditSessionDate(sess.date);
+    setEditStartTime(sess.earliestTime);
+    setEditEndTime(sess.latestTime);
+
+    setOpenEditDialog(true);
+  };
+  const handleUpdateStudySession = async () => {
+    if (!token || editSessionId == null || !editSessionTitle || !editSessionDate) return;
+    try {
+      // build the new startTime + duration
+      const durationMinutes = calculateDurationMinutes(editSessionDate, editStartTime, editEndTime);
+
+      const [sHour, sMin] = editStartTime.split(":").map(Number);
+      const combinedStart = new Date(editSessionDate.getTime());
+      combinedStart.setHours(sHour, sMin, 0, 0);
+
+      // PUT request
+      const updatedBackendSession = await updateStudySession(token, editSessionId, {
+        title: editSessionTitle,
+        startTime: combinedStart,
+        durationMinutes,
+      });
+
+      // Update local state
+      setSessions((prev) =>
+        prev.map((sess) => {
+          if (sess.id === editSessionId) {
+            return {
+              id: updatedBackendSession.id,
+              name: updatedBackendSession.title,
+              date: updatedBackendSession.startTime,
+              earliestTime: formatTime(updatedBackendSession.startTime),
+              latestTime: formatTime(updatedBackendSession.endTime),
+            };
+          }
+          return sess;
+        })
+      );
+
+      setOpenEditDialog(false);
+    } catch (err) {
+      console.error("Error updating study session:", err);
+    }
   };
 
   /**
    * 1. Handler for the "Request Availability" form
-   *    (now mimics File 1's createSession behavior).
    */
-  const handleAvailabilityRequest = () => {
-    // Only proceed if we have an event name and date
-    if (!availabilityName || !availabilityDate) return;
+  const handleAvailabilityRequest = async () => {
+    if (!availabilityName || !availabilityDate || !token || isNaN(numericGroupId)) return;
 
-    // Create new availability request
-    const newRequest: Session = {
-      id: Date.now(), //update this to a real ID!!
-      name: availabilityName,
-      date: availabilityDate,
-      earliestTime,
-      latestTime,
-    };
+    try {
+      const [startHour, startMin] = earliestTime.split(":").map(Number);
+      const [endHour, endMin] = latestTime.split(":").map(Number);
+      const availabilityPeriodStart = new Date(availabilityDate.getTime());
+      availabilityPeriodStart.setHours(startHour, startMin, 0, 0);
+      const availabilityPeriodEnd = new Date(availabilityDate.getTime());
+      availabilityPeriodEnd.setHours(endHour, endMin, 0, 0);
 
-    // Add to local state
-    setAvailabilityRequests((prev) => [...prev, newRequest]);
+      const availabilityRequestDetails = {
+        title: availabilityName,
+        availabilityPeriodStart,
+        availabilityPeriodEnd,
+      };
 
-    // Store the generated time slots in localStorage
-    localStorage.setItem(
-      "selectedTimeSlots",
-      JSON.stringify(generateTimeSlots(earliestTime, latestTime))
-    );
+      // Single API call to create availability request
+      await createAvailabilityRequest(token, numericGroupId, availabilityRequestDetails);
 
-    // Reset fields
-    setAvailabilityName("");
-    setAvailabilityDate(null);
-    setEarliestTime("09:00");
-    setLatestTime("17:00");
-    setOpenAvailability(false);
+      // Refresh availability requests and clear form
+      await loadAvailabilityRequests();
+      localStorage.setItem("selectedTimeSlots", JSON.stringify(generateTimeSlots(earliestTime, latestTime)));
 
-    // Finally navigate to /availability
-    navigate(`/study-groups/${groupId}/availability`);
+      // Reset form state
+      setAvailabilityName("");
+      setAvailabilityDate(null);
+      setEarliestTime("09:00");
+      setLatestTime("17:00");
+      setOpenAvailability(false);
+
+      // Navigate AFTER successful creation
+      navigate(`/study-groups/${groupId}/availability`);
+    } catch (error) {
+      console.error("Error creating availability request:", error);
+    }
   };
-
   /**
    * 2. Handler for the "Create Study Session" form
    *    (uses createStudySession API).
    */
+  //const [openSessionDialog, setOpenSessionDialog] = useState(false);
   const handleCreateStudySession = async () => {
     if (!sessionTitle || !sessionDate || !token || isNaN(numericGroupId)) return;
-
     try {
       // Calculate total duration in minutes
       const durationMinutes = calculateDurationMinutes(
@@ -192,7 +278,6 @@ export default function SchedulingUI() {
         startTime,
         endTime
       );
-
       // Build a startTime Date from sessionDate + startTime
       const [sHour, sMin] = startTime.split(":").map(Number);
       const combinedStart = new Date(sessionDate.getTime());
@@ -241,12 +326,11 @@ export default function SchedulingUI() {
     <div className="p-6">
       <h1 className="text-2xl font-bold">Scheduled Sessions</h1>
       <Box sx={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2, mt: 4 }}>
-        {/* Create Session */}
+        {/* Create Session Button */}
         <Button variant="contained" color="primary" onClick={() => setOpenSessionDialog(true)}>
           Create Session
         </Button>
-
-        {/* Dark-blue box for SESSIONS */}
+        {/* Blue box for Scheduled Sessions */}
         <Paper
           sx={{
             p: 2,
@@ -259,7 +343,7 @@ export default function SchedulingUI() {
           }}
         >
           <List>
-            {sessions.map((session, index) => (
+            {sessions.map((session) => (
               <ListItem
                 key={session.id}
                 sx={{
@@ -267,20 +351,17 @@ export default function SchedulingUI() {
                   borderRadius: "4px",
                   mb: 1,
                   padding: 1.5,
-                  "&:hover": {
-                    backgroundColor: "#f5f5f5",
-                  },
+                  "&:hover": { backgroundColor: "#f5f5f5" },
                 }}
               >
                 <ListItemText
-                  primary={`${session.name}, ${session.date ? session.date.toLocaleDateString() : ""
-                    } ${session.earliestTime} - ${session.latestTime}`}
+                  primary={`${session.name}, ${session.date ? session.date.toLocaleDateString() : ""} ${session.earliestTime} - ${session.latestTime}`}
                 />
                 <Box sx={{ display: "flex", gap: 1 }}>
-                  <IconButton onClick={() => handleEditSession(index)} sx={{ color: "primary.main" }}>
+                  <IconButton onClick={() => handleEditSession(sessions.findIndex(s => s.id === session.id))} sx={{ color: "primary.main" }}>
                     <EditIcon />
                   </IconButton>
-                  <IconButton onClick={() => handleDeleteSession(index)} sx={{ color: "error.main" }}>
+                  <IconButton onClick={() => handleDeleteSession(sessions.findIndex(s => s.id === session.id))} sx={{ color: "error.main" }}>
                     <DeleteIcon />
                   </IconButton>
                 </Box>
@@ -289,13 +370,13 @@ export default function SchedulingUI() {
           </List>
         </Paper>
 
-        {/* Title for availability requests */}
+        {/* Title for Availability Requests */}
         <h1 className="text-2xl font-bold">Availability Requested</h1>
-
-        {/* Request Availability */}
+        {/* Request Availability Button */}
         <Button variant="contained" color="primary" onClick={() => setOpenAvailability(true)}>
           Request Availability
         </Button>
+        {/* Blue box for Availability Requests */}
         <Paper
           sx={{
             p: 2,
@@ -316,23 +397,11 @@ export default function SchedulingUI() {
                   borderRadius: "4px",
                   mb: 1,
                   padding: 1.5,
-                  "&:hover": {
-                    backgroundColor: "#f5f5f5",
-                  },
+                  "&:hover": { backgroundColor: "#f5f5f5" },
                 }}
               >
                 <ListItemText
-                  primary={req.name}
-                  secondary={
-                    <>
-                      <Typography variant="body2" color="text.primary">
-                        Date: {req.date?.toLocaleDateString()}
-                      </Typography>
-                      <Typography variant="body2" color="text.primary">
-                        Time: {req.earliestTime} - {req.latestTime}
-                      </Typography>
-                    </>
-                  }
+                  primary={`${req.name}, ${req.date ? req.date.toLocaleDateString() : ""} ${req.earliestTime} - ${req.latestTime}`}
                 />
               </ListItem>
             ))}
@@ -340,17 +409,12 @@ export default function SchedulingUI() {
         </Paper>
       </Box>
 
-      {/* DIALOG 1: Request Study Session Availability (No API call) */}
+      {/* Dialog 1: Request Availability */}
       <Dialog open={openAvailability} onClose={() => setOpenAvailability(false)}>
         <DialogContent className="max-w-lg p-6">
           <DialogTitle>Request Study Session Availability</DialogTitle>
           <div className="space-y-4">
-            <TextField
-              fullWidth
-              label="Event Name"
-              value={availabilityName}
-              onChange={(e) => setAvailabilityName(e.target.value)}
-            />
+            <TextField fullWidth label="Event Name" value={availabilityName} onChange={(e) => setAvailabilityName(e.target.value)} />
             <div>
               <Typography variant="subtitle1" gutterBottom>
                 Select Dates
@@ -376,9 +440,7 @@ export default function SchedulingUI() {
                     sx={{
                       height: "56px",
                       "& .MuiOutlinedInput-notchedOutline": { borderColor: "#1976d2" },
-                      "&:hover .MuiOutlinedInput-notchedOutline": {
-                        borderColor: "#1976d2",
-                      },
+                      "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#1976d2" },
                     }}
                   >
                     {[...Array(24).keys()].map((hour) => (
@@ -398,9 +460,7 @@ export default function SchedulingUI() {
                     sx={{
                       height: "56px",
                       "& .MuiOutlinedInput-notchedOutline": { borderColor: "#1976d2" },
-                      "&:hover .MuiOutlinedInput-notchedOutline": {
-                        borderColor: "#1976d2",
-                      },
+                      "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#1976d2" },
                     }}
                   >
                     {[...Array(24).keys()].map((hour) => (
@@ -426,17 +486,12 @@ export default function SchedulingUI() {
         </DialogContent>
       </Dialog>
 
-      {/* DIALOG 2: Create Study Session (With API Call) */}
+      {/* Dialog 2: Create Study Session */}
       <Dialog open={openSessionDialog} onClose={() => setOpenSessionDialog(false)}>
         <DialogContent className="max-w-lg p-6">
           <DialogTitle>Create Study Session</DialogTitle>
           <div className="space-y-4">
-            <TextField
-              fullWidth
-              label="Session Title"
-              value={sessionTitle}
-              onChange={(e) => setSessionTitle(e.target.value)}
-            />
+            <TextField fullWidth label="Session Title" value={sessionTitle} onChange={(e) => setSessionTitle(e.target.value)} />
             <div>
               <Typography variant="subtitle1" gutterBottom>
                 Select Date
@@ -462,9 +517,7 @@ export default function SchedulingUI() {
                     sx={{
                       height: "56px",
                       "& .MuiOutlinedInput-notchedOutline": { borderColor: "#1976d2" },
-                      "&:hover .MuiOutlinedInput-notchedOutline": {
-                        borderColor: "#1976d2",
-                      },
+                      "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#1976d2" },
                     }}
                   >
                     {[...Array(24).keys()].map((hour) => (
@@ -484,9 +537,7 @@ export default function SchedulingUI() {
                     sx={{
                       height: "56px",
                       "& .MuiOutlinedInput-notchedOutline": { borderColor: "#1976d2" },
-                      "&:hover .MuiOutlinedInput-notchedOutline": {
-                        borderColor: "#1976d2",
-                      },
+                      "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#1976d2" },
                     }}
                   >
                     {[...Array(24).keys()].map((hour) => (
@@ -507,6 +558,83 @@ export default function SchedulingUI() {
               sx={{ mt: 3, py: 1.5, fontSize: "1rem" }}
             >
               CREATE STUDY SESSION
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog 3: Edit Study Session */}
+      <Dialog open={openEditDialog} onClose={() => setOpenEditDialog(false)}>
+        <DialogContent className="max-w-lg p-6">
+          <DialogTitle>Edit Study Session</DialogTitle>
+          <div className="space-y-4">
+            <TextField fullWidth label="Session Title" value={editSessionTitle} onChange={(e) => setEditSessionTitle(e.target.value)} />
+            <div>
+              <Typography variant="subtitle1" gutterBottom>
+                Select Date
+              </Typography>
+              <Calendar
+                onChange={(newDate) => setEditSessionDate(newDate as Date | null)}
+                value={editSessionDate}
+                tileDisabled={({ date }) => date < new Date()}
+              />
+            </div>
+            <Box sx={{ mt: 3 }}>
+              <Typography variant="subtitle1" gutterBottom>
+                Study Session Duration
+              </Typography>
+              <Box sx={{ display: "flex", gap: 2 }}>
+                <FormControl fullWidth variant="outlined">
+                  <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
+                    Start Time
+                  </Typography>
+                  <Select
+                    value={editStartTime}
+                    onChange={(e) => setEditStartTime(e.target.value)}
+                    sx={{
+                      height: "56px",
+                      "& .MuiOutlinedInput-notchedOutline": { borderColor: "#1976d2" },
+                      "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#1976d2" },
+                    }}
+                  >
+                    {[...Array(24).keys()].map((hour) => (
+                      <MenuItem key={hour} value={`${hour.toString().padStart(2, "0")}:00`}>
+                        {`${hour.toString().padStart(2, "0")}:00`}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <FormControl fullWidth variant="outlined">
+                  <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
+                    End Time
+                  </Typography>
+                  <Select
+                    value={editEndTime}
+                    onChange={(e) => setEditEndTime(e.target.value)}
+                    sx={{
+                      height: "56px",
+                      "& .MuiOutlinedInput-notchedOutline": { borderColor: "#1976d2" },
+                      "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#1976d2" },
+                    }}
+                  >
+                    {[...Array(24).keys()].map((hour) => (
+                      <MenuItem key={hour} value={`${hour.toString().padStart(2, "0")}:00`}>
+                        {`${hour.toString().padStart(2, "0")}:00`}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Box>
+            </Box>
+            <Button
+              variant="contained"
+              color="primary"
+              fullWidth
+              onClick={handleUpdateStudySession}
+              disabled={!editSessionTitle || !editSessionDate}
+              sx={{ mt: 3, py: 1.5, fontSize: "1rem" }}
+            >
+              UPDATE STUDY SESSION
             </Button>
           </div>
         </DialogContent>
