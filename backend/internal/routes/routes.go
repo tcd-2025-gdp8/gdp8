@@ -34,11 +34,7 @@ func RegisterAllRoutes(firebaseAuth *auth.Client, txManager persistence.Transact
 	)
 	fileService := services.NewFileService(txManager, &fileRepo, studyGroupService)
 	chatService := services.NewChatService(txManager, &chatRepo, studyGroupService)
-	calendarService, _ := services.NewGoogleCalendarService(
-		context.Background(),
-		"credentials/serviceAccountKey.json",
-		"",
-	)
+	calendarService, _ := services.NewGoogleCalendarService(context.Background(), "credentials/serviceAccountKey.json", "")
 	calendarHandler := handlers.NewCalendarHandler(calendarService)
 	RegisterCalendarRoutes(calendarHandler)
 	RegisterStudyGroupRoutes(firebaseAuth, studyGroupService)

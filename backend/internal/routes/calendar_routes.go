@@ -1,9 +1,8 @@
 package routes
 
 import (
-	"net/http"
-
 	"gdp8-backend/internal/handlers"
+	"net/http"
 )
 
 func RegisterCalendarRoutes(calendarHandler *handlers.CalendarHandler) {
