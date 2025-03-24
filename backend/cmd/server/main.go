@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"database/sql"
 	"log"
 	"net/http"
@@ -9,11 +8,9 @@ import (
 	"time"
 
 	"gdp8-backend/internal/firebase"
-	"gdp8-backend/internal/handlers"
 	"gdp8-backend/internal/middleware"
 	"gdp8-backend/internal/persistence"
 	"gdp8-backend/internal/routes"
-	"gdp8-backend/internal/services"
 )
 
 func main() {
@@ -22,40 +19,33 @@ func main() {
 		credentialsPath = "credentials/mockServiceAccountKey.json"
 	}
 
+	// Initialize Firebase
 	firebaseAuth, err := firebase.InitializeFirebase(credentialsPath)
 	if err != nil {
 		log.Fatalf("Failed to initialize Firebase Admin SDK: %v", err)
 	}
 
+	// Open DB connection
 	db, err := persistence.OpenDB()
 	if err != nil {
 		log.Fatalf("Failed to open database: %v", err)
 	}
 	defer func(db *sql.DB) {
-		err := db.Close()
-		if err != nil {
+		if err := db.Close(); err != nil {
 			log.Fatal(err)
 		}
 	}(db)
 
-	err = persistence.ExecuteMigrations(db)
-	if err != nil {
+	if err := persistence.ExecuteMigrations(db); err != nil {
 		log.Fatalf("Failed to execute migrations: %v", err)
 	}
 
 	txManager := persistence.NewSQLTransactionManager(db)
 
+	// Register all routes, including calendar
 	routes.RegisterAllRoutes(firebaseAuth, txManager)
 
-	ctx := context.Background()
-	calendarService, err := services.NewGoogleCalendarService(ctx, credentialsPath, "user@example.com")
-	if err != nil {
-		log.Fatalf("Failed to initialize Google Calendar service: %v", err)
-	}
-
-	calendarHandler := handlers.NewCalendarHandler(calendarService)
-	routes.RegisterCalendarRoutes(calendarHandler)
-
+	// Set up HTTP server with CORS
 	corsHandler := middleware.SimpleCORS(http.DefaultServeMux)
 
 	server := http.Server{
@@ -65,9 +55,7 @@ func main() {
 	}
 
 	log.Println("Server running on http://localhost" + server.Addr)
-
-	err = server.ListenAndServe()
-	if err != nil {
+	if err := server.ListenAndServe(); err != nil {
 		log.Fatal(err)
 	}
 }
