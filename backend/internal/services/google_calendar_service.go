@@ -21,12 +21,9 @@ type googleCalendarServiceImpl struct {
 }
 
 // NewGoogleCalendarService creates a new instance of GoogleCalendarService.
-// The subject parameter is the email address of the user to impersonate.
-func NewGoogleCalendarService(
-	ctx context.Context,
-	credentialsFile string,
-	subject string,
-) (GoogleCalendarService, error) {
+// The subject parameter is the email address of the user to impersonate (if applicable).
+// For testing without impersonation, you can pass an empty string.
+func NewGoogleCalendarService(ctx context.Context, credentialsFile string, subject string) (GoogleCalendarService, error) {
 	data, err := os.ReadFile(credentialsFile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read credentials file: %w", err)
@@ -36,6 +33,7 @@ func NewGoogleCalendarService(
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse JWT config: %w", err)
 	}
+	// Set subject for impersonation if provided.
 	config.Subject = subject
 
 	svc, err := calendar.NewService(ctx, option.WithHTTPClient(config.Client(ctx)))
@@ -47,9 +45,10 @@ func NewGoogleCalendarService(
 	}, nil
 }
 
-// CreateEvent creates an event on the specified calendar.
+// CreateEvent creates an event on the specified calendar and sends updates to attendees.
 func (g *googleCalendarServiceImpl) CreateEvent(calendarID string, event *calendar.Event) (*calendar.Event, error) {
-	createdEvent, err := g.calendarService.Events.Insert(calendarID, event).Do()
+	createdEvent, err := g.calendarService.Events.Insert(calendarID, event).
+		SendUpdates("all").Do()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create event: %w", err)
 	}

@@ -42,10 +42,10 @@ func main() {
 
 	txManager := persistence.NewSQLTransactionManager(db)
 
-	// Register all routes, including calendar
+	// Register all routes including calendar
 	routes.RegisterAllRoutes(firebaseAuth, txManager)
 
-	// Set up HTTP server with CORS
+	// Set up HTTP server with CORS middleware
 	corsHandler := middleware.SimpleCORS(http.DefaultServeMux)
 
 	server := http.Server{

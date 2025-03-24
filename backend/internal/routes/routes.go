@@ -2,6 +2,7 @@ package routes
 
 import (
 	"context"
+	"log"
 	"net/http"
 
 	"firebase.google.com/go/v4/auth"
@@ -34,9 +35,16 @@ func RegisterAllRoutes(firebaseAuth *auth.Client, txManager persistence.Transact
 	)
 	fileService := services.NewFileService(txManager, &fileRepo, studyGroupService)
 	chatService := services.NewChatService(txManager, &chatRepo, studyGroupService)
-	calendarService, _ := services.NewGoogleCalendarService(context.Background(), "credentials/serviceAccountKey.json", "")
+
+	// Initialize Google Calendar service (no impersonation for test)
+	calendarService, err := services.NewGoogleCalendarService(context.Background(), "credentials/serviceAccountKey.json", "")
+	if err != nil {
+		log.Printf("Warning: Failed to initialize Google Calendar service: %v", err)
+	}
 	calendarHandler := handlers.NewCalendarHandler(calendarService)
-	RegisterCalendarRoutes(calendarHandler)
+	RegisterCalendarRoutes(calendarHandler) // This registers the /api/calendar/invite route
+
+	// Register other routes...
 	RegisterStudyGroupRoutes(firebaseAuth, studyGroupService)
 	RegisterStudySessionRoutes(firebaseAuth, studySessionService)
 	RegisterModuleRoutes(firebaseAuth, moduleService)
@@ -44,6 +52,7 @@ func RegisterAllRoutes(firebaseAuth *auth.Client, txManager persistence.Transact
 	RegisterUserRoutes(firebaseAuth, userService)
 	RegisterChatRoutes(firebaseAuth, chatService)
 	RegisterFileRoutes(firebaseAuth, studyGroupService, fileService)
+
 	authHandler := handlers.NewAuthHandler(firebaseAuth)
 	http.HandleFunc("/api/auth/verify", authHandler.VerifyHandler)
 }

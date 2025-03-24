@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"time"
 
@@ -21,7 +20,10 @@ func NewCalendarHandler(calendarService services.GoogleCalendarService) *Calenda
 
 // CreateInviteHandler handles HTTP requests for creating a Google Calendar invite.
 func (h *CalendarHandler) CreateInviteHandler(w http.ResponseWriter, r *http.Request) {
-	log.Println("Received request at /api/calendar/invite")
+	// Log that we received a request (for debugging)
+	// (You can remove this once everything works.)
+	// log.Println("🔥 Received request at /api/calendar/invite")
+
 	var req struct {
 		Summary        string   `json:"summary"`
 		Location       string   `json:"location"`
@@ -72,10 +74,9 @@ func (h *CalendarHandler) CreateInviteHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	calendarID := "primary"
-
 	createdEvent, err := h.calendarService.CreateEvent(calendarID, event)
 	if err != nil {
-		http.Error(w, "Failed to create calendar event", http.StatusInternalServerError)
+		http.Error(w, "Failed to create calendar event: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
