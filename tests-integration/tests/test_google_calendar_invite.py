@@ -1,8 +1,9 @@
 from utils.custom_session import CustomSession
 
 class TestGoogleCalendarInvite:
-    def test_create_calendar_invite(self, access_token):
-        session = CustomSession(access_token)
+    def test_create_calendar_invite(self):
+        session = CustomSession()  # 👈 no token
+
         response = session.post("/api/calendar/invite", json={
             "summary": "Integration Test Meeting",
             "location": "Virtual",

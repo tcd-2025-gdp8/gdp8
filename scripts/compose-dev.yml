@@ -15,7 +15,6 @@ services:
         condition: service_healthy
         restart: true
 
-
   mysql:
     image: mysql
     environment:
@@ -34,7 +33,6 @@ services:
       retries: 3
       start_period: 10s
       timeout: 10s
-
 
 volumes:
   mysql_data:
