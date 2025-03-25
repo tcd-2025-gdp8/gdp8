@@ -54,13 +54,15 @@ func (s *SQLStudySessionAvailabilityRepository) GetCurrentStudySessionAvailabili
 			return nil, fmt.Errorf("failed to scan availability request: %w", err)
 		}
 
+		requests = append(requests, request)
+	}
+
+	for _, request := range requests {
 		entries, err := s.getEntriesForRequest(tx, request.ID)
 		if err != nil {
 			return nil, err
 		}
-
 		request.Entries = entries
-		requests = append(requests, request)
 	}
 
 	if err = rows.Err(); err != nil {
