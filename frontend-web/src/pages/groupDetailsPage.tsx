@@ -10,13 +10,24 @@ import { Module } from "../api/modules";
 import { useAuth } from "../auth/useAuth";
 import { getUserModules } from "../api/users";
 
+// Define a new interface that includes members
+interface StudyGroupData {
+    id: number;
+    name: string;
+    description: string;
+    type: "public" | "closed" | "invite-only";
+    moduleId: number;
+    maxMembers: number;
+    members: { id: string; name: string; role: string }[]; // Include members
+}
+
 export default function GroupDetailsPage() {
     const navigate = useNavigate();
     const { groupId } = useParams();
     const { token, user } = useAuth();
     const currentUserId = user?.uid;
 
-    const [studyGroupData, setStudyGroupData] = useState<EditStudyGroupData | null>(null);
+    const [studyGroupData, setStudyGroupData] = useState<StudyGroupData | null>(null);
     const [modulesList, setModulesList] = useState<Module[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -25,11 +36,11 @@ export default function GroupDetailsPage() {
     useEffect(() => {
         const fetchStudyGroup = async () => {
             if (!groupId || !token) return;
-    
+
             try {
                 const data = await fetchStudyGroupById(token, Number(groupId));
                 console.log("Fetched Study Group Data:", data);
-                setStudyGroupData(data);
+                setStudyGroupData(data); // Store the full response including members
             } catch (err) {
                 console.error("Error fetching study group:", err);
                 setError("Failed to load study group details.");
@@ -67,7 +78,6 @@ export default function GroupDetailsPage() {
         }
     };
 
-    // Handle async delete click, but return void in the event handler
     const handleDeleteClick = () => {
         handleDelete().catch((error) => console.error("Error handling delete:", error));
     };
@@ -85,7 +95,6 @@ export default function GroupDetailsPage() {
         }
     };
 
-    // Create a wrapper function that calls the async function without returning a Promise
     const handleSaveWrapper = (updatedData: EditStudyGroupData) => {
         handleUpdateStudyGroup(updatedData).catch((err) => {
             console.error("Error updating study group:", err);
@@ -95,6 +104,11 @@ export default function GroupDetailsPage() {
 
     const module = modulesList.find(module => module.id === studyGroupData?.moduleId);
     const moduleDisplay = module ? `Module: ${module.code} ${module.name}` : "Module: Unknown Module";
+
+    // Check if the user is an admin
+    const isAdmin = studyGroupData?.members.some(
+        (member) => member.id === currentUserId && member.role === "admin"
+    );
 
     return (
         <Box sx={{ display: "flex" }}>
@@ -114,12 +128,26 @@ export default function GroupDetailsPage() {
                             <Typography variant="body1" sx={{ mb: 1 }}>{moduleDisplay}</Typography>
                             <Typography variant="body1" sx={{ mb: 3 }}>Max Members: {studyGroupData.maxMembers}</Typography>
 
-                            <Button variant="contained" color="primary" onClick={() => setOpenEditDialog(true)} sx={{ mr: 2 }}>
-                                Edit Study Group
-                            </Button>
-                            <Button variant="contained" color="error" onClick={handleDeleteClick}>
-                                Delete Study Group
-                            </Button>
+                            {/* Only show buttons if the user is an admin */}
+                            {isAdmin && (
+                                <>
+                                    <Button 
+                                        variant="contained" 
+                                        color="primary" 
+                                        onClick={() => setOpenEditDialog(true)} 
+                                        sx={{ mr: 2 }}
+                                    >
+                                        Edit Study Group
+                                    </Button>
+                                    <Button 
+                                        variant="contained" 
+                                        color="error" 
+                                        onClick={handleDeleteClick}
+                                    >
+                                        Delete Study Group
+                                    </Button>
+                                </>
+                            )}
 
                             <DialogEditStudyGroup
                                 open={openEditDialog}
