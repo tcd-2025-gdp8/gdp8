@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -72,6 +73,7 @@ func (h *StudySessionHandler) GetStudySessionsByGroup(w http.ResponseWriter, r *
 
 	sessions, err := h.service.GetAllStudySessionsByStudyGroup(groupID, userID)
 	if err != nil {
+		log.Printf("Error getting study sessions for group ID %s, user ID %s: %v", groupIDString, userID, err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
@@ -122,6 +124,7 @@ func (h *StudySessionHandler) CreateStudySession(w http.ResponseWriter, r *http.
 
 	session, err := h.service.CreateStudySession(groupID, creatorID, details)
 	if err != nil {
+		log.Printf("Error creating study session for group ID %s, creator ID %s: %v", groupIDString, creatorID, err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
@@ -162,6 +165,7 @@ func (h *StudySessionHandler) UpdateStudySession(w http.ResponseWriter, r *http.
 
 	session, err := h.service.UpdateStudySession(studySessionID, details, userID)
 	if err != nil {
+		log.Printf("Error updating study session with ID %s by user %s: %v", studySessionIDString, userID, err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
@@ -184,6 +188,7 @@ func (h *StudySessionHandler) DeleteStudySession(w http.ResponseWriter, r *http.
 	}
 
 	if err := h.service.DeleteStudySession(studySessionID, userID); err != nil {
+		log.Printf("Error deleting study session with ID %s by user %s: %v", studySessionIDString, userID, err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
@@ -207,6 +212,7 @@ func (h *StudySessionHandler) GetCurrentAvailabilityRequests(w http.ResponseWrit
 
 	requests, err := h.service.GetCurrentStudySessionAvailabilityRequests(groupID, userID)
 	if err != nil {
+		log.Printf("Error getting current availability requests for group ID %s, user ID %s: %v", groupIDString, userID, err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
@@ -255,6 +261,7 @@ func (h *StudySessionHandler) CreateAvailabilityRequest(w http.ResponseWriter, r
 	}
 
 	if err := h.service.CreateStudySessionAvailabilityRequest(groupID, details, userID); err != nil {
+		log.Printf("Error creating availability request for group ID %s, user ID %s: %v", groupIDString, userID, err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
@@ -277,6 +284,7 @@ func (h *StudySessionHandler) DeleteAvailabilityRequest(w http.ResponseWriter, r
 	}
 
 	if err := h.service.DeleteStudySessionAvailabilityRequest(requestID, userID); err != nil {
+		log.Printf("Error deleting availability request with ID %s by user %s: %v", requestIDString, userID, err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
@@ -318,6 +326,7 @@ func (h *StudySessionHandler) UpsertAvailabilityEntries(w http.ResponseWriter, r
 	}
 
 	if err := h.service.UpsertUserAvailabilityEntries(requestID, userID, entries); err != nil {
+		log.Printf("Error updating availability entries for request ID %s by user %s: %v", requestIDString, userID, err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
