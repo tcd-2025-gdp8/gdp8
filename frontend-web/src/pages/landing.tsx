@@ -6,11 +6,12 @@ import {
   CircularProgress,
   Alert,
 } from "@mui/material";
-import { fetchUserStudyGroups, StudyGroup } from "../api/studyGroups"; // Import the new function
+import { fetchUserStudyGroups, StudyGroup } from "../api/studyGroups";
 import { getUserModules } from "../api/users";
 import { useAuth } from "../auth/useAuth";
 import StudyGroupCard from "../components/StudyGroupCard";
 import { Module } from "../api/modules";
+import { fetchAllUserStudySessions, Session } from "../api/studySessions";
 
 export default function LandingPage() {
   const { token, user } = useAuth();
@@ -18,6 +19,7 @@ export default function LandingPage() {
 
   const [studyGroups, setStudyGroups] = useState<StudyGroup[]>([]);
   const [modulesList, setModulesList] = useState<Module[]>([]);
+  const [studySessions, setStudySessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,10 +28,12 @@ export default function LandingPage() {
 
     try {
       const [userStudyGroups, userModules] = await Promise.all([
-        fetchUserStudyGroups(token, currentUserId), // Use the new function
+        fetchUserStudyGroups(token, currentUserId),
         getUserModules(token, currentUserId),
       ]);
 
+      const userStudySessions = await fetchAllUserStudySessions(token, userStudyGroups);
+      setStudySessions(userStudySessions); // Set the fetched study sessions
       setStudyGroups(userStudyGroups);
       setModulesList(userModules || []);
     } catch (err) {
@@ -77,13 +81,26 @@ export default function LandingPage() {
         })}
       </Grid>
 
-      {/* Study Sessions Section (Placeholder for now) */}
+      {/* Study Sessions Section */}
       <Typography variant="h5" style={{ marginBottom: "1.5rem", marginTop: "3rem" }}>
         Upcoming Study Sessions
       </Typography>
-      <Typography variant="body1" style={{ marginBottom: "2rem" }}>
-        This section will display upcoming study sessions in the future.
-      </Typography>
+      {loading && <CircularProgress />}
+      {error && <Alert severity="error">{error}</Alert>}
+      {!loading && studySessions.length === 0 && (
+        <Typography>No upcoming study sessions found.</Typography>
+      )}
+
+      <Grid container spacing={2}>
+        {studySessions.map((session) => (
+          <Grid item xs={12} sm={6} md={4} key={session.id}>
+            <Typography variant="h6">{session.name}</Typography>
+            <Typography variant="body2">Date: {session.date?.toLocaleString()}</Typography>
+            <Typography variant="body2">Start: {session.earliestTime}</Typography>
+            <Typography variant="body2">End: {session.latestTime}</Typography>
+          </Grid>
+        ))}
+      </Grid>
     </Container>
   );
 }
