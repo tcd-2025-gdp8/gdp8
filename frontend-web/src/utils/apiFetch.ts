@@ -33,7 +33,14 @@ export async function makeRequest(
     });
 
     if (!response.ok) {
-        throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
+        let serverMsg = "";
+        try {
+            serverMsg = await response.text();
+        } catch {
+            // fallback if reading the text body fails
+            serverMsg = response.statusText;
+        }
+        throw new Error(`HTTP error ${response.status}: ${serverMsg}`);
     }
 
     return response;

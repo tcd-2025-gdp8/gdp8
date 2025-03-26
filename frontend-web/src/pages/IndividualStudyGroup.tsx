@@ -11,7 +11,7 @@ export default function IndividualStudyGroup() {
     const navigate = useNavigate();
     const { groupId } = useParams();
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-    const [, setShowSchedule] = useState(false);
+    // const [, setShowSchedule] = useState(false);
 
     const handleMenuOpen = (event: React.MouseEvent<HTMLButtonElement>) => {
         setAnchorEl(event.currentTarget);
@@ -68,11 +68,13 @@ export default function IndividualStudyGroup() {
                         >
                             Chats
                         </MenuItem>
-                        <MenuItem onClick={handleMenuClose}>Files</MenuItem>
                         <MenuItem
                             onClick={() => {
                                 handleMenuClose();
-                                setShowSchedule(true); // Show schedule page
+                                if (groupId) {
+                                    // Now navigate to the real schedule route:
+                                    void navigate(`/study-groups/${groupId}/schedule`);
+                                }
                             }}
                         >
                             Schedule

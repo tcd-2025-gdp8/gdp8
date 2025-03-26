@@ -79,8 +79,8 @@ export async function fetchCurrentAvailabilityRequestsByGroupId(token: string | 
 }
 
 export async function createAvailabilityRequest(
-    token: string | null, 
-    studyGroupId: number, 
+    token: string | null,
+    studyGroupId: number,
     availabilityRequest: StudySessionAvailabilityRequestDetails
 ): Promise<void> {
 
@@ -97,14 +97,14 @@ export async function deleteAvailabilityRequest(token: string | null, availabili
 }
 
 export async function upsertAvailabilityEntries(
-    token: string | null, 
-    availabilityRequestId: number, 
+    token: string | null,
+    availabilityRequestId: number,
     availabilityEntries: StudySessionAvailabilityEntryDetails[]
 ): Promise<void> {
 
     await fetchApi(`/availability-requests/${availabilityRequestId}/entries`, token, {
         method: 'PUT',
-        body: JSON.stringify(availabilityEntries),
+        body: JSON.stringify({ entries: availabilityEntries }),
     });
 }
 
@@ -124,7 +124,7 @@ interface StudySessionAvailabilityRequestResponse {
     title: string;
     availabilityPeriodStart: string;
     availabilityPeriodEnd: string;
-    availabilityEntries: StudySessionAvailabilityEntryResponse[];
+    entries: StudySessionAvailabilityEntryResponse[];
 }
 
 interface StudySessionAvailabilityEntryResponse {
@@ -146,7 +146,7 @@ function toStudySessionAvailabilityRequest(response: StudySessionAvailabilityReq
         ...response,
         availabilityPeriodStart: new Date(response.availabilityPeriodStart),
         availabilityPeriodEnd: new Date(response.availabilityPeriodEnd),
-        availabilityEntries: response.availabilityEntries.map(toStudySessionAvailabilityEntry),
+        availabilityEntries: response.entries.map(toStudySessionAvailabilityEntry),
     };
 }
 

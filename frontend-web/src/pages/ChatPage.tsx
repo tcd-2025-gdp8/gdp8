@@ -4,7 +4,6 @@ import { Card, CardContent, TextField, Button, AppBar, Toolbar, Typography, Box 
 import { useAuth } from "../auth/useAuth";
 import { fetchApiToJson } from "../utils/apiFetch";
 import { fetchPastChatMessagesByGroupId } from "../api/chat";
-//import ChatbotChat from "../components/ChatbotChat";
 
 interface Message {
     text: string;
@@ -44,7 +43,6 @@ export default function ChatPage() {
     const chatID = currentPath[currentPath.length - 1];
     const ws = useRef<WebSocket | null>(null);
     const { token, user } = useAuth();
-    //const [chatbotOpen, setChatbotOpen] = useState(false);
     const [userDetails, setUserDetails] = useState<User | null>(null);
 
     const fetchUserDetails = useCallback(async () => {
