@@ -6,36 +6,138 @@ import {
   DialogContent,
   DialogActions,
 } from "@mui/material";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
   fetchCurrentAvailabilityRequestsByGroupId,
   createAvailabilityRequest,
-  upsertAvailabilityEntries
+  upsertAvailabilityEntries,
 } from "../api/studySessions";
 import { fetchStudyGroupById } from "../api/studyGroups";
 import { useAuth } from "../auth/useAuth";
 
 export default function AvailabilitySelection() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { token, user } = useAuth();
   const { groupId } = useParams();
   const numericGroupId = groupId ? Number(groupId) : NaN;
 
   const [groupMembers, setGroupMembers] = useState<{ id: string; name: string }[]>([]);
-  const memberNames = groupMembers.map(member => member.name);
+  const memberNames = groupMembers.map((member) => member.name);
 
   const currentUserName = user?.displayName ?? user?.email ?? "Unknown";
 
   const [availabilityRequestId, setAvailabilityRequestId] = useState<number | null>(null);
+  const [requestStartDate, setRequestStartDate] = useState<Date | null>(null);
+  const [requestEndDate, setRequestEndDate] = useState<Date | null>(null);
+  const [timeSlots, setTimeSlots] = useState<string[]>([]);
+
+  function generateHourlyTimeSlots(start: Date, end: Date): string[] {
+    const slots: string[] = [];
+    const current = new Date(start.getTime());
+    // Round down to the nearest hour
+    current.setMinutes(0, 0, 0);
+
+    while (current < end) {
+      slots.push(
+        current.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+      );
+      current.setHours(current.getHours() + 1);
+    }
+    return slots;
+  }
+
+  // When requestStartDate and requestEndDate change, generate the hourly slots.
+  useEffect(() => {
+    if (requestStartDate && requestEndDate && requestStartDate < requestEndDate) {
+      const newSlots = generateHourlyTimeSlots(requestStartDate, requestEndDate);
+      setTimeSlots(newSlots);
+    }
+  }, [requestStartDate, requestEndDate]);
+
   useEffect(() => {
     console.log("availabilityRequestId:", availabilityRequestId);
   }, [availabilityRequestId]);
 
-  const [timeSlots] = useState<string[]>([
-    "09:00 AM", "10:00 AM", "11:00 AM", "12:00 PM",
-    "01:00 PM", "02:00 PM", "03:00 PM", "04:00 PM", "05:00 PM"
-  ]);
-  // Local availability is stored as a record mapping user names to sets of time strings.
+  // Load group members.
+  useEffect(() => {
+    if (!token || isNaN(numericGroupId)) return;
+    fetchStudyGroupById(token, numericGroupId)
+      .then((group) => {
+        setGroupMembers(group.members);
+      })
+      .catch((err) => console.error("Error fetching group details", err));
+  }, [token, numericGroupId]);
+
+  // Check for query parameters for start and end.
+  // If found, use these dates; otherwise, fall back to fetching/creating a request.
+  useEffect(() => {
+    const queryParams = new URLSearchParams(location.search);
+    const startParam = queryParams.get("start");
+    const endParam = queryParams.get("end");
+
+    if (startParam && endParam) {
+      const startDate = new Date(startParam);
+      const endDate = new Date(endParam);
+      setRequestStartDate(startDate);
+      setRequestEndDate(endDate);
+
+      // Now fetch the current availability requests and try to find the one matching the start/end times
+      if (token && !isNaN(numericGroupId)) {
+        fetchCurrentAvailabilityRequestsByGroupId(token, numericGroupId)
+          .then((requests) => {
+            const matchingRequest = requests.find((r) => {
+              const rStart = new Date(r.availabilityPeriodStart).toISOString();
+              const rEnd = new Date(r.availabilityPeriodEnd).toISOString();
+              return rStart === startDate.toISOString() && rEnd === endDate.toISOString();
+            });
+            if (matchingRequest) {
+              setAvailabilityRequestId(matchingRequest.id);
+            } else {
+              // Optionally, if no matching request is found, create one here or handle the situation accordingly
+              console.warn("No matching availability request found.");
+            }
+          })
+          .catch((err) => console.error("Error fetching availability requests:", err));
+      }
+    } else {
+      // Fallback to your original logic if query params are not provided:
+      if (!token || isNaN(numericGroupId)) {
+        console.error("Invalid group ID or missing token");
+        return;
+      }
+      fetchCurrentAvailabilityRequestsByGroupId(token, numericGroupId)
+        .then((requests) => {
+          if (requests.length > 0) {
+            setAvailabilityRequestId(requests[0].id);
+            setRequestStartDate(new Date(requests[0].availabilityPeriodStart));
+            setRequestEndDate(new Date(requests[0].availabilityPeriodEnd));
+          } else {
+            const now = new Date();
+            const oneWeekLater = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+            const newRequest = {
+              title: "Availability Poll",
+              availabilityPeriodStart: now,
+              availabilityPeriodEnd: oneWeekLater,
+            };
+            return createAvailabilityRequest(token, numericGroupId, newRequest)
+              .then(() => fetchCurrentAvailabilityRequestsByGroupId(token, numericGroupId));
+          }
+        })
+        .then((updatedRequests) => {
+          if (updatedRequests && updatedRequests.length > 0) {
+            setAvailabilityRequestId(updatedRequests[0].id);
+            setRequestStartDate(new Date(updatedRequests[0].availabilityPeriodStart));
+            setRequestEndDate(new Date(updatedRequests[0].availabilityPeriodEnd));
+          }
+        })
+        .catch((err) => {
+          console.error("Error fetching or creating availability request:", err);
+        });
+    }
+  }, [token, numericGroupId, location.search]);
+
+  // Persist local availability changes to localStorage.
   const [availability, setAvailability] = useState<Record<string, Set<string>>>(() => {
     const stored = localStorage.getItem("userAvailability");
     if (stored) {
@@ -62,56 +164,6 @@ export default function AvailabilitySelection() {
   const gridRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!token || isNaN(numericGroupId)) return;
-    fetchStudyGroupById(token, numericGroupId)
-      .then((group) => {
-        setGroupMembers(group.members);
-      })
-      .catch((err) => console.error("Error fetching group details", err));
-  }, [token, numericGroupId]);
-
-  useEffect(() => {
-    if (!token || isNaN(numericGroupId)) {
-      console.error("Invalid group ID or missing token");
-      return;
-    }
-    fetchCurrentAvailabilityRequestsByGroupId(token, numericGroupId)
-      .then((requests) => {
-        if (requests.length > 0) {
-          setAvailabilityRequestId(requests[0].id);
-        } else {
-          const now = new Date();
-          const oneWeekLater = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-          const newRequest = {
-            title: "Availability Poll",
-            availabilityPeriodStart: now,
-            availabilityPeriodEnd: oneWeekLater,
-          };
-          return createAvailabilityRequest(token, numericGroupId, newRequest)
-            .then(() => fetchCurrentAvailabilityRequestsByGroupId(token, numericGroupId));
-        }
-      })
-      .then((updatedRequests) => {
-        if (updatedRequests && updatedRequests.length > 0) {
-          setAvailabilityRequestId(updatedRequests[0].id);
-        }
-      })
-      .catch((err) => {
-        console.error("Error fetching or creating availability request:", err);
-      });
-  }, [token, numericGroupId]);
-
-  // Persist local availability changes to localStorage.
-  useEffect(() => {
-    const availForStorage: Record<string, string[]> = {};
-    for (const key in availability) {
-      availForStorage[key] = Array.from(availability[key]);
-    }
-    localStorage.setItem("userAvailability", JSON.stringify(availForStorage));
-  }, [availability]);
-
-  // Global mouseup handler to end drag selection.
-  useEffect(() => {
     const handleMouseUp = () => setIsSelecting(false);
     document.addEventListener("mouseup", handleMouseUp);
     return () => document.removeEventListener("mouseup", handleMouseUp);
@@ -120,7 +172,7 @@ export default function AvailabilitySelection() {
   // Toggle a single time slot for the current user.
   const toggleAvailability = (time: string, mode?: "add" | "remove") => {
     const action = mode ?? selectionMode;
-    setAvailability(prev => {
+    setAvailability((prev) => {
       const newAvail = { ...prev };
       const currentAvail = new Set(newAvail[currentUserName]);
       if (action === "add") {
@@ -152,42 +204,55 @@ export default function AvailabilitySelection() {
 
   // Returns an array of member names who have selected the given time.
   const getAvailableUsers = (time: string) => {
-    return memberNames.filter(name => availability[name]?.has(time));
+    return memberNames.filter((name) => availability[name]?.has(time));
   };
 
   // Get the best time slots (most availability)
   const getBestTimeSlots = () => {
-    const timesWithCounts = timeSlots.map(time => ({
+    const timesWithCounts = timeSlots.map((time) => ({
       time,
-      count: getAvailableUsers(time).length
+      count: getAvailableUsers(time).length,
     }));
 
     return timesWithCounts
       .sort((a, b) => b.count - a.count)
-      .filter(item => item.count > 0)
+      .filter((item) => item.count > 0)
       .slice(0, 3);
   };
 
   const saveAvailabilityToBackend = async () => {
-    if (!token || !availabilityRequestId) {
-      console.error("No token or availabilityRequestId available");
+    if (!token || !availabilityRequestId || !requestStartDate || !requestEndDate) {
+      console.error("Missing token, availabilityRequestId, requestStartDate, or requestEndDate");
       return;
     }
-    // Get the current user's selected time strings.
+
     const selectedTimes = Array.from(availability[currentUserName] || []);
-    // Convert each selected time into a date range (assuming 1-hour blocks).
-    const entries = selectedTimes.map((slotString) => {
-      const [timePart, amPm] = slotString.split(" ");
-      const [rawHour, rawMin] = timePart.split(":");
-      let hour = parseInt(rawHour, 10);
-      const minute = parseInt(rawMin, 10);
-      if (amPm === "PM" && hour < 12) hour += 12;
-      if (amPm === "AM" && hour === 12) hour = 0;
-      const startDate = new Date();
-      startDate.setHours(hour, minute, 0, 0);
-      const endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
-      return { availabilityStart: startDate, availabilityEnd: endDate };
-    });
+
+    const entries = selectedTimes
+      .map((slotString) => {
+        const [timePart, amPm] = slotString.split(" ");
+        const [rawHour, rawMin] = timePart.split(":");
+        let hour = parseInt(rawHour, 10);
+        const minute = parseInt(rawMin, 10);
+
+        if (amPm === "PM" && hour < 12) hour += 12;
+        if (amPm === "AM" && hour === 12) hour = 0;
+
+        // Use the poll’s actual start date from DB
+        const entryStart = new Date(requestStartDate);
+        entryStart.setHours(hour, minute, 0, 0);
+
+        const entryEnd = new Date(entryStart.getTime() + 60 * 60 * 1000);
+
+        // Compare against the poll’s actual end date
+        if (entryStart < requestStartDate || entryEnd > requestEndDate) {
+          console.warn(`Entry ${slotString} is out of range. Skipping.`);
+          return null;
+        }
+        return { availabilityStart: entryStart, availabilityEnd: entryEnd };
+      })
+      .filter((entry) => entry !== null);
+
     try {
       await upsertAvailabilityEntries(token, availabilityRequestId, entries);
       alert("Your availability has been saved to the backend!");
@@ -196,8 +261,8 @@ export default function AvailabilitySelection() {
       alert("Failed to save availability.");
     }
   };
+
   useEffect(() => {
-    // Add global mouse up handler
     document.addEventListener("mouseup", handleMouseUp);
     return () => {
       document.removeEventListener("mouseup", handleMouseUp);
