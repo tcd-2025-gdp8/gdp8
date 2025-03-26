@@ -29,7 +29,7 @@ func (s *SQLStudySessionAvailabilityRepository) GetCurrentStudySessionAvailabili
 
 	query := `
 		SELECT id, study_group_id, availability_period_start, availability_period_end
-		FROM study_session_availability_requests
+		FROM current_study_session_availability_requests
 		WHERE study_group_id = ?
 		ORDER BY availability_period_start`
 
