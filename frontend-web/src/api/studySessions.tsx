@@ -1,4 +1,5 @@
 import { fetchApi, fetchApiToJson } from "../utils/apiFetch";
+import { fetchUserStudyGroups } from "./studyGroups";
 
 export interface StudySession {
     id: number;
@@ -106,6 +107,26 @@ export async function upsertAvailabilityEntries(
         method: 'PUT',
         body: JSON.stringify({ entries: availabilityEntries }),
     });
+}
+
+export async function fetchUserStudySessions(token: string | null, userId: string | null): Promise<StudySession[]> {
+    if (!token || !userId) return [];
+
+    try {
+        const userStudyGroups = await fetchUserStudyGroups(token, userId);
+        const userStudyGroupIds = new Set(userStudyGroups.map(group => group.id));
+
+        const allStudySessions = await fetchApiToJson<StudySessionResponse[]>("/study-sessions", token);
+
+        const userStudySessions = allStudySessions
+            .filter(session => userStudyGroupIds.has(session.studyGroupId))
+            .map(toStudySession);
+
+        return userStudySessions;
+    } catch (error) {
+        console.error("Error fetching user-specific study sessions:", error);
+        throw new Error("Failed to load study sessions.");
+    }
 }
 
 interface StudySessionResponse {
