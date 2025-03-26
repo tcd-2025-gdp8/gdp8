@@ -73,7 +73,7 @@ export default function IndividualStudyGroup() {
                                 handleMenuClose();
                                 if (groupId) {
                                     // Now navigate to the real schedule route:
-                                    navigate(`/study-groups/${groupId}/schedule`);
+                                    void navigate(`/study-groups/${groupId}/schedule`);
                                 }
                             }}
                         >

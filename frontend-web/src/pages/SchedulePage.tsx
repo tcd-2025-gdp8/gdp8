@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -75,36 +75,31 @@ export default function SchedulingUI() {
     return dateObj.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   }
 
-  async function loadSessions() {
+  const loadSessions = useCallback(async () => {
     if (!token || isNaN(numericGroupId)) return;
     try {
       const backendSessions = await fetchStudySessions(token, numericGroupId);
-
-      // The backend returns objects with `title`, `startTime`, `endTime` (and more).
-      // Convert them into our local structure:
       const mapped: Session[] = backendSessions.map((bs) => ({
         id: bs.id,
         name: bs.title,
-        date: bs.startTime, // convert "string" or "Date" from the backend as needed
+        date: bs.startTime, // adjust as needed
         earliestTime: formatTime(bs.startTime),
         latestTime: formatTime(bs.endTime),
       }));
-
       setSessions(mapped);
     } catch (err) {
       console.error("Error fetching sessions:", err);
     }
-  }
+  }, [token, numericGroupId]);
 
   // Load current availability requests from backend
-  async function loadAvailabilityRequests() {
+  const loadAvailabilityRequests = useCallback(async () => {
     if (!token || isNaN(numericGroupId)) return;
     try {
       const backendRequests = await fetchCurrentAvailabilityRequestsByGroupId(token, numericGroupId);
-      // Map the backend availability request to our local Session type.
       const mapped: Session[] = backendRequests.map((req) => ({
         id: req.id,
-        name: req.title, // Assuming API returns a "title"
+        name: req.title,
         date: new Date(req.availabilityPeriodStart),
         earliestTime: formatTime(new Date(req.availabilityPeriodStart)),
         latestTime: formatTime(new Date(req.availabilityPeriodEnd)),
@@ -113,15 +108,15 @@ export default function SchedulingUI() {
     } catch (err) {
       console.error("Error fetching availability requests:", err);
     }
-  }
-
-  useEffect(() => {
-    loadSessions();
   }, [token, numericGroupId]);
 
   useEffect(() => {
-    loadAvailabilityRequests();
-  }, [token, numericGroupId]);
+    void loadSessions();
+  }, [loadSessions]);
+
+  useEffect(() => {
+    void loadAvailabilityRequests();
+  }, [loadAvailabilityRequests]);
 
   /**
    * Utility to calculate duration minutes from start/end times on the same date.
@@ -260,9 +255,9 @@ export default function SchedulingUI() {
       setOpenAvailability(false);
 
       // Navigate AFTER successful creation
-      navigate(`/study-groups/${groupId}/availability`);
+      void navigate(`/study-groups/${groupId}/availability`);
     } catch (error) {
-      console.error("Error creating availability request:", error);
+      void console.error("Error creating availability request:", error);
     }
   };
   const handleDeleteAvailabilityRequest = async (id: number) => {
@@ -371,7 +366,10 @@ export default function SchedulingUI() {
                   <IconButton onClick={() => handleEditSession(sessions.findIndex(s => s.id === session.id))} sx={{ color: "primary.main" }}>
                     <EditIcon />
                   </IconButton>
-                  <IconButton onClick={() => handleDeleteSession(sessions.findIndex(s => s.id === session.id))} sx={{ color: "error.main" }}>
+                  <IconButton
+                    onClick={() => void handleDeleteSession(sessions.findIndex(s => s.id === session.id))}
+                    sx={{ color: "error.main" }}
+                  >
                     <DeleteIcon />
                   </IconButton>
                 </Box>
@@ -416,7 +414,7 @@ export default function SchedulingUI() {
                 />
                 <Box sx={{ display: "flex", gap: 1 }}>
                   <IconButton
-                    onClick={() => handleDeleteAvailabilityRequest(req.id)}
+                    onClick={() => void handleDeleteAvailabilityRequest(req.id)}
                     sx={{ color: "error.main" }}
                   >
                     <DeleteIcon />
@@ -495,7 +493,7 @@ export default function SchedulingUI() {
               variant="contained"
               color="primary"
               fullWidth
-              onClick={handleAvailabilityRequest}
+              onClick={() => void handleAvailabilityRequest()}
               disabled={!availabilityName || !availabilityDate}
               sx={{ mt: 3, py: 1.5, fontSize: "1rem" }}
             >
@@ -572,7 +570,7 @@ export default function SchedulingUI() {
               variant="contained"
               color="primary"
               fullWidth
-              onClick={handleCreateStudySession}
+              onClick={() => void handleCreateStudySession}
               disabled={!sessionTitle || !sessionDate}
               sx={{ mt: 3, py: 1.5, fontSize: "1rem" }}
             >
@@ -649,7 +647,7 @@ export default function SchedulingUI() {
               variant="contained"
               color="primary"
               fullWidth
-              onClick={handleUpdateStudySession}
+              onClick={() => void handleUpdateStudySession}
               disabled={!editSessionTitle || !editSessionDate}
               sx={{ mt: 3, py: 1.5, fontSize: "1rem" }}
             >

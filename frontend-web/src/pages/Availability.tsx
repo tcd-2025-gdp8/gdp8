@@ -24,7 +24,7 @@ export default function AvailabilitySelection() {
   const [groupMembers, setGroupMembers] = useState<{ id: string; name: string }[]>([]);
   const memberNames = groupMembers.map(member => member.name);
 
-  const currentUserName = user?.displayName || user?.email || "Unknown";
+  const currentUserName = user?.displayName ?? user?.email ?? "Unknown";
 
   const [availabilityRequestId, setAvailabilityRequestId] = useState<number | null>(null);
   useEffect(() => {
@@ -40,7 +40,7 @@ export default function AvailabilitySelection() {
     const stored = localStorage.getItem("userAvailability");
     if (stored) {
       try {
-        const parsed = JSON.parse(stored);
+        const parsed = JSON.parse(stored) as Record<string, string[]>;
         const result: Record<string, Set<string>> = {};
         for (const key in parsed) {
           if (Object.prototype.hasOwnProperty.call(parsed, key)) {
@@ -240,7 +240,7 @@ export default function AvailabilitySelection() {
         <p>
           Click and drag across the grid to mark when you are available. Click again to unmark.
           Your selections are automatically saved locally. You can sync them to the backend by
-          clicking "Save Availability to Server."
+          clicking &quot;Save Availability to Server.&quot;
         </p>
       </div>
 
@@ -404,7 +404,7 @@ export default function AvailabilitySelection() {
               borderBottom: "1px solid #ddd",
               fontWeight: "bold"
             }}>
-              Others' Availability
+              Others&apos; Availability
             </div>
             <div style={{ padding: "12px" }}>
               {memberNames.filter(name => name !== currentUserName).map(name => {
@@ -447,10 +447,10 @@ export default function AvailabilitySelection() {
         <Button variant="contained" color="primary" onClick={() => setOpen(true)}>
           View Summary
         </Button>
-        <Button variant="contained" color="success" onClick={saveAvailabilityToBackend}>
+        <Button variant="contained" color="success" onClick={() => void saveAvailabilityToBackend()}>
           Save Availability to Server
         </Button>
-        <Button variant="outlined" color="secondary" onClick={() => navigate(`/study-groups/${groupId}/schedule`)}>
+        <Button variant="outlined" color="secondary" onClick={() => void navigate(`/study-groups/${groupId}/schedule`)}>
           Back to Schedule
         </Button>
       </div>
