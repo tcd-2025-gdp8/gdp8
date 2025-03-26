@@ -5,6 +5,11 @@ import {
   Grid,
   CircularProgress,
   Alert,
+  Paper,
+  List,
+  ListItem,
+  ListItemText,
+  Box,
 } from "@mui/material";
 import { fetchUserStudyGroups, StudyGroup } from "../api/studyGroups";
 import { getUserModules } from "../api/users";
@@ -33,7 +38,7 @@ export default function LandingPage() {
       ]);
 
       const userStudySessions = await fetchAllUserStudySessions(token, userStudyGroups);
-      setStudySessions(userStudySessions); // Set the fetched study sessions
+      setStudySessions(userStudySessions);
       setStudyGroups(userStudyGroups);
       setModulesList(userModules || []);
     } catch (err) {
@@ -91,16 +96,39 @@ export default function LandingPage() {
         <Typography>No upcoming study sessions found.</Typography>
       )}
 
-      <Grid container spacing={2}>
-        {studySessions.map((session) => (
-          <Grid item xs={12} sm={6} md={4} key={session.id}>
-            <Typography variant="h6">{session.name}</Typography>
-            <Typography variant="body2">Date: {session.date?.toLocaleString()}</Typography>
-            <Typography variant="body2">Start: {session.earliestTime}</Typography>
-            <Typography variant="body2">End: {session.latestTime}</Typography>
-          </Grid>
-        ))}
-      </Grid>
+      <Paper
+        sx={{
+          p: 2,
+          bgcolor: "#3b5998",
+          borderRadius: "8px",
+          maxHeight: "220px",
+          overflowY: "auto",
+          width: "100%",
+          maxWidth: "1200px",
+          marginTop: "20px",
+        }}
+      >
+        <List>
+          {studySessions.map((session) => (
+            <ListItem
+              key={session.id}
+              sx={{
+                backgroundColor: "white",
+                borderRadius: "4px",
+                mb: 1,
+                padding: 1.5,
+                "&:hover": { backgroundColor: "#f5f5f5" },
+              }}
+            >
+              <ListItemText
+                primary={`${session.name}, ${
+                  session.date ? session.date.toLocaleDateString() : ""
+                } ${session.earliestTime} - ${session.latestTime}`}
+              />
+            </ListItem>
+          ))}
+        </List>
+      </Paper>
     </Container>
   );
 }
