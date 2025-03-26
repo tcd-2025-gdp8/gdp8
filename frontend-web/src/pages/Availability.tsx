@@ -9,7 +9,6 @@ import {
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
   fetchCurrentAvailabilityRequestsByGroupId,
-  createAvailabilityRequest,
   upsertAvailabilityEntries,
 } from "../api/studySessions";
 import { fetchStudyGroupById } from "../api/studyGroups";
@@ -72,70 +71,62 @@ export default function AvailabilitySelection() {
   // Check for query parameters for start and end.
   // If found, use these dates; otherwise, fall back to fetching/creating a request.
   useEffect(() => {
+    if (!token || isNaN(numericGroupId)) return;
+
     const queryParams = new URLSearchParams(location.search);
+    const reqIdParam = queryParams.get("reqId");
     const startParam = queryParams.get("start");
     const endParam = queryParams.get("end");
 
+    // 1) If we have a reqId in the query string, fetch *that* request from the backend
+    if (reqIdParam) {
+      const wantedId = Number(reqIdParam);
+      if (!isNaN(wantedId)) {
+        fetchCurrentAvailabilityRequestsByGroupId(token, numericGroupId)
+          .then((requests) => {
+            const found = requests.find((r) => r.id === wantedId);
+            if (found) {
+              setAvailabilityRequestId(found.id);
+              setRequestStartDate(new Date(found.availabilityPeriodStart));
+              setRequestEndDate(new Date(found.availabilityPeriodEnd));
+            } else {
+              console.warn("No availability request found for reqId=", wantedId);
+            }
+          })
+          .catch((err) => console.error("Error fetching requests:", err));
+        return; // Stop here
+      }
+    }
+
+    // 2) Otherwise, if we have start/end in the URL, use them:
     if (startParam && endParam) {
       const startDate = new Date(startParam);
       const endDate = new Date(endParam);
       setRequestStartDate(startDate);
       setRequestEndDate(endDate);
 
-      // Now fetch the current availability requests and try to find the one matching the start/end times
-      if (token && !isNaN(numericGroupId)) {
-        fetchCurrentAvailabilityRequestsByGroupId(token, numericGroupId)
-          .then((requests) => {
-            const matchingRequest = requests.find((r) => {
-              const rStart = new Date(r.availabilityPeriodStart).toISOString();
-              const rEnd = new Date(r.availabilityPeriodEnd).toISOString();
-              return rStart === startDate.toISOString() && rEnd === endDate.toISOString();
-            });
-            if (matchingRequest) {
-              setAvailabilityRequestId(matchingRequest.id);
-            } else {
-              // Optionally, if no matching request is found, create one here or handle the situation accordingly
-              console.warn("No matching availability request found.");
-            }
-          })
-          .catch((err) => console.error("Error fetching availability requests:", err));
-      }
-    } else {
-      // Fallback to your original logic if query params are not provided:
-      if (!token || isNaN(numericGroupId)) {
-        console.error("Invalid group ID or missing token");
-        return;
-      }
       fetchCurrentAvailabilityRequestsByGroupId(token, numericGroupId)
         .then((requests) => {
-          if (requests.length > 0) {
-            setAvailabilityRequestId(requests[0].id);
-            setRequestStartDate(new Date(requests[0].availabilityPeriodStart));
-            setRequestEndDate(new Date(requests[0].availabilityPeriodEnd));
-          } else {
-            const now = new Date();
-            const oneWeekLater = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-            const newRequest = {
-              title: "Availability Poll",
-              availabilityPeriodStart: now,
-              availabilityPeriodEnd: oneWeekLater,
-            };
-            return createAvailabilityRequest(token, numericGroupId, newRequest)
-              .then(() => fetchCurrentAvailabilityRequestsByGroupId(token, numericGroupId));
-          }
+          console.log("Fetched requests:", requests);
         })
-        .then((updatedRequests) => {
-          if (updatedRequests && updatedRequests.length > 0) {
-            setAvailabilityRequestId(updatedRequests[0].id);
-            setRequestStartDate(new Date(updatedRequests[0].availabilityPeriodStart));
-            setRequestEndDate(new Date(updatedRequests[0].availabilityPeriodEnd));
-          }
-        })
-        .catch((err) => {
-          console.error("Error fetching or creating availability request:", err);
-        });
+        .catch((err) => console.error("Error:", err));
+      return;
     }
+
+    // 3) Otherwise, fallback to "fetch the first request or create one"
+    fetchCurrentAvailabilityRequestsByGroupId(token, numericGroupId)
+      .then((requests) => {
+        if (requests.length > 0) {
+          setAvailabilityRequestId(requests[0].id);
+          setRequestStartDate(new Date(requests[0].availabilityPeriodStart));
+          setRequestEndDate(new Date(requests[0].availabilityPeriodEnd));
+        } else {
+          // Possibly create a new one if you want
+        }
+      })
+      .catch((err) => console.error("Error:", err));
   }, [token, numericGroupId, location.search]);
+
 
   // Persist local availability changes to localStorage.
   const [availability, setAvailability] = useState<Record<string, Set<string>>>(() => {

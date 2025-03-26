@@ -234,12 +234,6 @@ export default function SchedulingUI() {
       const availabilityPeriodEnd = new Date(availabilityDate.getTime());
       availabilityPeriodEnd.setHours(endHour, endMin, 0, 0);
 
-      const availabilityRequestDetails = {
-        title: availabilityName,
-        availabilityPeriodStart,
-        availabilityPeriodEnd,
-      };
-
       // Single API call to create availability request
       await createAvailabilityRequest(token, numericGroupId, {
         title: availabilityName,
@@ -260,7 +254,7 @@ export default function SchedulingUI() {
 
 
       // Navigate AFTER successful creation
-      navigate(
+      void navigate(
         `/study-groups/${groupId}/availability?start=${availabilityPeriodStart.toISOString()}&end=${availabilityPeriodEnd.toISOString()}`
       );
     } catch (error) {
