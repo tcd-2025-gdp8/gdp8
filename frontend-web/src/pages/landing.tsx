@@ -9,7 +9,6 @@ import {
   List,
   ListItem,
   ListItemText,
-  Box,
 } from "@mui/material";
 import { fetchUserStudyGroups, StudyGroup } from "../api/studyGroups";
 import { getUserModules } from "../api/users";
@@ -90,45 +89,48 @@ export default function LandingPage() {
       <Typography variant="h5" style={{ marginBottom: "1.5rem", marginTop: "3rem" }}>
         Upcoming Study Sessions
       </Typography>
+
       {loading && <CircularProgress />}
       {error && <Alert severity="error">{error}</Alert>}
-      {!loading && studySessions.length === 0 && (
-        <Typography>No upcoming study sessions found.</Typography>
-      )}
 
-      <Paper
-        sx={{
-          p: 2,
-          bgcolor: "#3b5998",
-          borderRadius: "8px",
-          maxHeight: "220px",
-          overflowY: "auto",
-          width: "100%",
-          maxWidth: "1200px",
-          marginTop: "20px",
-        }}
-      >
-        <List>
-          {studySessions.map((session) => (
-            <ListItem
-              key={session.id}
-              sx={{
-                backgroundColor: "white",
-                borderRadius: "4px",
-                mb: 1,
-                padding: 1.5,
-                "&:hover": { backgroundColor: "#f5f5f5" },
-              }}
-            >
-              <ListItemText
-                primary={`${session.name}, ${
-                  session.date ? session.date.toLocaleDateString() : ""
-                } ${session.earliestTime} - ${session.latestTime}`}
-              />
-            </ListItem>
-          ))}
-        </List>
-      </Paper>
+      {/* Only show Paper if there are study sessions */}
+      {!loading && studySessions.length > 0 ? (
+        <Paper
+          sx={{
+            p: 2,
+            bgcolor: "#3b5998",
+            borderRadius: "8px",
+            maxHeight: "220px",
+            overflowY: "auto",
+            width: "100%",
+            maxWidth: "1200px",
+            marginTop: "20px",
+          }}
+        >
+          <List>
+            {studySessions.map((session) => (
+              <ListItem
+                key={session.id}
+                sx={{
+                  backgroundColor: "white",
+                  borderRadius: "4px",
+                  mb: 1,
+                  padding: 1.5,
+                  "&:hover": { backgroundColor: "#f5f5f5" },
+                }}
+              >
+                <ListItemText
+                  primary={`${session.name}, ${
+                    session.date ? session.date.toLocaleDateString() : ""
+                  } ${session.earliestTime} - ${session.latestTime}`}
+                />
+              </ListItem>
+            ))}
+          </List>
+        </Paper>
+      ) : (
+        !loading && <Typography>No upcoming study sessions found.</Typography>
+      )}
     </Container>
   );
 }
