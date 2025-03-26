@@ -70,3 +70,15 @@ export async function deleteStudyGroup(token: string | null, studyGroupId: numbe
         method: "DELETE",
     });
 }
+
+export async function fetchUserStudyGroups(token: string | null, userId: string | null): Promise<StudyGroup[]> {
+    if (!token || !userId) return [];
+
+    try {
+        const allGroups = await fetchStudyGroups(token);
+        return allGroups.filter(group => group.members.some(member => member.id === userId));
+    } catch (error) {
+        console.error("Error fetching user study groups:", error);
+        throw error;
+    }
+}
