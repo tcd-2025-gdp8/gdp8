@@ -6,7 +6,7 @@ import {
   CircularProgress,
   Alert,
 } from "@mui/material";
-import { StudyGroup, fetchStudyGroups } from "../api/studyGroups";
+import { fetchUserStudyGroups, StudyGroup } from "../api/studyGroups"; // Import the new function
 import { getUserModules } from "../api/users";
 import { useAuth } from "../auth/useAuth";
 import StudyGroupCard from "../components/StudyGroupCard";
@@ -25,15 +25,10 @@ export default function LandingPage() {
     if (!token || !currentUserId) return;
 
     try {
-      const [allGroups, userModules] = await Promise.all([
-        fetchStudyGroups(token),
+      const [userStudyGroups, userModules] = await Promise.all([
+        fetchUserStudyGroups(token, currentUserId), // Use the new function
         getUserModules(token, currentUserId),
       ]);
-
-      // Filter study groups to only include those the user is a member of
-      const userStudyGroups = allGroups.filter((group) =>
-        group.members?.some((member) => member.id === currentUserId)
-      );
 
       setStudyGroups(userStudyGroups);
       setModulesList(userModules || []);
