@@ -4,7 +4,6 @@ import { Card, CardContent, TextField, Button, AppBar, Toolbar, Typography, Box 
 import { useAuth } from "../auth/useAuth";
 import { fetchApiToJson } from "../utils/apiFetch";
 import { fetchPastChatMessagesByGroupId } from "../api/chat";
-//import ChatbotChat from "../components/ChatbotChat";
 
 interface Message {
     text: string;

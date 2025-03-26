@@ -25,7 +25,8 @@ import {
   deleteStudySession,
   updateStudySession,
   createAvailabilityRequest,
-  fetchCurrentAvailabilityRequestsByGroupId
+  fetchCurrentAvailabilityRequestsByGroupId,
+  deleteAvailabilityRequest
 } from "../api/studySessions"; // Still used for "Create Study Session"
 import { useAuth } from "../auth/useAuth";
 import EditIcon from "@mui/icons-material/Edit";
@@ -264,6 +265,15 @@ export default function SchedulingUI() {
       console.error("Error creating availability request:", error);
     }
   };
+  const handleDeleteAvailabilityRequest = async (id: number) => {
+    if (!token) return;
+    try {
+      await deleteAvailabilityRequest(token, id);
+      setAvailabilityRequests((prev) => prev.filter((req) => req.id !== id));
+    } catch (error) {
+      console.error("Error deleting availability request:", error);
+    }
+  };
   /**
    * 2. Handler for the "Create Study Session" form
    *    (uses createStudySession API).
@@ -401,8 +411,17 @@ export default function SchedulingUI() {
                 }}
               >
                 <ListItemText
+                  //primary={`${session.name}, ${session.date ? session.date.toLocaleDateString() : ""} ${session.earliestTime} - ${session.latestTime}`}
                   primary={`${req.name}, ${req.date ? req.date.toLocaleDateString() : ""} ${req.earliestTime} - ${req.latestTime}`}
                 />
+                <Box sx={{ display: "flex", gap: 1 }}>
+                  <IconButton
+                    onClick={() => handleDeleteAvailabilityRequest(req.id)}
+                    sx={{ color: "error.main" }}
+                  >
+                    <DeleteIcon />
+                  </IconButton>
+                </Box>
               </ListItem>
             ))}
           </List>
