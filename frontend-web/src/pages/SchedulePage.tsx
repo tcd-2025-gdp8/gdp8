@@ -26,7 +26,8 @@ import {
   updateStudySession,
   createAvailabilityRequest,
   fetchCurrentAvailabilityRequestsByGroupId,
-  deleteAvailabilityRequest
+  deleteAvailabilityRequest,
+  StudySession
 } from "../api/studySessions"; // Still used for "Create Study Session"
 import { useAuth } from "../auth/useAuth";
 import EditIcon from "@mui/icons-material/Edit";
@@ -65,9 +66,11 @@ export default function SchedulingUI() {
   const [editSessionDate, setEditSessionDate] = useState<Date | null>(null);
   const [editStartTime, setEditStartTime] = useState("09:00");
   const [editEndTime, setEditEndTime] = useState("17:00");
+  const [backendStudySessions, setBackendStudySessions] = useState<StudySession[] | null>(null);
 
   const navigate = useNavigate();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
+    const currentUserId = user?.uid;
   const { groupId } = useParams();
   const numericGroupId = groupId ? Number(groupId) : NaN;
 
@@ -79,6 +82,7 @@ export default function SchedulingUI() {
     if (!token || isNaN(numericGroupId)) return;
     try {
       const backendSessions = await fetchStudySessions(token, numericGroupId);
+      setBackendStudySessions(backendSessions);
       const mapped: Session[] = backendSessions.map((bs) => ({
         id: bs.id,
         name: bs.title,
@@ -348,35 +352,34 @@ export default function SchedulingUI() {
             maxWidth: "1200px",
           }}
         >
-          <List>
-            {sessions.map((session) => (
-              <ListItem
-                key={session.id}
-                sx={{
-                  backgroundColor: "white",
-                  borderRadius: "4px",
-                  mb: 1,
-                  padding: 1.5,
-                  "&:hover": { backgroundColor: "#f5f5f5" },
-                }}
-              >
-                <ListItemText
-                  primary={`${session.name}, ${session.date ? session.date.toLocaleDateString() : ""} ${session.earliestTime} - ${session.latestTime}`}
-                />
-                <Box sx={{ display: "flex", gap: 1 }}>
-                  <IconButton onClick={() => handleEditSession(sessions.findIndex(s => s.id === session.id))} sx={{ color: "primary.main" }}>
+        <List>
+        {sessions.map((session, index) => {
+          // Find the corresponding session in backendStudySessions
+          const backendSession = backendStudySessions?.find(bs => bs.id === session.id);
+          const isCreator = backendSession?.creatorId === currentUserId;
+
+          return (
+            <ListItem key={session.id} component={Paper} sx={{ marginBottom: 1, padding: 1 }}>
+              <ListItemText
+                primary={session.name}
+                secondary={`${session.date?.toLocaleDateString()} | ${session.earliestTime} - ${session.latestTime}`}
+              />
+              
+              {/* Only show buttons if the current user is the creator */}
+              {isCreator && (
+                <>
+                  <IconButton onClick={() => handleEditSession(index)}>
                     <EditIcon />
                   </IconButton>
-                  <IconButton
-                    onClick={() => void handleDeleteSession(sessions.findIndex(s => s.id === session.id))}
-                    sx={{ color: "error.main" }}
-                  >
+                  <IconButton onClick={() => handleDeleteSession(index)}>
                     <DeleteIcon />
                   </IconButton>
-                </Box>
-              </ListItem>
-            ))}
-          </List>
+                </>
+              )}
+            </ListItem>
+          );
+        })}
+      </List>
         </Paper>
 
         {/* Title for Availability Requests */}
