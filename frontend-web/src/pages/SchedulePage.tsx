@@ -570,7 +570,7 @@ export default function SchedulingUI() {
               variant="contained"
               color="primary"
               fullWidth
-              onClick={() => void handleCreateStudySession}
+              onClick={() => void handleCreateStudySession()}
               disabled={!sessionTitle || !sessionDate}
               sx={{ mt: 3, py: 1.5, fontSize: "1rem" }}
             >
