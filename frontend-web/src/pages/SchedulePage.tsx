@@ -368,10 +368,10 @@ export default function SchedulingUI() {
               {/* Only show buttons if the current user is the creator */}
               {isCreator && (
                 <>
-                  <IconButton onClick={() => handleEditSession(index)}>
+                  <IconButton onClick={() => handleEditSession(index)} sx={{ color: "primary.main" }}>
                     <EditIcon />
                   </IconButton>
-                  <IconButton onClick={() => handleDeleteSession(index)}>
+                  <IconButton onClick={() => handleDeleteSession(index)} sx={{ color: "error.main" }}>
                     <DeleteIcon />
                   </IconButton>
                 </>
