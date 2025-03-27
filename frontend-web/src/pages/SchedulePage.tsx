@@ -234,14 +234,12 @@ export default function SchedulingUI() {
       const availabilityPeriodEnd = new Date(availabilityDate.getTime());
       availabilityPeriodEnd.setHours(endHour, endMin, 0, 0);
 
-      const availabilityRequestDetails = {
+      // Single API call to create availability request
+      await createAvailabilityRequest(token, numericGroupId, {
         title: availabilityName,
         availabilityPeriodStart,
-        availabilityPeriodEnd,
-      };
-
-      // Single API call to create availability request
-      await createAvailabilityRequest(token, numericGroupId, availabilityRequestDetails);
+        availabilityPeriodEnd
+      });
 
       // Refresh availability requests and clear form
       await loadAvailabilityRequests();
@@ -254,8 +252,11 @@ export default function SchedulingUI() {
       setLatestTime("17:00");
       setOpenAvailability(false);
 
+
       // Navigate AFTER successful creation
-      void navigate(`/study-groups/${groupId}/availability`);
+      void navigate(
+        `/study-groups/${groupId}/availability?start=${availabilityPeriodStart.toISOString()}&end=${availabilityPeriodEnd.toISOString()}`
+      );
     } catch (error) {
       void console.error("Error creating availability request:", error);
     }
@@ -400,6 +401,10 @@ export default function SchedulingUI() {
             {availabilityRequests.map((req) => (
               <ListItem
                 key={req.id}
+                onClick={() =>
+                  // Navigate to the Availability page with reqId in the query string
+                  void navigate(`/study-groups/${groupId}/availability?reqId=${req.id}`)
+                }
                 sx={{
                   backgroundColor: "white",
                   borderRadius: "4px",
@@ -414,7 +419,10 @@ export default function SchedulingUI() {
                 />
                 <Box sx={{ display: "flex", gap: 1 }}>
                   <IconButton
-                    onClick={() => void handleDeleteAvailabilityRequest(req.id)}
+                    onClick={(e) => {
+                      e.stopPropagation(); // Prevent triggering navigation when deleting
+                      void handleDeleteAvailabilityRequest(req.id);
+                    }}
                     sx={{ color: "error.main" }}
                   >
                     <DeleteIcon />
@@ -647,7 +655,7 @@ export default function SchedulingUI() {
               variant="contained"
               color="primary"
               fullWidth
-              onClick={() => void handleUpdateStudySession}
+              onClick={() => void handleUpdateStudySession()}
               disabled={!editSessionTitle || !editSessionDate}
               sx={{ mt: 3, py: 1.5, fontSize: "1rem" }}
             >
