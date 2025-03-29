@@ -1,9 +1,13 @@
 import { makeRequest } from '../utils/apiFetch';
 
-type ChatResponse = {
+interface ChatResponse {
     success: boolean;
     message: string;
-};
+}
+
+interface ApiResponse {
+    message?: string;
+}
 
 export async function sendChatMessage({
     token,
@@ -31,7 +35,8 @@ export async function sendChatMessage({
             body,
         });
 
-        const data = await res.json();
+        const data = (await res.json()) as ApiResponse;
+
         return {
             success: true,
             message: data.message ?? 'No message returned',
