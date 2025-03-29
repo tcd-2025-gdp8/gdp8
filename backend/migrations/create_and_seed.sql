@@ -208,3 +208,14 @@ CREATE TABLE IF NOT EXISTS files (
     FOREIGN KEY (study_group_id) REFERENCES study_groups(id) ON DELETE CASCADE,
     FOREIGN KEY (file_owner_id) REFERENCES users(id) ON DELETE RESTRICT
 );
+
+CREATE TABLE IF NOT EXISTS chatbot_memory (
+    study_group_id INT NOT NULL,
+    context_src VARCHAR(255) NOT NULL,
+    context_data LONGTEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (study_group_id, context_src),
+    FOREIGN KEY (study_group_id) REFERENCES study_groups(id) ON DELETE CASCADE,
+    FOREIGN KEY (context_src, study_group_id) REFERENCES files(name, study_group_id) ON DELETE CASCADE
+);

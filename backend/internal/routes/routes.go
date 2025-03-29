@@ -20,6 +20,7 @@ func RegisterAllRoutes(firebaseAuth *auth.Client, txManager persistence.Transact
 	studySessionAvailabilityRepo := repositories.SQLStudySessionAvailabilityRepository{}
 	fileRepo := repositories.SQLFileRepository{}
 	chatRepo := repositories.SQLChatMessagesRepository{}
+	chatbotRepo := repositories.SQLChatMessagesRepository{}
 
 	userService := services.NewUserService(txManager, &userRepo)
 	moduleService := services.NewModuleService(txManager, &moduleRepo)
@@ -30,6 +31,14 @@ func RegisterAllRoutes(firebaseAuth *auth.Client, txManager persistence.Transact
 	fileService := services.NewFileService(txManager, &fileRepo, studyGroupService)
 	chatService := services.NewChatService(txManager, &chatRepo, studyGroupService)
 
+	chatbotService := services.NewChatBotService(
+		txManager,
+		studyGroupService,
+		fileService,
+		chatService,
+		&chatbotRepo,
+	)
+
 	RegisterStudyGroupRoutes(firebaseAuth, studyGroupService)
 	RegisterStudySessionRoutes(firebaseAuth, studySessionService)
 	RegisterModuleRoutes(firebaseAuth, moduleService)
@@ -37,6 +46,7 @@ func RegisterAllRoutes(firebaseAuth *auth.Client, txManager persistence.Transact
 	RegisterUserRoutes(firebaseAuth, userService)
 	RegisterChatRoutes(firebaseAuth, chatService)
 	RegisterFileRoutes(firebaseAuth, studyGroupService, fileService)
+	RegisterChatBotRoutes(firebaseAuth, studyGroupService, fileService, chatService, chatbotService)
 
 	authHandler := handlers.NewAuthHandler(firebaseAuth)
 	http.HandleFunc("/api/auth/verify", authHandler.VerifyHandler)
