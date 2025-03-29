@@ -215,7 +215,7 @@ CREATE TABLE IF NOT EXISTS chatbot_memory (
     context_data LONGTEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
-    PRIMARY KEY (study_group_id),
+    PRIMARY KEY (study_group_id, context_src),
     FOREIGN KEY (study_group_id) REFERENCES study_groups(id) ON DELETE CASCADE,
     FOREIGN KEY (context_src, study_group_id) REFERENCES files(name, study_group_id) ON DELETE CASCADE
 );
