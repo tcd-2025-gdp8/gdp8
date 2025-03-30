@@ -20,7 +20,7 @@ func RegisterAllRoutes(firebaseAuth *auth.Client, txManager persistence.Transact
 	studySessionAvailabilityRepo := repositories.SQLStudySessionAvailabilityRepository{}
 	fileRepo := repositories.SQLFileRepository{}
 	chatRepo := repositories.SQLChatMessagesRepository{}
-	chatbotRepo := repositories.SQLChatMessagesRepository{}
+	chatbotRepo := repositories.SQLChatBotMemoryRepo{}
 
 	userService := services.NewUserService(txManager, &userRepo)
 	moduleService := services.NewModuleService(txManager, &moduleRepo)
@@ -45,7 +45,7 @@ func RegisterAllRoutes(firebaseAuth *auth.Client, txManager persistence.Transact
 	RegisterNotificationRoutes(firebaseAuth, notificationService)
 	RegisterUserRoutes(firebaseAuth, userService)
 	RegisterChatRoutes(firebaseAuth, chatService)
-	RegisterFileRoutes(firebaseAuth, studyGroupService, fileService)
+	RegisterFileRoutes(firebaseAuth, studyGroupService, fileService, chatbotService)
 	RegisterChatBotRoutes(firebaseAuth, studyGroupService, fileService, chatService, chatbotService)
 
 	authHandler := handlers.NewAuthHandler(firebaseAuth)

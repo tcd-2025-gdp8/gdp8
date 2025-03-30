@@ -12,8 +12,9 @@ import (
 
 func RegisterFileRoutes(firebaseAuth *auth.Client,
 	studyGroupService services.StudyGroupService,
-	fileService services.FileService) {
-	handler := handlers.NewFileHandler(studyGroupService, fileService)
+	fileService services.FileService,
+	chatbotService services.ChatBotService) {
+	handler := handlers.NewFileHandler(studyGroupService, fileService, chatbotService)
 	http.HandleFunc("GET /api/files/{chatID}", middleware.WithFirebaseAuth(firebaseAuth, handler.GetFiles))
 	http.HandleFunc("POST /api/file/delete", middleware.WithFirebaseAuth(firebaseAuth, handler.DeleteFile))
 	http.HandleFunc("POST /api/file", middleware.WithFirebaseAuth(firebaseAuth, handler.UploadFile))

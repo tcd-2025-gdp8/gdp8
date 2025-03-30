@@ -2,8 +2,10 @@ package handlers
 
 import (
 	"net/http"
+	"strconv"
 
 	"gdp8-backend/internal/chatbot"
+	"gdp8-backend/internal/models"
 	"gdp8-backend/internal/services"
 )
 
@@ -34,29 +36,27 @@ func NewChatBotHandler(
 func (h ChatBotHandler) Prompt(w http.ResponseWriter, r *http.Request) {
 	userMsg := r.FormValue("text")
 	chatID := r.FormValue("chatID")
-	_ = chatID
-	// needMemory := r.FormValue("memory")
-
+	memType := r.FormValue("memory")
+	groupID, convErr := strconv.Atoi(chatID)
+	if convErr != nil {
+		http.Error(w, "Invalid chatID", http.StatusBadRequest)
+		return
+	}
 	var resp string
 	var err error
-
-	// if needMemory == "true" {
-	// TODO (SCRUM 153):
-	// - query for all the context_data in the group
-
-	// TODO: query db and add the memory in the prompt
-	resp, err = h.client.Prompt(r.Context(), userMsg)
-	// } else {
-	// resp, err = h.client.Prompt(r.Context(), userMsg)
-	// }
-
+	if memType == "file" {
+		memory, err := h.chatbotService.GetMemory(models.StudyGroupID(groupID))
+		if err != nil {
+			http.Error(w, "Failed to retrieve memory", http.StatusInternalServerError)
+			return
+		}
+		resp, err = h.client.PromptWithContext(r.Context(), userMsg, memory)
+	} else {
+		resp, err = h.client.Prompt(r.Context(), userMsg)
+	}
 	if err != nil {
 		http.Error(w, "Couldn't generate the response", http.StatusInternalServerError)
+		return
 	}
-
 	sendJSONResponse(w, map[string]string{"message": resp})
 }
-
-// func (h ChatBotHandler) isUserAllowed(_ *http.Request) bool {
-// 	return true
-// }

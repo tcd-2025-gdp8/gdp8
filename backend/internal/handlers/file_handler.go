@@ -5,12 +5,14 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 
+	"gdp8-backend/internal/chatbot"
 	"gdp8-backend/internal/models"
 	"gdp8-backend/internal/services"
 )
@@ -25,12 +27,14 @@ type File struct {
 type FileHandler struct {
 	studyGroupService services.StudyGroupService
 	fileService       services.FileService
+	chatbotService    services.ChatBotService
 }
 
-func NewFileHandler(studyGroupService services.StudyGroupService, fileService services.FileService) *FileHandler {
+func NewFileHandler(studyGroupService services.StudyGroupService, fileService services.FileService, chatbotService services.ChatBotService) *FileHandler {
 	return &FileHandler{
 		studyGroupService: studyGroupService,
 		fileService:       fileService,
+		chatbotService:    chatbotService,
 	}
 }
 
@@ -41,35 +45,29 @@ func (h *FileHandler) GetFiles(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	chatID := parts[3]
-
 	files, err := h.getFilesByID(chatID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
-
 	userID, err := getUserID(r)
 	if err != nil {
 		http.Error(w, "Unabe to retrieve userID", http.StatusForbidden)
 		return
 	}
-
 	groupID, err := parseGroupID(chatID)
 	if err != nil {
 		http.Error(w, "Unabe to retrieve groupID", http.StatusForbidden)
 		return
 	}
-
 	if !h.isUserMember(groupID, userID) {
 		http.Error(w, "User not a member of the study group", http.StatusForbidden)
 		return
 	}
-
 	w.Header().Set("Content-Type", "application/zip")
 	w.Header().Set("Content-Disposition", "attachment; filename=\"files.zip\"")
 	zipWriter := zip.NewWriter(w)
 	defer zipWriter.Close()
-
 	for _, file := range files {
 		f, err := zipWriter.Create(file.Name)
 		if err != nil {
@@ -89,38 +87,56 @@ func (h *FileHandler) UploadFile(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error parsing multipart form", http.StatusBadRequest)
 		return
 	}
-
 	file, header, err := r.FormFile("file")
 	if err != nil {
 		http.Error(w, "Missing file", http.StatusBadRequest)
 		return
 	}
 	defer file.Close()
-
 	chatID, userID, err := h.extractFormValues(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
 	if !h.isUserMember(chatID, userID) {
 		http.Error(w, "User not a member of the study group", http.StatusForbidden)
 		return
 	}
-
 	err = h.saveFile(file, header.Filename, chatID)
 	if err != nil {
 		http.Error(w, "Error saving file", http.StatusInternalServerError)
 		return
 	}
-
 	err = h.createFile(header.Filename, chatID, userID)
-
 	if err != nil {
 		http.Error(w, "Error storing the file", http.StatusInternalServerError)
 		return
 	}
-
+	if strings.HasSuffix(strings.ToLower(header.Filename), ".pdf") {
+		filePath := filepath.Join("uploads", fmt.Sprintf("%d", chatID), header.Filename)
+		log.Println("Reading PDF file from:", filePath)
+		content, err := chatbot.ReadPDF(filePath)
+		if err != nil {
+			log.Println("Error reading PDF:", err)
+		} else {
+			log.Println("PDF content length:", len(content))
+			groupID, err := parseGroupID(fmt.Sprintf("%v", chatID))
+			if err != nil {
+				log.Println("Error parsing chatID:", err)
+			} else {
+				log.Println("Storing memory for groupID:", groupID, "filename:", header.Filename)
+				err = h.chatbotService.StoreMemory(groupID, &models.FileContext{
+					Name: header.Filename,
+					Data: content,
+				})
+				if err != nil {
+					log.Println("Error storing memory:", err)
+				} else {
+					log.Println("Memory stored successfully for", header.Filename)
+				}
+			}
+		}
+	}
 	sendJSONResponse(w, map[string]string{"message": "File uploaded successfully"})
 }
 
@@ -132,16 +148,18 @@ func (h *FileHandler) DeleteFile(w http.ResponseWriter, r *http.Request) {
 	}
 	filename := r.FormValue("filename")
 	canDelete := h.hasDeletionRights(filename, chatID, userID)
-
 	if !canDelete {
 		http.Error(w, "Cannot delete the file", http.StatusForbidden)
 		return
 	}
-
 	err = h.deleteFileByName(filename, chatID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-
+		return
+	}
+	groupID, err := parseGroupID(fmt.Sprintf("%v", chatID))
+	if err == nil {
+		_ = h.chatbotService.DeleteMemory(groupID, filename)
 	}
 	sendJSONResponse(w, map[string]string{"message": fmt.Sprintf("the file '%s' has been deleted", filename)})
 }
@@ -152,12 +170,10 @@ func (h *FileHandler) extractFormValues(r *http.Request) (models.StudyGroupID, m
 	if err != nil {
 		return models.StudyGroupID(0), models.UserID(""), errors.New("Invalid chatID")
 	}
-
 	userID, err := getUserID(r)
 	if err != nil {
 		return models.StudyGroupID(0), models.UserID(""), errors.New("Invalid user")
 	}
-
 	return groupID, userID, nil
 }
 
@@ -174,19 +190,16 @@ func (h *FileHandler) saveFile(file io.Reader, filename string, chatID models.St
 	if filename == "." || filename == "" {
 		return errors.New("invalid filename")
 	}
-
 	dirPath := fmt.Sprintf("uploads/%d", chatID)
 	if err := os.MkdirAll(dirPath, os.ModePerm); err != nil {
 		return err
 	}
-
 	dstPath := filepath.Join(dirPath, filename)
 	dst, err := os.Create(dstPath)
 	if err != nil {
 		return err
 	}
 	defer dst.Close()
-
 	_, err = io.Copy(dst, file)
 	return err
 }
@@ -199,17 +212,16 @@ func isUserMemberOfStudyGroup(userID models.UserID, studyGroup *models.StudyGrou
 	}
 	return false
 }
+
 func (h *FileHandler) getFilesByID(chatID string) ([]File, error) {
 	dirPath := filepath.Join("uploads", chatID)
 	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
 		return nil, fmt.Errorf("directory %s does not exist", dirPath)
 	}
-
 	entries, err := os.ReadDir(dirPath)
 	if err != nil {
 		return nil, err
 	}
-
 	var files []File
 	for _, entry := range entries {
 		if !entry.IsDir() {
@@ -220,7 +232,6 @@ func (h *FileHandler) getFilesByID(chatID string) ([]File, error) {
 			files = append(files, File{Name: entry.Name(), Content: content})
 		}
 	}
-
 	return files, nil
 }
 
@@ -243,7 +254,6 @@ func (h *FileHandler) createFile(filename string, groupID models.StudyGroupID, u
 		UserID:  userID,
 		GroupID: groupID,
 	}
-
 	_, err := h.fileService.CreateFile(newFile)
 	return err
 }
