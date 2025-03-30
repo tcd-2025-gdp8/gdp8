@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -30,7 +29,9 @@ type FileHandler struct {
 	chatbotService    services.ChatBotService
 }
 
-func NewFileHandler(studyGroupService services.StudyGroupService, fileService services.FileService, chatbotService services.ChatBotService) *FileHandler {
+func NewFileHandler(studyGroupService services.StudyGroupService,
+	fileService services.FileService,
+	chatbotService services.ChatBotService) *FileHandler {
 	return &FileHandler{
 		studyGroupService: studyGroupService,
 		fileService:       fileService,
@@ -83,7 +84,7 @@ func (h *FileHandler) GetFiles(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *FileHandler) UploadFile(w http.ResponseWriter, r *http.Request) {
-	if err := r.ParseMultipartForm(fileSizeLimitMb << 20); err != nil {
+	if err := r.ParseMultipartForm(fileSizeLimitMb << fileSizeLimitMb); err != nil {
 		http.Error(w, "Error parsing multipart form", http.StatusBadRequest)
 		return
 	}
@@ -102,38 +103,24 @@ func (h *FileHandler) UploadFile(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "User not a member of the study group", http.StatusForbidden)
 		return
 	}
-	err = h.saveFile(file, header.Filename, chatID)
-	if err != nil {
+	if err = h.saveFile(file, header.Filename, chatID); err != nil {
 		http.Error(w, "Error saving file", http.StatusInternalServerError)
 		return
 	}
-	err = h.createFile(header.Filename, chatID, userID)
-	if err != nil {
+	if err = h.createFile(header.Filename, chatID, userID); err != nil {
 		http.Error(w, "Error storing the file", http.StatusInternalServerError)
 		return
 	}
 	if strings.HasSuffix(strings.ToLower(header.Filename), ".pdf") {
 		filePath := filepath.Join("uploads", fmt.Sprintf("%d", chatID), header.Filename)
-		log.Println("Reading PDF file from:", filePath)
 		content, err := chatbot.ReadPDF(filePath)
-		if err != nil {
-			log.Println("Error reading PDF:", err)
-		} else {
-			log.Println("PDF content length:", len(content))
+		if err == nil {
 			groupID, err := parseGroupID(fmt.Sprintf("%v", chatID))
-			if err != nil {
-				log.Println("Error parsing chatID:", err)
-			} else {
-				log.Println("Storing memory for groupID:", groupID, "filename:", header.Filename)
-				err = h.chatbotService.StoreMemory(groupID, &models.FileContext{
+			if err == nil {
+				_ = h.chatbotService.StoreMemory(groupID, &models.FileContext{
 					Name: header.Filename,
 					Data: content,
 				})
-				if err != nil {
-					log.Println("Error storing memory:", err)
-				} else {
-					log.Println("Memory stored successfully for", header.Filename)
-				}
 			}
 		}
 	}

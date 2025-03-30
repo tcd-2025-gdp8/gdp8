@@ -14,10 +14,12 @@ type ChatBotMemoryRepo interface {
 
 type SQLChatBotMemoryRepo struct{}
 
-func (s *SQLChatBotMemoryRepo) GetFileContexts(
-	tx *sql.Tx,
+func (s *SQLChatBotMemoryRepo) GetFileContexts(tx *sql.Tx,
 	studyGroupID models.StudyGroupID) (map[string]string, error) {
-	rows, err := tx.Query("SELECT context_src, context_data FROM chatbot_memory WHERE study_group_id = ?",
+	rows, err := tx.Query(
+		`SELECT context_src, context_data
+         FROM chatbot_memory
+         WHERE study_group_id = ?`,
 		studyGroupID)
 	if err != nil {
 		return nil, err
@@ -32,19 +34,28 @@ func (s *SQLChatBotMemoryRepo) GetFileContexts(
 		}
 		contexts[src] = data
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 	return contexts, nil
 }
 
 func (s *SQLChatBotMemoryRepo) InsertMessage(tx *sql.Tx,
 	studyGroupID models.StudyGroupID,
 	message *models.FileContext) error {
-	_, err := tx.Exec("INSERT INTO chatbot_memory (study_group_id, context_src, context_data) VALUES (?, ?, ?)", studyGroupID, message.Name, message.Data)
+	_, err := tx.Exec(`INSERT INTO chatbot_memory (
+        study_group_id,
+        context_src,
+        context_data) VALUES (?, ?, ?)`,
+		studyGroupID, message.Name, message.Data)
 	return err
 }
 
 func (s *SQLChatBotMemoryRepo) DeleteMemory(tx *sql.Tx,
 	studyGroupID models.StudyGroupID,
 	contextSrc string) error {
-	_, err := tx.Exec("DELETE FROM chatbot_memory WHERE study_group_id = ? AND context_src = ?", studyGroupID, contextSrc)
+	_, err := tx.Exec(`DELETE FROM chatbot_memory
+        WHERE study_group_id = ? AND context_src = ?`,
+		studyGroupID, contextSrc)
 	return err
 }

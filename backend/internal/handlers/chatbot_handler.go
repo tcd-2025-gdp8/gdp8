@@ -43,7 +43,6 @@ func (h ChatBotHandler) Prompt(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var resp string
-	var err error
 	if memType == "file" {
 		memory, err := h.chatbotService.GetMemory(models.StudyGroupID(groupID))
 		if err != nil {
@@ -51,12 +50,17 @@ func (h ChatBotHandler) Prompt(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		resp, err = h.client.PromptWithContext(r.Context(), userMsg, memory)
+		if err != nil {
+			http.Error(w, "Couldn't generate the response", http.StatusInternalServerError)
+			return
+		}
 	} else {
+		var err error
 		resp, err = h.client.Prompt(r.Context(), userMsg)
-	}
-	if err != nil {
-		http.Error(w, "Couldn't generate the response", http.StatusInternalServerError)
-		return
+		if err != nil {
+			http.Error(w, "Couldn't generate the response", http.StatusInternalServerError)
+			return
+		}
 	}
 	sendJSONResponse(w, map[string]string{"message": resp})
 }
