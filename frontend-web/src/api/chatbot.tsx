@@ -1,25 +1,20 @@
 import { makeRequest } from '../utils/apiFetch';
 
-interface ChatResponse {
-    success: boolean;
+interface BotResponse {
     message: string;
 }
 
-interface ApiResponse {
-    message?: string;
-}
-
-export async function sendChatMessage({
+export async function prompt({
     token,
     chatID,
     message,
     memory,
 }: {
-        token: string | null;
-        chatID: string;
-        message: string;
-        memory?: 'prevchats' | 'file' | 'all';
-    }): Promise<ChatResponse> {
+    token: string | null;
+    chatID: string;
+    message: string;
+    memory?: string;
+}): Promise<BotResponse> {
     const body = new URLSearchParams({
         text: message,
         chatID,
@@ -34,16 +29,10 @@ export async function sendChatMessage({
             },
             body,
         });
-
-        const data = (await res.json()) as ApiResponse;
-
-        return {
-            success: true,
-            message: data.message ?? 'No message returned',
-        };
+        const data = (await res.json()) as BotResponse;
+        return data;
     } catch {
         return {
-            success: false,
             message: 'Could not reach chatbot',
         };
     }
