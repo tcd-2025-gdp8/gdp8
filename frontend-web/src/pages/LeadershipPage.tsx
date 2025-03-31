@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Trophy, Clock, Users, Award } from 'lucide-react';
+import Sidebar from './../components/Sidebar'; // Import the Sidebar component
 
 import { 
   Card, 
@@ -71,7 +72,7 @@ const mockStudyGroups: StudyGroupsMap = {
 
 const weekLabels: string[] = ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
 
-const Leaderboard: React.FC = () => {
+const LeadershipPage: React.FC = () => {
   const [selectedModule, setSelectedModule] = useState<string>(mockModules[0].id);
   
   // Get current module's study groups and sort by total hours
@@ -109,182 +110,193 @@ const Leaderboard: React.FC = () => {
   };
 
   return (
-    <Box sx={{ bgcolor: '#F9FAFB', minHeight: '100vh', p: 3 }}>
-     <Box sx={{ width: '100%', maxWidth: '100%', mx: 'auto', px: { xs: 2, md: 4 } }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
-          <Box>
-            <Typography variant="h4" sx={{ fontWeight: 'bold', display: 'flex', alignItems: 'center' }}>
-              <Trophy color="#FFD700" size={32} style={{ marginRight: '12px' }} />
-              Study Group Leaderboard
-            </Typography>
-            <Typography variant="subtitle1" color="text.secondary">
-              See which groups are putting in the most study hours
-            </Typography>
-          </Box>
-        </Box>
-        
-        <Box sx={{ width: '100%' }}>
-          {/* Module Selection Dropdown */}
-          <Box sx={{ mb: 3, maxWidth: 400 }}>
-            <FormControl fullWidth>
-              <InputLabel id="module-select-label">Select Module</InputLabel>
-              <Select
-                labelId="module-select-label"
-                id="module-select"
-                value={selectedModule}
-                label="Select Module"
-                onChange={handleModuleChange}
-              >
-                {mockModules.map(module => (
-                  <MenuItem key={module.id} value={module.id}>{module.name}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+    <Box sx={{ display: 'flex' }}>
+      <Sidebar />
+      
+      <Box 
+        sx={{ 
+          bgcolor: '#F9FAFB', 
+          minHeight: '100vh', 
+          p: 3, 
+          flexGrow: 1,
+        }}
+      >
+        <Box sx={{ width: '100%', maxWidth: '100%', mx: 'auto', px: { xs: 2, md: 4 } }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
+            <Box>
+              <Typography variant="h4" sx={{ fontWeight: 'bold', display: 'flex', alignItems: 'center' }}>
+                <Trophy color="#FFD700" size={32} style={{ marginRight: '12px' }} />
+                Study Group Leaderboard
+              </Typography>
+              <Typography variant="subtitle1" color="text.secondary">
+                See which groups are putting in the most study hours
+              </Typography>
+            </Box>
           </Box>
           
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1fr 2fr' }, gap: 3 }}>
-            {/* Podium - Top 3 */}
-            <Card elevation={3}>
-              <CardContent sx={{ pt: 3 }}>
-                <Typography variant="h6" sx={{ fontWeight: 600, mb: 3, textAlign: 'center', color: '#4B5563' }}>
-                  Top Performers
-                </Typography>
-                
-                <Box sx={{ position: 'relative', height: '256px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', pb: 2 }}>
-                  {/* 2nd Place */}
-                  {currentGroups.length > 1 && (
-                    <Box sx={{ position: 'absolute', bottom: 0, left: 0, width: '112px', mx: 2 }}>
-                      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                        <Box sx={{ bgcolor: '#E5E7EB', height: '128px', width: '100%', borderTopLeftRadius: '8px', borderTopRightRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <Award color="#9CA3AF" size={32} />
+          <Box sx={{ width: '100%' }}>
+            {/* Module Selection Dropdown */}
+            <Box sx={{ mb: 3, maxWidth: 400 }}>
+              <FormControl fullWidth>
+                <InputLabel id="module-select-label">Select Module</InputLabel>
+                <Select
+                  labelId="module-select-label"
+                  id="module-select"
+                  value={selectedModule}
+                  label="Select Module"
+                  onChange={handleModuleChange}
+                >
+                  {mockModules.map(module => (
+                    <MenuItem key={module.id} value={module.id}>{module.name}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Box>
+            
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1fr 2fr' }, gap: 3 }}>
+              {/* Podium - Top 3 */}
+              <Card elevation={3}>
+                <CardContent sx={{ pt: 3 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 600, mb: 3, textAlign: 'center', color: '#4B5563' }}>
+                    Top Performers
+                  </Typography>
+                  
+                  <Box sx={{ position: 'relative', height: '256px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', pb: 2 }}>
+                    {/* 2nd Place */}
+                    {currentGroups.length > 1 && (
+                      <Box sx={{ position: 'absolute', bottom: 0, left: 0, width: '112px', mx: 2 }}>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                          <Box sx={{ bgcolor: '#E5E7EB', height: '128px', width: '100%', borderTopLeftRadius: '8px', borderTopRightRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Award color="#9CA3AF" size={32} />
+                          </Box>
+                          <Box sx={{ bgcolor: '#4B5563', width: '100%', py: 1, textAlign: 'center', color: 'white', fontWeight: 600, borderBottomLeftRadius: '8px', borderBottomRightRadius: '8px' }}>
+                            {currentGroups[1].totalHours}h
+                          </Box>
+                          <Typography variant="body2" sx={{ mt: 1, fontWeight: 500, textAlign: 'center' }}>
+                            {currentGroups[1].name}
+                          </Typography>
                         </Box>
-                        <Box sx={{ bgcolor: '#4B5563', width: '100%', py: 1, textAlign: 'center', color: 'white', fontWeight: 600, borderBottomLeftRadius: '8px', borderBottomRightRadius: '8px' }}>
-                          {currentGroups[1].totalHours}h
+                      </Box>
+                    )}
+                    
+                    {/* 1st Place */}
+                    <Box sx={{ position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '128px', zIndex: 1 }}>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        <Box sx={{ bgcolor: '#FEF3C7', height: '176px', width: '100%', borderTopLeftRadius: '8px', borderTopRightRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 2, borderColor: '#FCD34D' }}>
+                          <Trophy color="#F59E0B" size={40} />
+                        </Box>
+                        <Box sx={{ bgcolor: '#F59E0B', width: '100%', py: 1.5, textAlign: 'center', color: 'white', fontWeight: 700, borderBottomLeftRadius: '8px', borderBottomRightRadius: '8px', fontSize: '1.125rem' }}>
+                          {currentGroups[0].totalHours}h
                         </Box>
                         <Typography variant="body2" sx={{ mt: 1, fontWeight: 500, textAlign: 'center' }}>
-                          {currentGroups[1].name}
+                          {currentGroups[0].name}
                         </Typography>
                       </Box>
                     </Box>
-                  )}
-                  
-                  {/* 1st Place */}
-                  <Box sx={{ position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '128px', zIndex: 1 }}>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                      <Box sx={{ bgcolor: '#FEF3C7', height: '176px', width: '100%', borderTopLeftRadius: '8px', borderTopRightRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 2, borderColor: '#FCD34D' }}>
-                        <Trophy color="#F59E0B" size={40} />
+                    
+                    {/* 3rd Place */}
+                    {currentGroups.length > 2 && (
+                      <Box sx={{ position: 'absolute', bottom: 0, right: 0, width: '112px', mx: 2 }}>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                          <Box sx={{ bgcolor: '#FEF3C7', height: '96px', width: '100%', borderTopLeftRadius: '8px', borderTopRightRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Award color="#D97706" size={28} />
+                          </Box>
+                          <Box sx={{ bgcolor: '#D97706', width: '100%', py: 1, textAlign: 'center', color: 'white', fontWeight: 600, borderBottomLeftRadius: '8px', borderBottomRightRadius: '8px' }}>
+                            {currentGroups[2].totalHours}h
+                          </Box>
+                          <Typography variant="body2" sx={{ mt: 1, fontWeight: 500, textAlign: 'center' }}>
+                            {currentGroups[2].name}
+                          </Typography>
+                        </Box>
                       </Box>
-                      <Box sx={{ bgcolor: '#F59E0B', width: '100%', py: 1.5, textAlign: 'center', color: 'white', fontWeight: 700, borderBottomLeftRadius: '8px', borderBottomRightRadius: '8px', fontSize: '1.125rem' }}>
-                        {currentGroups[0].totalHours}h
-                      </Box>
-                      <Typography variant="body2" sx={{ mt: 1, fontWeight: 500, textAlign: 'center' }}>
-                        {currentGroups[0].name}
-                      </Typography>
-                    </Box>
+                    )}
                   </Box>
-                  
-                  {/* 3rd Place */}
-                  {currentGroups.length > 2 && (
-                    <Box sx={{ position: 'absolute', bottom: 0, right: 0, width: '112px', mx: 2 }}>
-                      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                        <Box sx={{ bgcolor: '#FEF3C7', height: '96px', width: '100%', borderTopLeftRadius: '8px', borderTopRightRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <Award color="#D97706" size={28} />
-                        </Box>
-                        <Box sx={{ bgcolor: '#D97706', width: '100%', py: 1, textAlign: 'center', color: 'white', fontWeight: 600, borderBottomLeftRadius: '8px', borderBottomRightRadius: '8px' }}>
-                          {currentGroups[2].totalHours}h
-                        </Box>
-                        <Typography variant="body2" sx={{ mt: 1, fontWeight: 500, textAlign: 'center' }}>
-                          {currentGroups[2].name}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  )}
-                </Box>
-              </CardContent>
-            </Card>
-            
-            {/* Weekly Progress Chart */}
-            <Card elevation={3}>
-              <CardContent sx={{ pt: 3 }}>
-                <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: '#4B5563' }}>
-                  Weekly Progress
-                </Typography>
-                <Box sx={{ height: 300, width: '100%' }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={chartData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" />
-                      <YAxis label={{ value: 'Hours', angle: -90, position: 'insideLeft' }} />
-                      <Tooltip />
-                      {currentGroups.slice(0, 5).map((group, index) => (
-                        <Bar 
-                          key={group.id} 
-                          dataKey={group.name} 
-                          stackId="a"
-                          fill={[
-                            "#3B82F6", // Blue
-                            "#10B981", // Green
-                            "#F43F5E", // Rose
-                            "#8B5CF6", // Purple
-                            "#F59E0B"  // Amber
-                          ][index % 5]} 
-                        />
-                      ))}
-                    </BarChart>
-                  </ResponsiveContainer>
-                </Box>
-              </CardContent>
-            </Card>
-            
-            {/* Full Rankings List */}
-            <Box sx={{ gridColumn: { xs: 'span 1', lg: 'span 2' } }}>
+                </CardContent>
+              </Card>
+              
+              {/* Weekly Progress Chart */}
               <Card elevation={3}>
                 <CardContent sx={{ pt: 3 }}>
                   <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: '#4B5563' }}>
-                    Complete Rankings
+                    Weekly Progress
                   </Typography>
-                  <TableContainer component={Paper} sx={{ border: 1, borderColor: 'divider', borderRadius: 1 }}>
-                    <Table sx={{ minWidth: 650 }}>
-                      <TableHead sx={{ bgcolor: '#F9FAFB' }}>
-                        <TableRow>
-                          <TableCell width="10%" align="center">Rank</TableCell>
-                          <TableCell width="40%">Group</TableCell>
-                          <TableCell width="20%" align="center">Members</TableCell>
-                          <TableCell width="30%" align="center">Total Hours</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {currentGroups.map((group, index) => (
-                          <TableRow key={group.id} sx={{ bgcolor: index < 3 ? '#F9FAFB' : 'inherit' }}>
-                            <TableCell align="center">
-                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, mx: 'auto' }}>
-                                {getMedalIcon(index)}
-                              </Box>
-                            </TableCell>
-                            <TableCell>
-                              <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                                {group.name}
-                              </Typography>
-                            </TableCell>
-                            <TableCell align="center">
-                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'text.secondary' }}>
-                                <Users size={16} style={{ marginRight: 4 }} />
-                                {group.members}
-                              </Box>
-                            </TableCell>
-                            <TableCell align="center">
-                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>
-                                <Clock size={16} style={{ marginRight: 8, color: '#6B7280' }} />
-                                {group.totalHours}h
-                              </Box>
-                            </TableCell>
-                          </TableRow>
+                  <Box sx={{ height: 300, width: '100%' }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={chartData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis label={{ value: 'Hours', angle: -90, position: 'insideLeft' }} />
+                        <Tooltip />
+                        {currentGroups.slice(0, 5).map((group, index) => (
+                          <Bar 
+                            key={group.id} 
+                            dataKey={group.name} 
+                            stackId="a"
+                            fill={[
+                              "#3B82F6", // Blue
+                              "#10B981", // Green
+                              "#F43F5E", // Rose
+                              "#8B5CF6", // Purple
+                              "#F59E0B"  // Amber
+                            ][index % 5]} 
+                          />
                         ))}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </Box>
                 </CardContent>
               </Card>
+              
+              {/* Full Rankings List */}
+              <Box sx={{ gridColumn: { xs: 'span 1', lg: 'span 2' } }}>
+                <Card elevation={3}>
+                  <CardContent sx={{ pt: 3 }}>
+                    <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: '#4B5563' }}>
+                      Complete Rankings
+                    </Typography>
+                    <TableContainer component={Paper} sx={{ border: 1, borderColor: 'divider', borderRadius: 1 }}>
+                      <Table sx={{ minWidth: 650 }}>
+                        <TableHead sx={{ bgcolor: '#F9FAFB' }}>
+                          <TableRow>
+                            <TableCell width="10%" align="center">Rank</TableCell>
+                            <TableCell width="40%">Group</TableCell>
+                            <TableCell width="20%" align="center">Members</TableCell>
+                            <TableCell width="30%" align="center">Total Hours</TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {currentGroups.map((group, index) => (
+                            <TableRow key={group.id} sx={{ bgcolor: index < 3 ? '#F9FAFB' : 'inherit' }}>
+                              <TableCell align="center">
+                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, mx: 'auto' }}>
+                                  {getMedalIcon(index)}
+                                </Box>
+                              </TableCell>
+                              <TableCell>
+                                <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                  {group.name}
+                                </Typography>
+                              </TableCell>
+                              <TableCell align="center">
+                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'text.secondary' }}>
+                                  <Users size={16} style={{ marginRight: 4 }} />
+                                  {group.members}
+                                </Box>
+                              </TableCell>
+                              <TableCell align="center">
+                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>
+                                  <Clock size={16} style={{ marginRight: 8, color: '#6B7280' }} />
+                                  {group.totalHours}h
+                                </Box>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  </CardContent>
+                </Card>
+              </Box>
             </Box>
           </Box>
         </Box>
@@ -293,4 +305,4 @@ const Leaderboard: React.FC = () => {
   );
 };
 
-export default Leaderboard;
+export default LeadershipPage;
