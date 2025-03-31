@@ -14,9 +14,15 @@ interface ChatbotChatProps {
     onClose: () => void;
 }
 
+function extractGroupNumber(url: string): string {
+    const match = url.match(/\/study-groups\/(\d+)\/files/);
+    return match ? match[1] : "";
+}
+
 export default function ChatbotChat({ onClose }: ChatbotChatProps) {
     const [botMessages, setBotMessages] = useState<Message[]>([]);
     const [botInput, setBotInput] = useState("");
+    const chatID = extractGroupNumber(window.location.toString());
     const { token } = useAuth();
     const botChatRef = useRef<HTMLDivElement>(null);
 
@@ -32,8 +38,9 @@ export default function ChatbotChat({ onClose }: ChatbotChatProps) {
             try {
                 const response = await prompt({
                     token: token,
-                    chatID: "1",
+                    chatID: chatID,
                     message: botInput,
+                    memory: "file"
                 });
                 const botReply: Message = {
                     text: response.message,
