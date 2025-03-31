@@ -15,7 +15,7 @@ interface ChatbotChatProps {
 }
 
 function extractGroupNumber(url: string): string {
-    const match = url.match(/\/study-groups\/(\d+)\/files/);
+    const match = /\/study-groups\/(\d+)\/files/.exec(url);
     return match ? match[1] : "";
 }
 
@@ -48,7 +48,7 @@ export default function ChatbotChat({ onClose }: ChatbotChatProps) {
                     timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
                 };
                 setBotMessages((prev) => [...prev, botReply]);
-            } catch (error) {
+            } catch {
                 const errorReply: Message = {
                     text: "Error fetching response.",
                     sender: "Chatbot",
@@ -130,9 +130,9 @@ export default function ChatbotChat({ onClose }: ChatbotChatProps) {
                     variant="outlined"
                     size="small"
                     fullWidth
-                    onKeyDown={(e) => { if (e.key === "Enter") sendBotMessage(); }} // Wrapped function to avoid promise-returning issues
+                    onKeyDown={(e) => { if (e.key === "Enter") void sendBotMessage(); }} 
                 />
-                <Button onClick={() => sendBotMessage()} style={{ marginLeft: "8px", backgroundColor: "#3b5998", color: "#fff" }}>
+                <Button onClick={() => void sendBotMessage()} style={{ marginLeft: "8px", backgroundColor: "#3b5998", color: "#fff" }}>
                     <Send />
                 </Button>
             </div>
