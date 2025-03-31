@@ -12,6 +12,7 @@ import FilesPage from "./pages/FilesPage";
 import GroupDetailsPage from "./pages/groupDetailsPage";
 import SchedulePage from "./pages/SchedulePage";
 import AvailabilitySelection from "./pages/Availability";
+import Leaderboard from "./pages/LeadershipPage";
 
 const App: React.FC = () => {
   return (
@@ -61,6 +62,10 @@ const App: React.FC = () => {
         <Route path="/study-groups/:groupId/availability"
           element={<AvailabilitySelection />}
         />
+        
+        <Route path="/study-groups/:groupId/leadership-board"
+            element={<Leaderboard />}
+          />
       </Routes>
     </BrowserRouter>
   );
