@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { Send } from "@mui/icons-material";
 import { AppBar, Toolbar, Typography, Box, TextField, Button, CardContent } from "@mui/material";
+import { prompt } from "../api/chatbot";
+import { useAuth } from "../auth/useAuth";
 
 interface Message {
     text: string;
@@ -15,10 +17,10 @@ interface ChatbotChatProps {
 export default function ChatbotChat({ onClose }: ChatbotChatProps) {
     const [botMessages, setBotMessages] = useState<Message[]>([]);
     const [botInput, setBotInput] = useState("");
+    const { token } = useAuth();
     const botChatRef = useRef<HTMLDivElement>(null);
 
-    // Function to handle sending bot messages (removed async)
-    const sendBotMessage = () => {
+    const sendBotMessage = async () => {
         if (botInput.trim()) {
             const userMessage: Message = {
                 text: botInput,
@@ -27,19 +29,31 @@ export default function ChatbotChat({ onClose }: ChatbotChatProps) {
             };
             setBotMessages((prev) => [...prev, userMessage]);
 
-            // Simulated bot response (replace with API call if needed)
-            setTimeout(() => {
+            try {
+                const response = await prompt({
+                    token: token,
+                    chatID: "1",
+                    message: botInput,
+                });
                 const botReply: Message = {
-                    text: `I'm a chatbot! You said: "${botInput}"`,
+                    text: response.message,
                     sender: "Chatbot",
                     timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
                 };
                 setBotMessages((prev) => [...prev, botReply]);
-            }, 1000);
+            } catch (error) {
+                const errorReply: Message = {
+                    text: "Error fetching response.",
+                    sender: "Chatbot",
+                    timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+                };
+                setBotMessages((prev) => [...prev, errorReply]);
+            }
 
             setBotInput("");
         }
     };
+
 
     // Scroll to the bottom whenever botMessages change
     useEffect(() => {
