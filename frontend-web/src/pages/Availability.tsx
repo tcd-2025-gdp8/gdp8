@@ -10,6 +10,8 @@ import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
   fetchCurrentAvailabilityRequestsByGroupId,
   upsertAvailabilityEntries,
+  createStudySession,
+  StudySessionAvailabilityEntry
 } from "../api/studySessions";
 import { fetchStudyGroupById } from "../api/studyGroups";
 import { useAuth } from "../auth/useAuth";
@@ -21,16 +23,42 @@ export default function AvailabilitySelection() {
   const { groupId } = useParams();
   const numericGroupId = groupId ? Number(groupId) : NaN;
 
+  // Store the array of groupMembers as { id, name }
   const [groupMembers, setGroupMembers] = useState<{ id: string; name: string }[]>([]);
-  const memberNames = groupMembers.map((member) => member.name);
 
-  const currentUserName = user?.displayName ?? user?.email ?? "Unknown";
+  // Use the actual backend user ID for the current user
+  const currentUserId = user?.uid ?? "UnknownUid";
 
   const [availabilityRequestId, setAvailabilityRequestId] = useState<number | null>(null);
   const [requestStartDate, setRequestStartDate] = useState<Date | null>(null);
   const [requestEndDate, setRequestEndDate] = useState<Date | null>(null);
   const [timeSlots, setTimeSlots] = useState<string[]>([]);
 
+  // Store the backend availability entries
+  const [backendAvailabilityEntries, setBackendAvailabilityEntries] = useState<StudySessionAvailabilityEntry[]>([]);
+
+  // A helper to format a Date into "hh:mm AM/PM"
+  const formatTime = (date: Date): string =>
+    date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+  // Return userIds (string[]) for everyone who has availability matching the given time slot
+  const getBackendAvailableUsers = (timeSlot: string): string[] => {
+    return Array.from(
+      new Set(
+        backendAvailabilityEntries
+          .filter((entry) => formatTime(entry.availabilityStart) === timeSlot)
+          .map((entry) => entry.userId)
+      )
+    );
+  };
+
+  // Return the array of { id, name } that are available for a given time slot
+  function getAvailableUsers(time: string): { id: string; name: string }[] {
+    const availableUserIds = getBackendAvailableUsers(time);
+    return groupMembers.filter((member) => availableUserIds.includes(member.id));
+  }
+
+  // Generate hourly time slots between two dates
   function generateHourlyTimeSlots(start: Date, end: Date): string[] {
     const slots: string[] = [];
     const current = new Date(start.getTime());
@@ -46,7 +74,7 @@ export default function AvailabilitySelection() {
     return slots;
   }
 
-  // When requestStartDate and requestEndDate change, generate the hourly slots.
+  // Generate time slots whenever the start/end changes
   useEffect(() => {
     if (requestStartDate && requestEndDate && requestStartDate < requestEndDate) {
       const newSlots = generateHourlyTimeSlots(requestStartDate, requestEndDate);
@@ -58,7 +86,7 @@ export default function AvailabilitySelection() {
     console.log("availabilityRequestId:", availabilityRequestId);
   }, [availabilityRequestId]);
 
-  // Load group members.
+  // Load group members
   useEffect(() => {
     if (!token || isNaN(numericGroupId)) return;
     fetchStudyGroupById(token, numericGroupId)
@@ -68,8 +96,7 @@ export default function AvailabilitySelection() {
       .catch((err) => console.error("Error fetching group details", err));
   }, [token, numericGroupId]);
 
-  // Check for query parameters for start and end.
-  // If found, use these dates; otherwise, fall back to fetching/creating a request.
+  // Check for query parameters: reqId, start, end
   useEffect(() => {
     if (!token || isNaN(numericGroupId)) return;
 
@@ -78,7 +105,7 @@ export default function AvailabilitySelection() {
     const startParam = queryParams.get("start");
     const endParam = queryParams.get("end");
 
-    // 1) If we have a reqId in the query string, fetch *that* request from the backend
+    // 1) If we have a reqId in the query string, fetch that request
     if (reqIdParam) {
       const wantedId = Number(reqIdParam);
       if (!isNaN(wantedId)) {
@@ -89,16 +116,17 @@ export default function AvailabilitySelection() {
               setAvailabilityRequestId(found.id);
               setRequestStartDate(new Date(found.availabilityPeriodStart));
               setRequestEndDate(new Date(found.availabilityPeriodEnd));
+              setBackendAvailabilityEntries(found.availabilityEntries);
             } else {
               console.warn("No availability request found for reqId=", wantedId);
             }
           })
           .catch((err) => console.error("Error fetching requests:", err));
-        return; // Stop here
+        return;
       }
     }
 
-    // 2) Otherwise, if we have start/end in the URL, use them:
+    // 2) If we have start/end in the URL, use them
     if (startParam && endParam) {
       const startDate = new Date(startParam);
       const endDate = new Date(endParam);
@@ -107,28 +135,31 @@ export default function AvailabilitySelection() {
 
       fetchCurrentAvailabilityRequestsByGroupId(token, numericGroupId)
         .then((requests) => {
-          console.log("Fetched requests:", requests);
+          if (requests.length > 0) {
+            setAvailabilityRequestId(requests[0].id);
+            setBackendAvailabilityEntries(requests[0].availabilityEntries);
+          }
         })
-        .catch((err) => console.error("Error:", err));
+        .catch((err) => console.error("Error fetching requests:", err));
       return;
     }
 
-    // 3) Otherwise, fallback to "fetch the first request or create one"
+    // 3) Otherwise, just fetch the first request
     fetchCurrentAvailabilityRequestsByGroupId(token, numericGroupId)
       .then((requests) => {
         if (requests.length > 0) {
           setAvailabilityRequestId(requests[0].id);
           setRequestStartDate(new Date(requests[0].availabilityPeriodStart));
           setRequestEndDate(new Date(requests[0].availabilityPeriodEnd));
+          setBackendAvailabilityEntries(requests[0].availabilityEntries);
         } else {
-          // Possibly create a new one if you want
+          // Possibly create a new request if needed
         }
       })
       .catch((err) => console.error("Error:", err));
   }, [token, numericGroupId, location.search]);
 
-
-  // Persist local availability changes to localStorage.
+  // Persist local availability in localStorage
   const [availability, setAvailability] = useState<Record<string, Set<string>>>(() => {
     const stored = localStorage.getItem("userAvailability");
     if (stored) {
@@ -154,30 +185,31 @@ export default function AvailabilitySelection() {
   const [selectionMode, setSelectionMode] = useState<"add" | "remove">("add");
   const gridRef = useRef<HTMLDivElement>(null);
 
+  // Mouse handling for click-and-drag selection
   useEffect(() => {
     const handleMouseUp = () => setIsSelecting(false);
     document.addEventListener("mouseup", handleMouseUp);
     return () => document.removeEventListener("mouseup", handleMouseUp);
   }, []);
 
-  // Toggle a single time slot for the current user.
+  // Toggle a single time slot for the current user
   const toggleAvailability = (time: string, mode?: "add" | "remove") => {
     const action = mode ?? selectionMode;
     setAvailability((prev) => {
       const newAvail = { ...prev };
-      const currentAvail = new Set(newAvail[currentUserName]);
+      const currentAvail = new Set(newAvail[currentUserId]);
       if (action === "add") {
         currentAvail.add(time);
       } else {
         currentAvail.delete(time);
       }
-      newAvail[currentUserName] = currentAvail;
+      newAvail[currentUserId] = currentAvail;
       return newAvail;
     });
   };
 
   const handleMouseDown = (time: string) => {
-    const isAvail = availability[currentUserName]?.has(time);
+    const isAvail = availability[currentUserId]?.has(time);
     setSelectionMode(isAvail ? "remove" : "add");
     toggleAvailability(time);
     setIsSelecting(true);
@@ -193,12 +225,7 @@ export default function AvailabilitySelection() {
     setIsSelecting(false);
   };
 
-  // Returns an array of member names who have selected the given time.
-  const getAvailableUsers = (time: string) => {
-    return memberNames.filter((name) => availability[name]?.has(time));
-  };
-
-  // Get the best time slots (most availability)
+  // Compute "best times" based on how many members are available
   const getBestTimeSlots = () => {
     const timesWithCounts = timeSlots.map((time) => ({
       time,
@@ -211,13 +238,14 @@ export default function AvailabilitySelection() {
       .slice(0, 3);
   };
 
+  // Save local availability to the backend
   const saveAvailabilityToBackend = async () => {
     if (!token || !availabilityRequestId || !requestStartDate || !requestEndDate) {
       console.error("Missing token, availabilityRequestId, requestStartDate, or requestEndDate");
       return;
     }
 
-    const selectedTimes = Array.from(availability[currentUserName] || []);
+    const selectedTimes = Array.from(availability[currentUserId] || []);
 
     const entries = selectedTimes
       .map((slotString) => {
@@ -235,7 +263,7 @@ export default function AvailabilitySelection() {
 
         const entryEnd = new Date(entryStart.getTime() + 60 * 60 * 1000);
 
-        // Compare against the poll’s actual end date
+        // Check if it's in range
         if (entryStart < requestStartDate || entryEnd > requestEndDate) {
           console.warn(`Entry ${slotString} is out of range. Skipping.`);
           return null;
@@ -247,18 +275,65 @@ export default function AvailabilitySelection() {
     try {
       await upsertAvailabilityEntries(token, availabilityRequestId, entries);
       alert("Your availability has been saved to the backend!");
+
+      // Re-fetch the updated availability requests
+      const requests = await fetchCurrentAvailabilityRequestsByGroupId(token, numericGroupId);
+      const updatedRequest = requests.find((r) => r.id === availabilityRequestId);
+      if (updatedRequest) {
+        setBackendAvailabilityEntries(updatedRequest.availabilityEntries);
+      }
     } catch (err) {
       console.error("Failed to upsert availability:", err);
       alert("Failed to save availability.");
     }
   };
 
+  // Additional mouse-up listener
   useEffect(() => {
     document.addEventListener("mouseup", handleMouseUp);
     return () => {
       document.removeEventListener("mouseup", handleMouseUp);
     };
   }, []);
+
+  async function handleCreateSessionFromBestTime(time: string) {
+    if (!token || !requestStartDate || isNaN(numericGroupId)) {
+      console.error("Missing token or group ID or requestStartDate");
+      return;
+    }
+
+    // Parse the "time" string (e.g. "02:00 PM") into a JS Date
+    const [timePart, amPm] = time.split(" ");
+    const [rawHour, rawMin] = timePart.split(":");
+    let hour = parseInt(rawHour, 10);
+    const minute = parseInt(rawMin, 10);
+
+    if (amPm === "PM" && hour < 12) hour += 12;
+    if (amPm === "AM" && hour === 12) hour = 0;
+
+    // Build the start time from requestStartDate
+    const sessionStart = new Date(requestStartDate);
+    sessionStart.setHours(hour, minute, 0, 0);
+
+    // For demonstration, let's do a 60-minute duration
+    const durationMinutes = 60;
+
+    try {
+      // Make a default title or do something like "Study Session"
+      const newSession = await createStudySession(token, numericGroupId, {
+        title: `Study Session @ ${time}`,
+        startTime: sessionStart,
+        durationMinutes,
+      });
+      alert(`Session created! ID=${newSession.id}`);
+
+      // Optionally navigate to schedule page or re-fetch sessions
+      // navigate(`/study-groups/${groupId}/schedule`);
+    } catch (err) {
+      console.error("Failed to create session:", err);
+      alert("Failed to create session.");
+    }
+  }
 
   return (
     <div style={{ padding: "24px 64px 24px 64px", maxWidth: "1200px", margin: "0 auto 0 100px", position: "relative" }}>
@@ -277,7 +352,7 @@ export default function AvailabilitySelection() {
         justifyContent: "space-between"
       }}>
         <div>
-          <span style={{ fontWeight: "bold" }}>Logged in as:</span> {currentUserName}
+          <span style={{ fontWeight: "bold" }}>Logged in as:</span> {currentUserId}
         </div>
         <div style={{ color: "#666", fontSize: "14px" }}>
           You can only modify your own availability
@@ -338,7 +413,7 @@ export default function AvailabilitySelection() {
                   height: "40px",
                   flexGrow: 1,
                   cursor: "pointer",
-                  backgroundColor: availability[currentUserName]?.has(time) ? "#3f51b5" : "#e0e0e0",
+                  backgroundColor: availability[currentUserId]?.has(time) ? "#3f51b5" : "#e0e0e0",
                   transition: "background-color 0.2s"
                 }}
                 onMouseDown={() => handleMouseDown(time)}
@@ -367,6 +442,8 @@ export default function AvailabilitySelection() {
           flexDirection: "column",
           gap: "16px"
         }}>
+
+          {/* "Group Availability" bar chart */}
           <div style={{
             border: "1px solid #ddd",
             borderRadius: "4px",
@@ -383,8 +460,12 @@ export default function AvailabilitySelection() {
             </div>
             <div style={{ padding: "12px" }}>
               {timeSlots.map((time) => {
-                const availableNames = getAvailableUsers(time);
-                const percentage = Math.round((availableNames.length / memberNames.length) * 100);
+                const availableUserIds = getBackendAvailableUsers(time);
+                const memberCount = groupMembers.length;
+                const percentage = memberCount > 0
+                  ? Math.round((availableUserIds.length / memberCount) * 100)
+                  : 0;
+
                 return (
                   <div key={time} style={{ marginBottom: "8px", display: "flex", alignItems: "center" }}>
                     <div style={{ width: "100px", fontSize: "14px" }}>{time}</div>
@@ -403,7 +484,7 @@ export default function AvailabilitySelection() {
                       }} />
                     </div>
                     <div style={{ width: "40px", fontSize: "14px", textAlign: "right" }}>
-                      {availableNames.length}/{memberNames.length}
+                      {availableUserIds.length}/{memberCount}
                     </div>
                   </div>
                 );
@@ -428,17 +509,42 @@ export default function AvailabilitySelection() {
             </div>
             <div style={{ padding: "12px" }}>
               {getBestTimeSlots().length > 0 ? (
-                getBestTimeSlots().map(({ time, count }, index) => (
-                  <div key={time} style={{ marginBottom: index < 2 ? "8px" : 0 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
-                      <strong>{time}</strong>
-                      <span>{count}/{memberNames.length} people available ({Math.round((count / memberNames.length) * 100)}%)</span>
+                // Only map over the top 3 slots
+                getBestTimeSlots().slice(0, 3).map(({ time, count }, index) => {
+                  // Percentage of total members
+                  const percentage = groupMembers.length > 0
+                    ? Math.round((count / groupMembers.length) * 100)
+                    : 0;
+
+                  return (
+                    <div
+                      key={time}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        marginBottom: index < 2 ? "8px" : 0
+                      }}
+                    >
+                      <span style={{ fontSize: "12px" }}>
+                        <strong>{time}</strong> — {percentage}% available
+                      </span>
+                      <Button
+                        variant="outlined"
+                        color="primary"
+                        sx={{
+                          fontSize: "12px",
+                          padding: "4px 8px",
+                          textTransform: "none",
+                          whiteSpace: "nowrap",
+                        }}
+                        onClick={() => void handleCreateSessionFromBestTime(time)}
+                      >
+                        Create Session
+                      </Button>
                     </div>
-                    <div style={{ fontSize: "14px" }}>
-                      {getAvailableUsers(time).join(", ")}
-                    </div>
-                  </div>
-                ))
+                  );
+                })
               ) : (
                 <p style={{ fontStyle: "italic", color: "#666" }}>
                   No availability selected yet
@@ -447,7 +553,8 @@ export default function AvailabilitySelection() {
             </div>
           </div>
 
-          {/* Others' availability */}
+
+          {/* Others' Availability */}
           <div style={{
             border: "1px solid #ddd",
             borderRadius: "4px",
@@ -463,36 +570,49 @@ export default function AvailabilitySelection() {
               Others&apos; Availability
             </div>
             <div style={{ padding: "12px" }}>
-              {memberNames.filter(name => name !== currentUserName).map(name => {
-                const userTimes = Array.from(availability[name] || []);
-                return (
-                  <div key={name} style={{ marginBottom: "8px" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}>
-                      <strong>{name}</strong>
-                      <span>{userTimes.length}/{timeSlots.length} slots</span>
-                    </div>
-                    <div style={{
-                      backgroundColor: "#eee",
-                      height: "8px",
-                      borderRadius: "4px",
-                      overflow: "hidden",
-                      marginTop: "4px"
-                    }}>
-                      <div style={{
-                        width: `${(userTimes.length / timeSlots.length) * 100}%`,
-                        backgroundColor: userTimes.length > 0 ? "#3f51b5" : "#eee",
-                        height: "100%"
-                      }} />
-                    </div>
-                    {userTimes.length > 0 && (
-                      <div style={{ fontSize: "12px", marginTop: "4px", color: "#666" }}>
-                        {userTimes.slice(0, 3).join(", ")}
-                        {userTimes.length > 3 ? ` and ${userTimes.length - 3} more...` : ""}
+              {groupMembers
+                .filter((member) => member.id !== currentUserId)
+                .map((member) => {
+                  // Count how many time slots the backend says they are available for:
+                  let count = 0;
+                  for (const slot of timeSlots) {
+                    const users = getBackendAvailableUsers(slot);
+                    if (users.includes(member.id)) {
+                      count++;
+                    }
+                  }
+
+                  const totalSlots = timeSlots.length;
+                  const percentage = totalSlots > 0
+                    ? Math.round((count / totalSlots) * 100)
+                    : 0;
+
+                  return (
+                    <div key={member.id} style={{ marginBottom: "8px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between" }}>
+                        <strong>{member.name}</strong>
+                        <span>{count}/{totalSlots} slots</span>
                       </div>
-                    )}
-                  </div>
-                );
-              })}
+                      <div
+                        style={{
+                          backgroundColor: "#eee",
+                          height: "8px",
+                          borderRadius: "4px",
+                          overflow: "hidden",
+                          marginTop: "4px"
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: `${percentage}%`,
+                            backgroundColor: percentage > 0 ? "#3f51b5" : "#eee",
+                            height: "100%",
+                          }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
             </div>
           </div>
         </div>
@@ -516,57 +636,95 @@ export default function AvailabilitySelection() {
         <DialogTitle>Availability Summary</DialogTitle>
         <DialogContent>
           <div>
+            {/* By Person */}
             <h3 style={{ fontWeight: "bold", marginBottom: "8px" }}>By Person</h3>
-            {memberNames.map((name) => (
-              <div key={name} style={{
-                borderBottom: "1px solid #eee",
-                paddingBottom: "8px",
-                marginBottom: "8px",
-                backgroundColor: name === currentUserName ? "#f0f8ff" : "transparent"
-              }}>
-                <strong>{name}{name === currentUserName ? " (You)" : ""}:</strong>{" "}
-                {Array.from(availability[name] || []).length > 0 ? (
-                  <span>{Array.from(availability[name] || []).join(", ")}</span>
-                ) : (
-                  <span style={{ fontStyle: "italic", color: "#666" }}>
-                    No availability selected
-                  </span>
-                )}
-              </div>
-            ))}
-
-            <h3 style={{ fontWeight: "bold", marginTop: "16px", marginBottom: "8px" }}>By Time Slot</h3>
-            {timeSlots.map((time) => {
-              const availableNames = getAvailableUsers(time);
+            {groupMembers.map((member) => {
+              const userTimes = Array.from(availability[member.id] || []);
               return (
-                <div key={time} style={{ borderBottom: "1px solid #eee", paddingBottom: "8px", marginBottom: "8px" }}>
-                  <strong>{time}:</strong>{" "}
-                  {availableNames.length > 0 ? (
-                    <span>{availableNames.join(", ")}</span>
+                <div
+                  key={member.id}
+                  style={{
+                    borderBottom: "1px solid #eee",
+                    paddingBottom: "8px",
+                    marginBottom: "8px",
+                    backgroundColor: member.id === currentUserId ? "#f0f8ff" : "transparent"
+                  }}
+                >
+                  <strong>
+                    {member.name}
+                    {member.id === currentUserId ? " (You)" : ""}
+                  </strong>{" "}
+                  {userTimes.length > 0 ? (
+                    <span>{userTimes.join(", ")}</span>
                   ) : (
-                    <span style={{ fontStyle: "italic", color: "#666" }}>No one available</span>
+                    <span style={{ fontStyle: "italic", color: "#666" }}>
+                      No availability selected
+                    </span>
                   )}
                 </div>
               );
             })}
 
-            <h3 style={{ fontWeight: "bold", marginTop: "16px", marginBottom: "8px" }}>Best Options</h3>
-            {getBestTimeSlots().length > 0 ? (
-              getBestTimeSlots().map(({ time, count }) => (
-                <div key={time} style={{
-                  backgroundColor: "#f0f8ff",
-                  padding: "8px",
-                  marginBottom: "8px",
-                  borderRadius: "4px",
-                  border: "1px solid #cce5ff"
-                }}>
-                  <div style={{ display: "flex", justifyContent: "space-between" }}>
-                    <strong>{time}</strong>
-                    <span>{count}/{memberNames.length} people available ({Math.round((count / memberNames.length) * 100)}%)</span>
-                  </div>
-                  <div>{getAvailableUsers(time).join(", ")}</div>
+            {/* By Time Slot */}
+            <h3 style={{ fontWeight: "bold", marginTop: "16px", marginBottom: "8px" }}>By Time Slot</h3>
+            {timeSlots.map((time) => {
+              const slotUsers = getAvailableUsers(time);
+              const displayNames = slotUsers.map((m) => m.name);
+
+              return (
+                <div
+                  key={time}
+                  style={{
+                    borderBottom: "1px solid #eee",
+                    paddingBottom: "8px",
+                    marginBottom: "8px",
+                  }}
+                >
+                  <strong>{time}:</strong>{" "}
+                  {slotUsers.length > 0 ? (
+                    <span>{displayNames.join(", ")}</span>
+                  ) : (
+                    <span style={{ fontStyle: "italic", color: "#666" }}>
+                      No one available
+                    </span>
+                  )}
                 </div>
-              ))
+              );
+            })}
+
+            {/* Best Options */}
+            <h3 style={{ fontWeight: "bold", marginTop: "16px", marginBottom: "8px" }}>
+              Best Options
+            </h3>
+            {getBestTimeSlots().length > 0 ? (
+              getBestTimeSlots().map(({ time, count }) => {
+                const slotUsers = getAvailableUsers(time);
+                const displayNames = slotUsers.map((m) => m.name);
+                const percentage = groupMembers.length > 0
+                  ? Math.round((count / groupMembers.length) * 100)
+                  : 0;
+
+                return (
+                  <div
+                    key={time}
+                    style={{
+                      backgroundColor: "#f0f8ff",
+                      padding: "8px",
+                      marginBottom: "8px",
+                      borderRadius: "4px",
+                      border: "1px solid #cce5ff"
+                    }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <strong>{time}</strong>
+                      <span>
+                        {count}/{groupMembers.length} people available ({percentage}%)
+                      </span>
+                    </div>
+                    <div>{displayNames.join(", ")}</div>
+                  </div>
+                );
+              })
             ) : (
               <div style={{ fontStyle: "italic", color: "#666" }}>
                 No common availability found yet
