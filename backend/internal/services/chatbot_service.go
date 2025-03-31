@@ -2,7 +2,6 @@ package services
 
 import (
 	"database/sql"
-	"fmt"
 
 	"gdp8-backend/internal/models"
 	"gdp8-backend/internal/persistence"
@@ -10,8 +9,9 @@ import (
 )
 
 type ChatBotService interface {
-	GetMemory(studyGroupID models.StudyGroupID, userID models.UserID) ([]models.ChatMessageView, error)
-	StoreMemory(studyGroupID models.StudyGroupID, message *models.ChatMessageDetails) error
+	GetMemory(studyGroupID models.StudyGroupID) (map[string]string, error)
+	StoreMemory(studyGroupID models.StudyGroupID, ctx *models.FileContext) error
+	DeleteMemory(studyGroupID models.StudyGroupID, contextSrc string) error
 }
 
 type ChatBotServiceImpl struct {
@@ -38,19 +38,22 @@ func NewChatBotService(
 	}
 }
 
-func (s *ChatBotServiceImpl) GetMemory(
-	studyGroupID models.StudyGroupID,
-	userID models.UserID) ([]models.ChatMessageView, error) {
-	messages, err := s.chatService.GetChatMessagesByGroupID(studyGroupID, userID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get memory: %w", err)
-	}
-
-	return messages, nil
+func (s *ChatBotServiceImpl) GetMemory(studyGroupID models.StudyGroupID) (map[string]string, error) {
+	return persistence.WithTransaction(s.txManager, func(tx *sql.Tx) (map[string]string, error) {
+		return s.memoryRepo.GetFileContexts(tx, studyGroupID)
+	})
 }
 
-func (s *ChatBotServiceImpl) StoreMemory(studyGroupID models.StudyGroupID, message *models.ChatMessageDetails) error {
+func (s *ChatBotServiceImpl) StoreMemory(
+	studyGroupID models.StudyGroupID,
+	ctx *models.FileContext) error {
 	return persistence.WithTransactionNoReturnVal(s.txManager, func(tx *sql.Tx) error {
-		return s.memoryRepo.InsertMessage(tx, studyGroupID, message)
+		return s.memoryRepo.InsertMessage(tx, studyGroupID, ctx)
+	})
+}
+
+func (s *ChatBotServiceImpl) DeleteMemory(studyGroupID models.StudyGroupID, contextSrc string) error {
+	return persistence.WithTransactionNoReturnVal(s.txManager, func(tx *sql.Tx) error {
+		return s.memoryRepo.DeleteMemory(tx, studyGroupID, contextSrc)
 	})
 }

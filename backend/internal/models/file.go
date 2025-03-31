@@ -5,3 +5,8 @@ type File struct {
 	UserID  UserID
 	GroupID StudyGroupID
 }
+
+type FileContext struct {
+	Name string
+	Data string
+}

@@ -3,7 +3,9 @@ package chatbot
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
+	"strings"
 
 	"google.golang.org/genai"
 )
@@ -18,6 +20,16 @@ type GeminiClient struct {
 }
 
 const model = "gemini-1.5-flash"
+
+const basePrompt = `
+    You are an assistant for a study group app used by undergraduate students at Trinity College Dublin.
+    Your role is to help them study by giving clear, accurate answers and explanations.
+    Always reply in plain text only. No markdown, no bullet points, no formatting. Keep it simple.
+    You may receive study files as context before the user's question — use the data from these files
+    to enhance your answer when applicable, but if the question is outside their scope,
+    answer it using your general knowledge.
+    Be friendly and encouraging, but stay focused on helping the user understand the topic.
+`
 
 func NewClient() (GeminiClient, error) {
 	ctx := context.Background()
@@ -54,7 +66,32 @@ func (gc *GeminiClient) Prompt(ctx context.Context, input string) (string, error
 	result, err := gc.Client.Models.GenerateContent(
 		ctx,
 		model,
-		genai.Text(input),
+		genai.Text(fmt.Sprintf("%s\nUser question: %s", basePrompt, input)),
+		gc.config)
+
+	if err != nil {
+		return "", err
+	}
+
+	return result.Text(), err
+}
+
+func (gc *GeminiClient) PromptWithContext(ctx context.Context, input string, memory map[string]string) (string, error) {
+
+	sb := &strings.Builder{}
+
+	for filename, data := range memory {
+		sb.WriteString(fmt.Sprintf("[Start of %s]:\n%s[End of %s]\n", filename, data, filename))
+	}
+
+	result, err := gc.Client.Models.GenerateContent(
+		ctx,
+		model,
+		genai.Text(
+			fmt.Sprintf("%s\nUse the following files as context:\n\n%s\nUser question: %s",
+				basePrompt,
+				sb.String(),
+				input)),
 		gc.config)
 
 	if err != nil {
