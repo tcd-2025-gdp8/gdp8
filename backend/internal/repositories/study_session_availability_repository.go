@@ -57,12 +57,12 @@ func (s *SQLStudySessionAvailabilityRepository) GetCurrentStudySessionAvailabili
 		requests = append(requests, request)
 	}
 
-	for _, request := range requests {
-		entries, err := s.getEntriesForRequest(tx, request.ID)
+	for i := range requests {
+		entries, err := s.getEntriesForRequest(tx, requests[i].ID)
 		if err != nil {
 			return nil, err
 		}
-		request.Entries = entries
+		requests[i].Entries = entries
 	}
 
 	if err = rows.Err(); err != nil {

@@ -327,6 +327,7 @@ func (h *StudySessionHandler) UpsertAvailabilityEntries(w http.ResponseWriter, r
 
 	if err := h.service.UpsertUserAvailabilityEntries(requestID, userID, entries); err != nil {
 		log.Printf("Error updating availability entries for request ID %s by user %s: %v", requestIDString, userID, err)
+		log.Printf("Detailed error: %+v", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}

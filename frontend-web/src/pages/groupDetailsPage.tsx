@@ -41,6 +41,7 @@ export default function GroupDetailsPage() {
                 const data = await fetchStudyGroupById(token, Number(groupId));
                 console.log("Fetched Study Group Data:", data);
                 setStudyGroupData(data); // Store the full response including members
+
             } catch (err) {
                 console.error("Error fetching study group:", err);
                 setError("Failed to load study group details.");
@@ -84,7 +85,7 @@ export default function GroupDetailsPage() {
 
     const handleUpdateStudyGroup = async (updatedData: EditStudyGroupData) => {
         if (!token || !groupId) return;
-        
+
         try {
             const updatedGroup = await updateStudyGroup(token, Number(groupId), updatedData);
             setStudyGroupData(updatedGroup);
@@ -131,17 +132,17 @@ export default function GroupDetailsPage() {
                             {/* Only show buttons if the user is an admin */}
                             {isAdmin && (
                                 <>
-                                    <Button 
-                                        variant="contained" 
-                                        color="primary" 
-                                        onClick={() => setOpenEditDialog(true)} 
+                                    <Button
+                                        variant="contained"
+                                        color="primary"
+                                        onClick={() => setOpenEditDialog(true)}
                                         sx={{ mr: 2 }}
                                     >
                                         Edit Study Group
                                     </Button>
-                                    <Button 
-                                        variant="contained" 
-                                        color="error" 
+                                    <Button
+                                        variant="contained"
+                                        color="error"
                                         onClick={handleDeleteClick}
                                     >
                                         Delete Study Group
