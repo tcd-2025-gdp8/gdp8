@@ -7,6 +7,7 @@ type StudySessionAvailabilityRequestID int64
 type StudySessionAvailabilityRequest struct {
 	ID           StudySessionAvailabilityRequestID
 	StudyGroupID StudyGroupID
+	CreatorID UserID
 	StudySessionAvailabilityRequestDetails
 	Entries []StudySessionAvailabilityEntry
 }
