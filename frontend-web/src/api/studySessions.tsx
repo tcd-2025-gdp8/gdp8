@@ -25,6 +25,7 @@ export interface StudySessionAvailabilityRequest {
     id: number;
     studyGroupId: number;
     title: string;
+    creatorId: string;
     availabilityPeriodStart: Date;
     availabilityPeriodEnd: Date;
     availabilityEntries: StudySessionAvailabilityEntry[];
@@ -167,6 +168,7 @@ interface StudySessionAvailabilityRequestResponse {
     id: number;
     studyGroupId: number;
     title: string;
+    creatorId: string;
     availabilityPeriodStart: string;
     availabilityPeriodEnd: string;
     entries: StudySessionAvailabilityEntryResponse[];
