@@ -114,7 +114,7 @@ func (s *SQLStudySessionAvailabilityRepository) CreateStudySessionAvailabilityRe
 	query := `
 		INSERT INTO study_session_availability_requests 
 		(study_group_id, creator_id, title, availability_period_start, availability_period_end)
-		VALUES (?, ?, ?, ?)`
+		VALUES (?, ?, ?, ?, ?)`
 
 	_, err := tx.Exec(query,
 		studyGroupID,
