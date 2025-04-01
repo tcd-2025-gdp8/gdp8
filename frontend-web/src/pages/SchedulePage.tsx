@@ -27,7 +27,8 @@ import {
   createAvailabilityRequest,
   fetchCurrentAvailabilityRequestsByGroupId,
   deleteAvailabilityRequest,
-  StudySession
+  StudySession,
+  StudySessionAvailabilityRequest
 } from "../api/studySessions"; // Still used for "Create Study Session"
 import { useAuth } from "../auth/useAuth";
 import EditIcon from "@mui/icons-material/Edit";
@@ -67,6 +68,7 @@ export default function SchedulingUI() {
   const [editStartTime, setEditStartTime] = useState("09:00");
   const [editEndTime, setEditEndTime] = useState("17:00");
   const [backendStudySessions, setBackendStudySessions] = useState<StudySession[] | null>(null);
+  const [backendAvailabilityRequests, setBackendAvailabilityRequests] = useState<StudySessionAvailabilityRequest[] | null>(null);
 
   const navigate = useNavigate();
   const { token, user } = useAuth();
@@ -101,6 +103,7 @@ export default function SchedulingUI() {
     if (!token || isNaN(numericGroupId)) return;
     try {
       const backendRequests = await fetchCurrentAvailabilityRequestsByGroupId(token, numericGroupId);
+      setBackendAvailabilityRequests(backendRequests);
       const mapped: Session[] = backendRequests.map((req) => ({
         id: req.id,
         name: req.title,
@@ -356,7 +359,7 @@ export default function SchedulingUI() {
         {sessions.map((session, index) => {
           // Find the corresponding session in backendStudySessions
           const backendSession = backendStudySessions?.find(bs => bs.id === session.id);
-          const isCreator = backendSession?.creatorId === currentUserId;
+          const isStudySessionCreator = backendSession?.creatorId === currentUserId;
 
           return (
             <ListItem key={session.id} component={Paper} sx={{ marginBottom: 1, padding: 1 }}>
@@ -366,7 +369,7 @@ export default function SchedulingUI() {
               />
               
               {/* Only show buttons if the current user is the creator */}
-              {isCreator && (
+              {isStudySessionCreator && (
                 <>
                   <IconButton onClick={() => handleEditSession(index)} sx={{ color: "primary.main" }}>
                     <EditIcon />
@@ -401,7 +404,15 @@ export default function SchedulingUI() {
           }}
         >
           <List>
-            {availabilityRequests.map((req) => (
+          {availabilityRequests.map((req) => {
+            // Find the corresponding availability request in backendAvailabilityRequests
+            const backendAvailabilityRequest = backendAvailabilityRequests?.find(
+              (br) => br.id === req.id
+            );
+            const isAvailabilityRequestCreator =
+              backendAvailabilityRequest?.creatorId === currentUserId;
+
+            return (
               <ListItem
                 key={req.id}
                 onClick={() =>
@@ -417,23 +428,31 @@ export default function SchedulingUI() {
                 }}
               >
                 <ListItemText
-                  //primary={`${session.name}, ${session.date ? session.date.toLocaleDateString() : ""} ${session.earliestTime} - ${session.latestTime}`}
-                  primary={`${req.name}, ${req.date ? req.date.toLocaleDateString() : ""} ${req.earliestTime} - ${req.latestTime}`}
+                  primary={`${req.name}, ${req.date ? req.date.toLocaleDateString() : ""} ${
+                    req.earliestTime
+                  } - ${req.latestTime}`}
                 />
                 <Box sx={{ display: "flex", gap: 1 }}>
-                  <IconButton
-                    onClick={(e) => {
-                      e.stopPropagation(); // Prevent triggering navigation when deleting
-                      void handleDeleteAvailabilityRequest(req.id);
-                    }}
-                    sx={{ color: "error.main" }}
-                  >
-                    <DeleteIcon />
-                  </IconButton>
+                  {/* Only show buttons if the current user is the creator */}
+                  {isAvailabilityRequestCreator && (
+                    <>
+                      <IconButton
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          void handleDeleteAvailabilityRequest(req.id);
+                        }}
+                        sx={{ color: "error.main" }}
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </>
+                  )}
                 </Box>
               </ListItem>
-            ))}
-          </List>
+            );
+          })}
+        </List>
+
         </Paper>
       </Box>
 
