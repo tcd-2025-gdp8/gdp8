@@ -13,8 +13,8 @@ type StudySessionAvailabilityRepository interface {
 		studyGroupID models.StudyGroupID) ([]models.StudySessionAvailabilityRequest, error)
 	GetStudySessionAvailabilityRequest(tx *sql.Tx,
 		id models.StudySessionAvailabilityRequestID) (*models.StudySessionAvailabilityRequest, error)
-		CreateStudySessionAvailabilityRequest(tx *sql.Tx, studyGroupID models.StudyGroupID,
-			creatorID models.UserID, availabilityRequestDetails *models.StudySessionAvailabilityRequestDetails) error		
+	CreateStudySessionAvailabilityRequest(tx *sql.Tx, studyGroupID models.StudyGroupID,
+		creatorID models.UserID, availabilityRequestDetails *models.StudySessionAvailabilityRequestDetails) error
 	DeleteStudySessionAvailabilityRequest(tx *sql.Tx,
 		availabilityRequestID models.StudySessionAvailabilityRequestID) error
 	UpsertUserAvailabilityEntries(tx *sql.Tx, availabilityRequestID models.StudySessionAvailabilityRequestID,

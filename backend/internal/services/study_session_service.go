@@ -169,7 +169,7 @@ func (s *studySessionServiceImpl) CreateStudySessionAvailabilityRequest(studyGro
 
 	err = persistence.WithTransactionNoReturnVal(s.txMgr, func(tx *sql.Tx) error {
 		return s.studySessionAvailabilityRepo.CreateStudySessionAvailabilityRequest(tx,
-			studyGroupID, creatorID, availabilityRequestDetails)		
+			studyGroupID, creatorID, availabilityRequestDetails)
 	})
 
 	// TODO send a notification
