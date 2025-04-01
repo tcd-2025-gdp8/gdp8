@@ -14,7 +14,7 @@ type StudySessionAvailabilityRepository interface {
 	GetStudySessionAvailabilityRequest(tx *sql.Tx,
 		id models.StudySessionAvailabilityRequestID) (*models.StudySessionAvailabilityRequest, error)
 	CreateStudySessionAvailabilityRequest(tx *sql.Tx, studyGroupID models.StudyGroupID,
-		availabilityRequestDetails *models.StudySessionAvailabilityRequestDetails) error
+		creatorID models.UserID, availabilityRequestDetails *models.StudySessionAvailabilityRequestDetails) error
 	DeleteStudySessionAvailabilityRequest(tx *sql.Tx,
 		availabilityRequestID models.StudySessionAvailabilityRequestID) error
 	UpsertUserAvailabilityEntries(tx *sql.Tx, availabilityRequestID models.StudySessionAvailabilityRequestID,
@@ -28,7 +28,7 @@ func (s *SQLStudySessionAvailabilityRepository) GetCurrentStudySessionAvailabili
 	studyGroupID models.StudyGroupID) ([]models.StudySessionAvailabilityRequest, error) {
 
 	query := `
-		SELECT id, study_group_id, availability_period_start, availability_period_end
+		SELECT id, study_group_id, creator_id, availability_period_start, availability_period_end
 		FROM current_study_session_availability_requests
 		WHERE study_group_id = ?
 		ORDER BY availability_period_start`
@@ -47,6 +47,7 @@ func (s *SQLStudySessionAvailabilityRepository) GetCurrentStudySessionAvailabili
 		err := rows.Scan(
 			&request.ID,
 			&request.StudyGroupID,
+			&request.CreatorID,
 			&request.AvailabilityPeriodStart,
 			&request.AvailabilityPeriodEnd,
 		)
@@ -76,7 +77,7 @@ func (s *SQLStudySessionAvailabilityRepository) GetStudySessionAvailabilityReque
 	id models.StudySessionAvailabilityRequestID) (*models.StudySessionAvailabilityRequest, error) {
 
 	query := `
-		SELECT id, study_group_id, availability_period_start, availability_period_end
+		SELECT id, study_group_id, creator_id, availability_period_start, availability_period_end
 		FROM study_session_availability_requests
 		WHERE id = ?`
 
@@ -84,6 +85,7 @@ func (s *SQLStudySessionAvailabilityRepository) GetStudySessionAvailabilityReque
 	err := tx.QueryRow(query, id).Scan(
 		&request.ID,
 		&request.StudyGroupID,
+		&request.CreatorID,
 		&request.AvailabilityPeriodStart,
 		&request.AvailabilityPeriodEnd,
 	)
@@ -104,15 +106,17 @@ func (s *SQLStudySessionAvailabilityRepository) GetStudySessionAvailabilityReque
 }
 
 func (s *SQLStudySessionAvailabilityRepository) CreateStudySessionAvailabilityRequest(tx *sql.Tx,
-	studyGroupID models.StudyGroupID, availabilityRequestDetails *models.StudySessionAvailabilityRequestDetails) error {
+	studyGroupID models.StudyGroupID, creatorID models.UserID,
+	availabilityRequestDetails *models.StudySessionAvailabilityRequestDetails) error {
 
 	query := `
 		INSERT INTO study_session_availability_requests 
-		(study_group_id, availability_period_start, availability_period_end)
-		VALUES (?, ?, ?)`
+		(study_group_id, creator_id, availability_period_start, availability_period_end)
+		VALUES (?, ?, ?, ?)`
 
 	_, err := tx.Exec(query,
 		studyGroupID,
+		creatorID,
 		availabilityRequestDetails.AvailabilityPeriodStart,
 		availabilityRequestDetails.AvailabilityPeriodEnd,
 	)

@@ -22,7 +22,7 @@ type StudySessionService interface {
 	GetCurrentStudySessionAvailabilityRequests(
 		studyGroupID models.StudyGroupID, requesterID models.UserID) ([]models.StudySessionAvailabilityRequest, error)
 	CreateStudySessionAvailabilityRequest(studyGroupID models.StudyGroupID,
-		availabilityRequestDetails *models.StudySessionAvailabilityRequestDetails, requesterID models.UserID) error
+		availabilityRequestDetails *models.StudySessionAvailabilityRequestDetails, creatorID models.UserID) error
 	DeleteStudySessionAvailabilityRequest(
 		availabilityRequestID models.StudySessionAvailabilityRequestID, requesterID models.UserID) error
 	UpsertUserAvailabilityEntries(availabilityRequestID models.StudySessionAvailabilityRequestID,
@@ -156,9 +156,9 @@ func (s *studySessionServiceImpl) GetCurrentStudySessionAvailabilityRequests(
 }
 
 func (s *studySessionServiceImpl) CreateStudySessionAvailabilityRequest(studyGroupID models.StudyGroupID,
-	availabilityRequestDetails *models.StudySessionAvailabilityRequestDetails, requesterID models.UserID) error {
+	availabilityRequestDetails *models.StudySessionAvailabilityRequestDetails, creatorID models.UserID) error {
 
-	isMember, err := s.studyGroupService.IsGroupMember(studyGroupID, requesterID)
+	isMember, err := s.studyGroupService.IsGroupMember(studyGroupID, creatorID)
 	if err != nil {
 		return err
 	}
@@ -169,7 +169,7 @@ func (s *studySessionServiceImpl) CreateStudySessionAvailabilityRequest(studyGro
 
 	err = persistence.WithTransactionNoReturnVal(s.txMgr, func(tx *sql.Tx) error {
 		return s.studySessionAvailabilityRepo.CreateStudySessionAvailabilityRequest(tx,
-			studyGroupID, availabilityRequestDetails)
+			studyGroupID, creatorID, availabilityRequestDetails)
 	})
 
 	// TODO send a notification

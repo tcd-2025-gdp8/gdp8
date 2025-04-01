@@ -32,6 +32,7 @@ type StudySessionDetailsDTO struct {
 type StudySessionAvailabilityRequestResponse struct {
 	ID                      int64                              `json:"id"`
 	StudyGroupID            int64                              `json:"studyGroupId"`
+	CreatorID               string                             `json:"creatorId"`
 	Title                   string                             `json:"title"`
 	AvailabilityPeriodStart time.Time                          `json:"availabilityPeriodStart"`
 	AvailabilityPeriodEnd   time.Time                          `json:"availabilityPeriodEnd"`
@@ -362,6 +363,7 @@ func toAvailabilityRequestResponse(
 	return StudySessionAvailabilityRequestResponse{
 		ID:                      int64(request.ID),
 		StudyGroupID:            int64(request.StudyGroupID),
+		CreatorID:               string(request.CreatorID),
 		Title:                   request.Title,
 		AvailabilityPeriodStart: request.AvailabilityPeriodStart,
 		AvailabilityPeriodEnd:   request.AvailabilityPeriodEnd,
