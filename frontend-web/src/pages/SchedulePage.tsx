@@ -374,7 +374,7 @@ export default function SchedulingUI() {
                   <IconButton onClick={() => handleEditSession(index)} sx={{ color: "primary.main" }}>
                     <EditIcon />
                   </IconButton>
-                  <IconButton onClick={() => handleDeleteSession(index)} sx={{ color: "error.main" }}>
+                  <IconButton onClick={() => void handleDeleteSession(index)} sx={{ color: "error.main" }}>
                     <DeleteIcon />
                   </IconButton>
                 </>
