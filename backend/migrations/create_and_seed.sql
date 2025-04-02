@@ -145,6 +145,7 @@ CREATE TABLE IF NOT EXISTS study_session_availability_requests (
     id INT AUTO_INCREMENT PRIMARY KEY,
     study_group_id INT NOT NULL,
     creator_id VARCHAR(255) NOT NULL,
+    title VARCHAR(255) NOT NULL,
     availability_period_start TIMESTAMP NOT NULL,
     availability_period_end TIMESTAMP NOT NULL,
 

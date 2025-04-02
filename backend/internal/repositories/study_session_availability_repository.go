@@ -28,7 +28,7 @@ func (s *SQLStudySessionAvailabilityRepository) GetCurrentStudySessionAvailabili
 	studyGroupID models.StudyGroupID) ([]models.StudySessionAvailabilityRequest, error) {
 
 	query := `
-		SELECT id, study_group_id, creator_id, availability_period_start, availability_period_end
+		SELECT id, study_group_id, creator_id, title, availability_period_start, availability_period_end
 		FROM current_study_session_availability_requests
 		WHERE study_group_id = ?
 		ORDER BY availability_period_start`
@@ -48,6 +48,7 @@ func (s *SQLStudySessionAvailabilityRepository) GetCurrentStudySessionAvailabili
 			&request.ID,
 			&request.StudyGroupID,
 			&request.CreatorID,
+			&request.Title,
 			&request.AvailabilityPeriodStart,
 			&request.AvailabilityPeriodEnd,
 		)
@@ -77,7 +78,7 @@ func (s *SQLStudySessionAvailabilityRepository) GetStudySessionAvailabilityReque
 	id models.StudySessionAvailabilityRequestID) (*models.StudySessionAvailabilityRequest, error) {
 
 	query := `
-		SELECT id, study_group_id, creator_id, availability_period_start, availability_period_end
+		SELECT id, study_group_id, creator_id, title, availability_period_start, availability_period_end
 		FROM study_session_availability_requests
 		WHERE id = ?`
 
@@ -86,6 +87,7 @@ func (s *SQLStudySessionAvailabilityRepository) GetStudySessionAvailabilityReque
 		&request.ID,
 		&request.StudyGroupID,
 		&request.CreatorID,
+		&request.Title,
 		&request.AvailabilityPeriodStart,
 		&request.AvailabilityPeriodEnd,
 	)
@@ -111,12 +113,13 @@ func (s *SQLStudySessionAvailabilityRepository) CreateStudySessionAvailabilityRe
 
 	query := `
 		INSERT INTO study_session_availability_requests 
-		(study_group_id, creator_id, availability_period_start, availability_period_end)
-		VALUES (?, ?, ?, ?)`
+		(study_group_id, creator_id, title, availability_period_start, availability_period_end)
+		VALUES (?, ?, ?, ?, ?)`
 
 	_, err := tx.Exec(query,
 		studyGroupID,
 		creatorID,
+		availabilityRequestDetails.Title,
 		availabilityRequestDetails.AvailabilityPeriodStart,
 		availabilityRequestDetails.AvailabilityPeriodEnd,
 	)
