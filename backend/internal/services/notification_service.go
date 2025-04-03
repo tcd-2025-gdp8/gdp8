@@ -85,12 +85,7 @@ func (s *notificationServiceImpl) AddStudySessionReminderNotification(
 		Payload: payload,
 	}
 
-	var usersToBeNotified []models.UserID
-	for _, member := range studyGroupMembers {
-		if member.Role == models.RoleMember || member.Role == models.RoleAdmin {
-			usersToBeNotified = append(usersToBeNotified, member.UserID)
-		}
-	}
+	usersToBeNotified := getActualStudyGroupMembers(studyGroupMembers)
 
 	return persistence.WithTransactionNoReturnVal(s.txMgr, func(tx *sql.Tx) error {
 		return s.notificationRepo.AddNotification(tx, notification, usersToBeNotified)
@@ -146,12 +141,7 @@ func (s *notificationServiceImpl) AddStudyGroupEventNotification(
 		Payload: payload,
 	}
 
-	actualStudyGroupMembers := make([]models.UserID, 0, len(studyGroupMembers))
-	for _, member := range studyGroupMembers {
-		if member.Role == models.RoleMember || member.Role == models.RoleAdmin {
-			actualStudyGroupMembers = append(actualStudyGroupMembers, member.UserID)
-		}
-	}
+	actualStudyGroupMembers := getActualStudyGroupMembers(studyGroupMembers)
 
 	var usersToBeNotified []models.UserID
 
@@ -186,4 +176,14 @@ func (s *notificationServiceImpl) AddStudyGroupEventNotification(
 	return persistence.WithTransactionNoReturnVal(s.txMgr, func(tx *sql.Tx) error {
 		return s.notificationRepo.AddNotification(tx, notification, usersToBeNotified)
 	})
+}
+
+func getActualStudyGroupMembers(members []models.StudyGroupMemberView) []models.UserID {
+	filteredMembers := make([]models.UserID, 0, len(members))
+	for _, member := range members {
+		if member.Role == models.RoleMember || member.Role == models.RoleAdmin {
+			filteredMembers = append(filteredMembers, member.UserID)
+		}
+	}
+	return filteredMembers
 }
