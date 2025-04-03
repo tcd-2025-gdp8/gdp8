@@ -56,6 +56,8 @@ type StudyGroupService interface {
 
 	RetrieveGroupRole(studyGroupID models.StudyGroupID, userID models.UserID) (*models.StudyGroupRole, error)
 	IsGroupMember(studyGroupID models.StudyGroupID, userID models.UserID) (bool, error)
+
+	SetNotificationService(notificationService NotificationService)
 }
 
 var ErrStudyGroupNotFound = errors.New("study group not found")
@@ -79,6 +81,10 @@ func NewStudyGroupService(
 		studyGroupRepo:      studyGroupRepo,
 		notificationService: notificationService,
 	}
+}
+
+func (s *studyGroupServiceImpl) SetNotificationService(notificationService NotificationService) {
+	s.notificationService = notificationService
 }
 
 func (s *studyGroupServiceImpl) GetStudyGroupByID(id models.StudyGroupID) (*models.StudyGroupView, error) {
@@ -227,7 +233,7 @@ func (s *studyGroupServiceImpl) HandleAdminMemberOperation(command AdminMemberOp
 		}
 		go func() {
 			notificationErr := s.notificationService.AddStudyGroupEventNotification(
-				notificationType, adminID, &targetUserID, studyGroupID, studyGroup.Members)
+				notificationType, adminID, &targetUserID, studyGroupID, studyGroup.Name, studyGroup.Members)
 			if notificationErr != nil {
 				log.Printf("Error sending notification: %v\n", notificationErr)
 			}
@@ -286,7 +292,7 @@ func (s *studyGroupServiceImpl) HandleSelfMemberOperation(command SelfMemberOper
 		}
 		go func() {
 			notificationErr := s.notificationService.AddStudyGroupEventNotification(
-				notificationType, memberID, nil, studyGroupID, studyGroup.Members)
+				notificationType, memberID, nil, studyGroupID, studyGroup.Name, studyGroup.Members)
 			if notificationErr != nil {
 				log.Printf("Error sending notification: %v\n", notificationErr)
 			}

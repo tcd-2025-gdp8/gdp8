@@ -3,6 +3,7 @@ package services
 import (
 	"database/sql"
 	"errors"
+	"log"
 
 	"gdp8-backend/internal/models"
 	"gdp8-backend/internal/persistence"
@@ -37,18 +38,21 @@ type studySessionServiceImpl struct {
 	studySessionAvailabilityRepo repositories.StudySessionAvailabilityRepository
 	studySessionRepository       repositories.StudySessionRepository
 	studyGroupService            StudyGroupService
+	notificationService          NotificationService
 }
 
 func NewStudySessionService(txMgr persistence.TransactionManager,
 	studySessionAvailabilityRepo repositories.StudySessionAvailabilityRepository,
 	studySessionRepository repositories.StudySessionRepository,
-	studyGroupService StudyGroupService) StudySessionService {
+	studyGroupService StudyGroupService,
+	notificationService NotificationService) StudySessionService {
 
 	return &studySessionServiceImpl{
 		txMgr:                        txMgr,
 		studySessionAvailabilityRepo: studySessionAvailabilityRepo,
 		studySessionRepository:       studySessionRepository,
 		studyGroupService:            studyGroupService,
+		notificationService:          notificationService,
 	}
 }
 
@@ -90,7 +94,17 @@ func (s *studySessionServiceImpl) CreateStudySession(studyGroupID models.StudyGr
 		return s.studySessionRepository.CreateStudySession(tx, studyGroupID, creatorID, studySessionDetails)
 	})
 
-	// TODO send a notification
+	if err != nil {
+		return nil, err
+	}
+
+	go func() {
+		notificationErr := s.notificationService.AddStudySessionNotification(
+			models.NotificationTypeStudySessionScheduled, studySession, creatorID)
+		if notificationErr != nil {
+			log.Printf("Error sending notification: %v\n", notificationErr)
+		}
+	}()
 	// TODO send a calendar invite
 
 	return studySession, err
@@ -111,7 +125,17 @@ func (s *studySessionServiceImpl) UpdateStudySession(studySessionID models.Study
 		return s.studySessionRepository.UpdateStudySession(tx, studySessionID, studySessionDetails)
 	})
 
-	// TODO send a notification
+	if err != nil {
+		return nil, err
+	}
+
+	go func() {
+		notificationErr := s.notificationService.AddStudySessionNotification(
+			models.NotificationTypeStudySessionUpdated, studySession, requesterID)
+		if notificationErr != nil {
+			log.Printf("Error sending notification: %v\n", notificationErr)
+		}
+	}()
 	// TODO update the calendar invite
 
 	return studySession, err
@@ -120,19 +144,33 @@ func (s *studySessionServiceImpl) UpdateStudySession(studySessionID models.Study
 func (s *studySessionServiceImpl) DeleteStudySession(studySessionID models.StudySessionID,
 	requesterID models.UserID) error {
 
-	err := persistence.WithTransactionNoReturnVal(s.txMgr, func(tx *sql.Tx) error {
+	deletedStudySession, err := persistence.WithTransaction(s.txMgr, func(tx *sql.Tx) (*models.StudySession, error) {
 		studySession, err := s.studySessionRepository.GetStudySession(tx, studySessionID)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		if studySession.CreatorID != requesterID {
-			return ErrUnauthorizedStudySessionOperation
+			return nil, ErrUnauthorizedStudySessionOperation
 		}
 
-		return s.studySessionRepository.DeleteStudySession(tx, studySessionID)
+		err = s.studySessionRepository.DeleteStudySession(tx, studySessionID)
+		if err != nil {
+			return nil, err
+		}
+		return studySession, nil
 	})
 
-	// TODO send a notification
+	if err != nil {
+		return err
+	}
+
+	go func() {
+		notificationErr := s.notificationService.AddStudySessionNotification(
+			models.NotificationTypeStudySessionCancelled, deletedStudySession, requesterID)
+		if notificationErr != nil {
+			log.Printf("Error sending notification: %v\n", notificationErr)
+		}
+	}()
 	// TODO update the calendar invite
 
 	return err
@@ -167,12 +205,21 @@ func (s *studySessionServiceImpl) CreateStudySessionAvailabilityRequest(studyGro
 		return ErrUnauthorizedStudySessionOperation
 	}
 
-	err = persistence.WithTransactionNoReturnVal(s.txMgr, func(tx *sql.Tx) error {
+	req, err := persistence.WithTransaction(s.txMgr, func(tx *sql.Tx) (*models.StudySessionAvailabilityRequest, error) {
 		return s.studySessionAvailabilityRepo.CreateStudySessionAvailabilityRequest(tx,
 			studyGroupID, creatorID, availabilityRequestDetails)
 	})
 
-	// TODO send a notification
+	if err != nil {
+		return err
+	}
+
+	go func() {
+		notificationErr := s.notificationService.AddStudySessionAvailabilityRequestCreatedNotification(req, creatorID)
+		if notificationErr != nil {
+			log.Printf("Error sending notification: %v\n", notificationErr)
+		}
+	}()
 
 	return err
 }
@@ -191,26 +238,26 @@ func (s *studySessionServiceImpl) UpsertUserAvailabilityEntries(
 	availabilityRequestID models.StudySessionAvailabilityRequestID, userID models.UserID,
 	availabilityEntries []models.AvailabilityEntry) error {
 
-	err := persistence.WithTransactionNoReturnVal(s.txMgr, func(tx *sql.Tx) error {
+	req, err := persistence.WithTransaction(s.txMgr, func(tx *sql.Tx) (*models.StudySessionAvailabilityRequest, error) {
 		availReq, err := s.studySessionAvailabilityRepo.GetStudySessionAvailabilityRequest(tx, availabilityRequestID)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		isMember, err := s.studyGroupService.IsGroupMember(availReq.StudyGroupID, userID)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		if !isMember {
-			return ErrUnauthorizedStudySessionOperation
+			return nil, ErrUnauthorizedStudySessionOperation
 		}
 
 		for _, entry := range availabilityEntries {
 			if entry.AvailabilityEntryStart.Before(availReq.AvailabilityPeriodStart) ||
 				entry.AvailabilityEntryEnd.After(availReq.AvailabilityPeriodEnd) {
 
-				return ErrInvalidStudySessionAvailabilityEntry
+				return nil, ErrInvalidStudySessionAvailabilityEntry
 			}
 		}
 
@@ -218,7 +265,16 @@ func (s *studySessionServiceImpl) UpsertUserAvailabilityEntries(
 			availabilityRequestID, userID, availabilityEntries)
 	})
 
-	// TODO send a notification
+	if err != nil {
+		return err
+	}
+
+	go func() {
+		notificationErr := s.notificationService.AddStudySessionAvailabilityUpdatedNotification(req, userID)
+		if notificationErr != nil {
+			log.Printf("Error sending notification: %v\n", notificationErr)
+		}
+	}()
 
 	return err
 }
