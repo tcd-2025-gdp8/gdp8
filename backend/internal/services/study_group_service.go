@@ -56,6 +56,8 @@ type StudyGroupService interface {
 
 	RetrieveGroupRole(studyGroupID models.StudyGroupID, userID models.UserID) (*models.StudyGroupRole, error)
 	IsGroupMember(studyGroupID models.StudyGroupID, userID models.UserID) (bool, error)
+
+	SetNotificationService(notificationService NotificationService)
 }
 
 var ErrStudyGroupNotFound = errors.New("study group not found")
@@ -79,6 +81,10 @@ func NewStudyGroupService(
 		studyGroupRepo:      studyGroupRepo,
 		notificationService: notificationService,
 	}
+}
+
+func (s *studyGroupServiceImpl) SetNotificationService(notificationService NotificationService) {
+	s.notificationService = notificationService
 }
 
 func (s *studyGroupServiceImpl) GetStudyGroupByID(id models.StudyGroupID) (*models.StudyGroupView, error) {
