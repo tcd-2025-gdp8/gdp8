@@ -23,18 +23,34 @@ interface StudySession {
     endTime: string;
 }
 
+interface StudySessionAvailabilityRequest {
+    id: number;
+    studyGroup: StudyGroup;
+    title: string;
+}
+
 interface NotificationPayloadMap {
     "study-group-joined": { studyGroup: StudyGroup; triggeringUser: User };
     "study-group-requested-to-join": { studyGroup: StudyGroup; triggeringUser: User };
     "study-group-left": { studyGroup: StudyGroup; triggeringUser: User };
     "study-group-accepted-invite": { studyGroup: StudyGroup; triggeringUser: User };
     "study-group-rejected-invite": { studyGroup: StudyGroup; triggeringUser: User };
+
     "study-group-invited": { studyGroup: StudyGroup; triggeringUser: User; targetUser: User };
     "study-group-accepted-join-request": { studyGroup: StudyGroup; triggeringUser: User; targetUser: User };
     "study-group-rejected-join-request": { studyGroup: StudyGroup; triggeringUser: User; targetUser: User };
     "study-group-removed-member": { studyGroup: StudyGroup; triggeringUser: User; targetUser: User };
+
     //"study-group-chat-message": { studyGroup: StudyGroup; triggeringUser: User }; // Currently not implemented in the backend
+
     "study-session-reminder": { studySession: StudySession };
+
+    "study-session-scheduled": { studySession: StudySession };
+    "study-session-updated": { studySession: StudySession };
+    "study-session-cancelled": { studySession: StudySession };
+
+    "study-session-availability-request-created": { studySessionAvailabilityRequest: StudySessionAvailabilityRequest };
+    "study-session-availability-request-updated-entries": { studySessionAvailabilityRequest: StudySessionAvailabilityRequest; triggeringUser: User};
 };
 
 type NotificationDto = {
@@ -90,6 +106,7 @@ function augmentNotification(notification: NotificationDto, userId: string): Not
                         `You have rejected the invitation to join the study group "${notification.payload.studyGroup.name}".` : 
                         `${notification.payload.triggeringUser.name} has rejected the invitation to join the study group "${notification.payload.studyGroup.name}".`;
             break;
+        
         case "study-group-invited":
             content = (userId === notification.payload.triggeringUser.id) ? 
                         `You have invited ${notification.payload.targetUser?.name} to join the study group "${notification.payload.studyGroup.name}".` : 
@@ -110,13 +127,32 @@ function augmentNotification(notification: NotificationDto, userId: string): Not
                         `You have removed ${notification.payload.targetUser?.name} from the study group "${notification.payload.studyGroup.name}".` : 
                         `${notification.payload.triggeringUser.name} has removed ${notification.payload.targetUser?.name} from the study group "${notification.payload.studyGroup.name}".`;
             break;
+
         // case "study-group-chat-message":
         //     content = `You have a new message in the study group "${notification.payload.studyGroup.name}" from ${notification.payload.triggeringUser.name}.`;
         //     break;
+
         case "study-session-reminder":
-            content = `Reminder: Your study session for "${notification.payload.studySession.title}" is coming up 
-            (${formatTimestamp(notification.payload.studySession.startTime)} - ${formatTimestamp(notification.payload.studySession.endTime)}).`;
+            content = `Reminder: Your study session for "${notification.payload.studySession.title}" is coming up (${formatTimestamp(notification.payload.studySession.startTime)} - ${formatTimestamp(notification.payload.studySession.endTime)}).`;
             break;
+        
+        case "study-session-scheduled":
+            content = `A new study session "${notification.payload.studySession.title}" has been scheduled (${formatTimestamp(notification.payload.studySession.startTime)} - ${formatTimestamp(notification.payload.studySession.endTime)}).`;
+            break;
+        case "study-session-updated":
+            content = `Study session "${notification.payload.studySession.title}" has been updated (${formatTimestamp(notification.payload.studySession.startTime)} - ${formatTimestamp(notification.payload.studySession.endTime)}).`;
+            break;
+        case "study-session-cancelled":
+            content = `Study session "${notification.payload.studySession.title}" (${formatTimestamp(notification.payload.studySession.startTime)} - ${formatTimestamp(notification.payload.studySession.endTime)}) has been cancelled.`;
+            break;
+        
+        case "study-session-availability-request-created":
+            content = `A new availability request "${notification.payload.studySessionAvailabilityRequest.title}" for study group "${notification.payload.studySessionAvailabilityRequest.studyGroup.name}" has been created.`;
+            break;
+        case "study-session-availability-request-updated-entries":
+            content = `${notification.payload.triggeringUser.name} has updated the availability request "${notification.payload.studySessionAvailabilityRequest.title}" for study group "${notification.payload.studySessionAvailabilityRequest.studyGroup.name}" with their availability.`;
+            break;
+        
         default:
             content = "You have a new notification.";
     }
