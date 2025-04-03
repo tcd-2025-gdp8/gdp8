@@ -100,7 +100,7 @@ func (s *studySessionServiceImpl) CreateStudySession(studyGroupID models.StudyGr
 
 	go func() {
 		notificationErr := s.notificationService.AddStudySessionNotification(
-			models.NotificationTypeStudySessionScheduled, studySession)
+			models.NotificationTypeStudySessionScheduled, studySession, creatorID)
 		if notificationErr != nil {
 			log.Printf("Error sending notification: %v\n", notificationErr)
 		}
@@ -131,7 +131,7 @@ func (s *studySessionServiceImpl) UpdateStudySession(studySessionID models.Study
 
 	go func() {
 		notificationErr := s.notificationService.AddStudySessionNotification(
-			models.NotificationTypeStudySessionUpdated, studySession)
+			models.NotificationTypeStudySessionUpdated, studySession, requesterID)
 		if notificationErr != nil {
 			log.Printf("Error sending notification: %v\n", notificationErr)
 		}
@@ -166,7 +166,7 @@ func (s *studySessionServiceImpl) DeleteStudySession(studySessionID models.Study
 
 	go func() {
 		notificationErr := s.notificationService.AddStudySessionNotification(
-			models.NotificationTypeStudySessionCancelled, deletedStudySession)
+			models.NotificationTypeStudySessionCancelled, deletedStudySession, requesterID)
 		if notificationErr != nil {
 			log.Printf("Error sending notification: %v\n", notificationErr)
 		}
@@ -215,7 +215,7 @@ func (s *studySessionServiceImpl) CreateStudySessionAvailabilityRequest(studyGro
 	}
 
 	go func() {
-		notificationErr := s.notificationService.AddStudySessionAvailabilityRequestCreatedNotification(request)
+		notificationErr := s.notificationService.AddStudySessionAvailabilityRequestCreatedNotification(request, creatorID)
 		if notificationErr != nil {
 			log.Printf("Error sending notification: %v\n", notificationErr)
 		}

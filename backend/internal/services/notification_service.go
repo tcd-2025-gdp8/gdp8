@@ -25,10 +25,12 @@ type NotificationService interface {
 		studyGroupMembers []models.StudyGroupMemberView,
 	) error
 
-	AddStudySessionNotification(notificationType models.NotificationType, session *models.StudySession) error
+	AddStudySessionNotification(notificationType models.NotificationType,
+		session *models.StudySession, requesterID models.UserID) error
 	AddStudySessionReminderNotification(session *models.StudySession, studyGroupMembers []models.StudyGroupMemberView) error
 
-	AddStudySessionAvailabilityRequestCreatedNotification(availabilityRequest *models.StudySessionAvailabilityRequest) error
+	AddStudySessionAvailabilityRequestCreatedNotification(availabilityRequest *models.StudySessionAvailabilityRequest,
+		requesterID models.UserID) error
 	AddStudySessionAvailabilityUpdatedNotification(availabilityRequest *models.StudySessionAvailabilityRequest,
 		userID models.UserID) error
 }
@@ -89,7 +91,7 @@ func (s *notificationServiceImpl) MarkNotificationAsRead(userID models.UserID,
 }
 
 func (s *notificationServiceImpl) AddStudySessionNotification(notificationType models.NotificationType,
-	session *models.StudySession) error {
+	session *models.StudySession, requesterID models.UserID) error {
 
 	if notificationType != models.NotificationTypeStudySessionScheduled &&
 		notificationType != models.NotificationTypeStudySessionUpdated &&
@@ -113,7 +115,7 @@ func (s *notificationServiceImpl) AddStudySessionNotification(notificationType m
 	if studyGroup == nil {
 		return fmt.Errorf("failed to get study group: study group not found")
 	}
-	usersToBeNotified := getActualStudyGroupMembers(studyGroup.Members)
+	usersToBeNotified := getActualStudyGroupMembers(studyGroup.Members, &requesterID)
 
 	return s.saveNotification(notificationType, payload, usersToBeNotified)
 }
@@ -132,13 +134,13 @@ func (s *notificationServiceImpl) AddStudySessionReminderNotification(
 		return fmt.Errorf("failed to marshal notification payload: %w", err)
 	}
 
-	usersToBeNotified := getActualStudyGroupMembers(studyGroupMembers)
+	usersToBeNotified := getActualStudyGroupMembers(studyGroupMembers, nil)
 
 	return s.saveNotification(models.NotificationTypeStudySessionReminder, payload, usersToBeNotified)
 }
 
 func (s *notificationServiceImpl) AddStudySessionAvailabilityRequestCreatedNotification(
-	availabilityRequest *models.StudySessionAvailabilityRequest) error {
+	availabilityRequest *models.StudySessionAvailabilityRequest, requesterID models.UserID) error {
 
 	studyGroup, err := s.studyGroupService.GetStudyGroupByID(availabilityRequest.StudyGroupID)
 	if err != nil {
@@ -164,7 +166,7 @@ func (s *notificationServiceImpl) AddStudySessionAvailabilityRequestCreatedNotif
 		return fmt.Errorf("failed to marshal notification payload: %w", err)
 	}
 
-	usersToBeNotified := getActualStudyGroupMembers(studyGroup.Members)
+	usersToBeNotified := getActualStudyGroupMembers(studyGroup.Members, &requesterID)
 
 	return s.saveNotification(models.NotificationTypeStudySessionAvailabilityRequestCreated, payload, usersToBeNotified)
 }
@@ -209,7 +211,7 @@ func (s *notificationServiceImpl) AddStudySessionAvailabilityUpdatedNotification
 		return fmt.Errorf("failed to marshal notification payload: %w", err)
 	}
 
-	usersToBeNotified := getActualStudyGroupMembers(studyGroup.Members)
+	usersToBeNotified := getActualStudyGroupMembers(studyGroup.Members, &userID)
 
 	return s.saveNotification(models.NotificationTypeStudySessionAvailabilityEntriesUpdated, payload, usersToBeNotified)
 }
@@ -262,7 +264,11 @@ func (s *notificationServiceImpl) AddStudyGroupEventNotification(
 		return fmt.Errorf("failed to marshal notification payload: %w", err)
 	}
 
-	actualStudyGroupMembers := getActualStudyGroupMembers(studyGroupMembers)
+	actualStudyGroupMembers := getActualStudyGroupMembers(studyGroupMembers, &triggeringUserID)
+	membersAndTargetUser := actualStudyGroupMembers
+	if targetUserID != nil {
+		membersAndTargetUser = append(membersAndTargetUser, *targetUserID)
+	}
 
 	var usersToBeNotified []models.UserID
 	switch notificationType {
@@ -277,13 +283,13 @@ func (s *notificationServiceImpl) AddStudyGroupEventNotification(
 	case models.NotificationTypeStudyGroupRejectedInvite:
 		usersToBeNotified = actualStudyGroupMembers
 	case models.NotificationTypeStudyGroupInvited:
-		usersToBeNotified = append([]models.UserID{triggeringUserID}, actualStudyGroupMembers...)
+		usersToBeNotified = membersAndTargetUser
 	case models.NotificationTypeStudyGroupAcceptedJoinRequest:
-		usersToBeNotified = append([]models.UserID{triggeringUserID}, actualStudyGroupMembers...)
+		usersToBeNotified = actualStudyGroupMembers
 	case models.NotificationTypeStudyGroupRejectedJoinRequest:
-		usersToBeNotified = append([]models.UserID{triggeringUserID}, actualStudyGroupMembers...)
+		usersToBeNotified = membersAndTargetUser
 	case models.NotificationTypeStudyGroupRemovedMember:
-		usersToBeNotified = append([]models.UserID{triggeringUserID}, actualStudyGroupMembers...)
+		usersToBeNotified = membersAndTargetUser
 	case models.NotificationTypeStudyGroupChatMessage:
 		return ErrInvalidNotificationType
 	case models.NotificationTypeStudySessionReminder:
@@ -309,9 +315,13 @@ func (s *notificationServiceImpl) saveNotification(notificationType models.Notif
 	})
 }
 
-func getActualStudyGroupMembers(members []models.StudyGroupMemberView) []models.UserID {
+// getActualStudyGroupMembers filters members of a study group, excluding a specific user and non-member/admin roles.
+func getActualStudyGroupMembers(members []models.StudyGroupMemberView, userToBeExcluded *models.UserID) []models.UserID {
 	filteredMembers := make([]models.UserID, 0, len(members))
 	for _, member := range members {
+		if userToBeExcluded != nil && member.UserID == *userToBeExcluded {
+			continue
+		}
 		if member.Role == models.RoleMember || member.Role == models.RoleAdmin {
 			filteredMembers = append(filteredMembers, member.UserID)
 		}
