@@ -106,11 +106,6 @@ func (s *notificationServiceImpl) AddStudySessionNotification(notificationType m
 		return fmt.Errorf("failed to marshal notification payload: %w", err)
 	}
 
-	notification := models.NotificationDetails{
-		Type:    notificationType,
-		Payload: payload,
-	}
-
 	studyGroup, err := s.studyGroupService.GetStudyGroupByID(session.StudyGroupID)
 	if err != nil {
 		return fmt.Errorf("failed to get study group: %w", err)
@@ -120,9 +115,7 @@ func (s *notificationServiceImpl) AddStudySessionNotification(notificationType m
 	}
 	usersToBeNotified := getActualStudyGroupMembers(studyGroup.Members)
 
-	return persistence.WithTransactionNoReturnVal(s.txMgr, func(tx *sql.Tx) error {
-		return s.notificationRepo.AddNotification(tx, notification, usersToBeNotified)
-	})
+	return s.saveNotification(notificationType, payload, usersToBeNotified)
 }
 
 func (s *notificationServiceImpl) AddStudySessionReminderNotification(
@@ -139,16 +132,9 @@ func (s *notificationServiceImpl) AddStudySessionReminderNotification(
 		return fmt.Errorf("failed to marshal notification payload: %w", err)
 	}
 
-	notification := models.NotificationDetails{
-		Type:    models.NotificationTypeStudySessionReminder,
-		Payload: payload,
-	}
-
 	usersToBeNotified := getActualStudyGroupMembers(studyGroupMembers)
 
-	return persistence.WithTransactionNoReturnVal(s.txMgr, func(tx *sql.Tx) error {
-		return s.notificationRepo.AddNotification(tx, notification, usersToBeNotified)
-	})
+	return s.saveNotification(models.NotificationTypeStudySessionReminder, payload, usersToBeNotified)
 }
 
 func (s *notificationServiceImpl) AddStudySessionAvailabilityRequestCreatedNotification(
@@ -174,16 +160,9 @@ func (s *notificationServiceImpl) AddStudySessionAvailabilityRequestCreatedNotif
 		return fmt.Errorf("failed to marshal notification payload: %w", err)
 	}
 
-	notification := models.NotificationDetails{
-		Type:    models.NotificationTypeStudySessionAvailabilityRequestCreated,
-		Payload: payload,
-	}
-
 	usersToBeNotified := getActualStudyGroupMembers(studyGroup.Members)
 
-	return persistence.WithTransactionNoReturnVal(s.txMgr, func(tx *sql.Tx) error {
-		return s.notificationRepo.AddNotification(tx, notification, usersToBeNotified)
-	})
+	return s.saveNotification(models.NotificationTypeStudySessionAvailabilityRequestCreated, payload, usersToBeNotified)
 }
 
 func (s *notificationServiceImpl) AddStudySessionAvailabilityUpdatedNotification(
@@ -221,16 +200,9 @@ func (s *notificationServiceImpl) AddStudySessionAvailabilityUpdatedNotification
 		return fmt.Errorf("failed to marshal notification payload: %w", err)
 	}
 
-	notification := models.NotificationDetails{
-		Type:    models.NotificationTypeStudySessionAvailabilityEntriesUpdated,
-		Payload: payload,
-	}
-
 	usersToBeNotified := getActualStudyGroupMembers(studyGroup.Members)
 
-	return persistence.WithTransactionNoReturnVal(s.txMgr, func(tx *sql.Tx) error {
-		return s.notificationRepo.AddNotification(tx, notification, usersToBeNotified)
-	})
+	return s.saveNotification(models.NotificationTypeStudySessionAvailabilityEntriesUpdated, payload, usersToBeNotified)
 }
 
 func (s *notificationServiceImpl) AddStudyGroupEventNotification(
@@ -281,15 +253,9 @@ func (s *notificationServiceImpl) AddStudyGroupEventNotification(
 		return fmt.Errorf("failed to marshal notification payload: %w", err)
 	}
 
-	notification := models.NotificationDetails{
-		Type:    notificationType,
-		Payload: payload,
-	}
-
 	actualStudyGroupMembers := getActualStudyGroupMembers(studyGroupMembers)
 
 	var usersToBeNotified []models.UserID
-
 	switch notificationType {
 	case models.NotificationTypeStudyGroupJoined:
 		usersToBeNotified = actualStudyGroupMembers
@@ -316,6 +282,17 @@ func (s *notificationServiceImpl) AddStudyGroupEventNotification(
 		return ErrInvalidNotificationType
 	default:
 		return ErrInvalidNotificationType
+	}
+
+	return s.saveNotification(notificationType, payload, usersToBeNotified)
+}
+
+func (s *notificationServiceImpl) saveNotification(notificationType models.NotificationType,
+	payload models.NotificationPayloadType, usersToBeNotified []models.UserID) error {
+
+	notification := models.NotificationDetails{
+		Type:    notificationType,
+		Payload: payload,
 	}
 
 	return persistence.WithTransactionNoReturnVal(s.txMgr, func(tx *sql.Tx) error {
