@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
+
 import {
     Container,
     Typography,
@@ -71,15 +72,19 @@ export default function ModuleSettingsPage() {
         );
     };
 
-    const handleSave = async () => {
-        try {
-            if (!userID) return;
-            await updateUserModules(token, userID, { selectedModules });
-        } catch (error) {
-            console.error("Error:", error);
-            alert("Failed to save modules.");
-        }
-    };
+    const navigate = useNavigate();
+
+const handleSave = async () => {
+    try {
+        if (!userID) return;
+        await updateUserModules(token, userID, { selectedModules });
+        alert("Your module preferences have been saved to the backend!");
+        void navigate("/landing");
+    } catch (error) {
+        console.error("Error:", error);
+        alert("Failed to save modules.");
+    }
+};
 
     if (!token || !user) {
         return <Navigate to="/login" />
