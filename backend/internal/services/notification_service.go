@@ -2,7 +2,10 @@ package services
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"time"
 
 	"gdp8-backend/internal/models"
 	"gdp8-backend/internal/persistence"
@@ -10,18 +13,19 @@ import (
 )
 
 type NotificationService interface {
-	GetUserNotifications(userID models.UserID) ([]models.NotificationView, error)
+	GetUserNotifications(userID models.UserID) ([]models.Notification, error)
 	MarkNotificationAsRead(userID models.UserID, notificationID models.NotificationID) error
+
 	AddStudyGroupEventNotification(
 		notificationType models.NotificationType,
 		triggeringUserID models.UserID,
 		targetUserID *models.UserID,
 		studyGroupID models.StudyGroupID,
+		studyGroupName string,
 		studyGroupMembers []models.StudyGroupMemberView,
 	) error
 
-	// NEW: AddStudySessionReminderNotification sends a reminder for a study session.
-	AddStudySessionReminderNotification(session models.StudySession, studyGroupMembers []models.StudyGroupMemberView) error
+	AddStudySessionReminderNotification(session *models.StudySession, studyGroupMembers []models.StudyGroupMemberView) error
 }
 
 var ErrInvalidNotificationType = errors.New("invalid notification type")
@@ -29,19 +33,21 @@ var ErrInvalidNotificationType = errors.New("invalid notification type")
 type notificationServiceImpl struct {
 	txMgr            persistence.TransactionManager
 	notificationRepo repositories.NotificationRepository
+	userService      UserService
 }
 
 func NewNotificationService(txMgr persistence.TransactionManager,
-	notificationRepo repositories.NotificationRepository) NotificationService {
+	notificationRepo repositories.NotificationRepository, userService UserService) NotificationService {
 
 	return &notificationServiceImpl{
 		txMgr:            txMgr,
 		notificationRepo: notificationRepo,
+		userService:      userService,
 	}
 }
 
-func (s *notificationServiceImpl) GetUserNotifications(userID models.UserID) ([]models.NotificationView, error) {
-	return persistence.WithTransaction(s.txMgr, func(tx *sql.Tx) ([]models.NotificationView, error) {
+func (s *notificationServiceImpl) GetUserNotifications(userID models.UserID) ([]models.Notification, error) {
+	return persistence.WithTransaction(s.txMgr, func(tx *sql.Tx) ([]models.Notification, error) {
 		return s.notificationRepo.GetUserNotifications(tx, userID)
 	})
 }
@@ -55,14 +61,28 @@ func (s *notificationServiceImpl) MarkNotificationAsRead(userID models.UserID,
 }
 
 func (s *notificationServiceImpl) AddStudySessionReminderNotification(
-	session models.StudySession,
+	session *models.StudySession,
 	studyGroupMembers []models.StudyGroupMemberView,
 ) error {
+
+	payload, err := json.Marshal(struct {
+		StudySessionID        models.StudySessionID `json:"studySessionId"`
+		StudySessionTitle     string                `json:"studySessionTitle"`
+		StudySessionStartTime time.Time             `json:"studySessionStartTime"`
+		StudySessionEndTime   time.Time             `json:"studySessionEndTime"`
+	}{
+		StudySessionID:        session.ID,
+		StudySessionTitle:     session.Title,
+		StudySessionStartTime: session.StartTime,
+		StudySessionEndTime:   session.EndTime,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to marshal notification payload: %w", err)
+	}
+
 	notification := models.NotificationDetails{
-		Type:             models.NotificationTypeStudySessionReminder,
-		TriggeringUserID: session.CreatorID,
-		StudyGroupID:     session.StudyGroupID,
-		MessageID:        nil,
+		Type:    models.NotificationTypeStudySessionReminder,
+		Payload: payload,
 	}
 
 	var usersToBeNotified []models.UserID
@@ -80,14 +100,50 @@ func (s *notificationServiceImpl) AddStudySessionReminderNotification(
 func (s *notificationServiceImpl) AddStudyGroupEventNotification(
 	notificationType models.NotificationType,
 	triggeringUserID models.UserID, targetUserID *models.UserID,
-	studyGroupID models.StudyGroupID, studyGroupMembers []models.StudyGroupMemberView) error {
+	studyGroupID models.StudyGroupID, studyGroupName string, studyGroupMembers []models.StudyGroupMemberView) error {
+
+	triggeringUser, err := s.userService.GetUser(triggeringUserID)
+	if err != nil {
+		return fmt.Errorf("failed to get triggering user: %w", err)
+	}
+	if triggeringUser == nil {
+		return fmt.Errorf("failed to get triggering user: user not found")
+	}
+
+	var targetUserName *string
+	if targetUserID != nil {
+		targetUser, err := s.userService.GetUser(*targetUserID)
+		if err != nil {
+			return fmt.Errorf("failed to get target user: %w", err)
+		}
+		if targetUser == nil {
+			return fmt.Errorf("failed to get target user: user not found")
+		}
+		targetUserName = &targetUser.Name
+	}
+
+	payload, err := json.Marshal(struct {
+		TriggeringUserID   models.UserID       `json:"triggeringUserId"`
+		TriggeringUserName string              `json:"triggeringUserName"`
+		TargetUserID       *models.UserID      `json:"targetUserId,omitempty"`
+		TargetUserName     *string             `json:"targetUserName,omitempty"`
+		StudyGroupID       models.StudyGroupID `json:"studyGroupId"`
+		StudyGroupName     string              `json:"studyGroupName"`
+	}{
+		TriggeringUserID:   triggeringUserID,
+		TriggeringUserName: triggeringUser.Name,
+		TargetUserID:       targetUserID,
+		TargetUserName:     targetUserName,
+		StudyGroupID:       studyGroupID,
+		StudyGroupName:     studyGroupName,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to marshal notification payload: %w", err)
+	}
 
 	notification := models.NotificationDetails{
-		Type:             notificationType,
-		TriggeringUserID: triggeringUserID,
-		TargetUserID:     targetUserID,
-		StudyGroupID:     studyGroupID,
-		MessageID:        nil,
+		Type:    notificationType,
+		Payload: payload,
 	}
 
 	actualStudyGroupMembers := make([]models.UserID, 0, len(studyGroupMembers))
