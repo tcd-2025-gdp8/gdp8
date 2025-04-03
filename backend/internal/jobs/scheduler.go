@@ -40,7 +40,7 @@ func ProcessUpcomingSessions(
 			continue
 		}
 
-		if err := notificationService.AddStudySessionReminderNotification(session, members); err != nil {
+		if err := notificationService.AddStudySessionReminderNotification(&session, members); err != nil {
 			log.Printf("Error sending reminder for session %d: %v", session.ID, err)
 		} else {
 			log.Printf("Reminder sent for session %d", session.ID)
