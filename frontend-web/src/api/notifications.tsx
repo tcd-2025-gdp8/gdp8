@@ -1,42 +1,52 @@
 import { fetchApi, fetchApiToJson } from "../utils/apiFetch";
 
 
-export type NotificationType =
-    | "study-group-joined"
-    | "study-group-requested-to-join"
-    | "study-group-left"
-    | "study-group-accepted-invite"
-    | "study-group-rejected-invite"
-    | "study-group-invited"
-    | "study-group-accepted-join-request"
-    | "study-group-rejected-join-request"
-    | "study-group-removed-member"
-    | "study-group-chat-message"
-    | "study-session-reminder";
-
-
-export interface NotificationDto {
+interface BaseNotificationDto {
     id: number;
-    type: NotificationType;
-    triggeringUser: {
-        id: string;
-        name: string;
-    };
-    targetUser: {
-        id: string;
-        name: string;
-    } | null;
-    studyGroup: {
-        id: number;
-        name: string;
-    };
-    messageId: number | null;
     createdAt: Date;
 }
 
-export interface Notification extends NotificationDto {
-    content: string;
+interface User {
+    id: string;
+    name: string;
 }
+
+interface StudyGroup {
+    id: number;
+    name: string;
+}
+
+interface StudySession {
+    id: number;
+    title: string;
+    startTime: string;
+    endTime: string;
+}
+
+interface NotificationPayloadMap {
+    "study-group-joined": { studyGroup: StudyGroup; triggeringUser: User };
+    "study-group-requested-to-join": { studyGroup: StudyGroup; triggeringUser: User };
+    "study-group-left": { studyGroup: StudyGroup; triggeringUser: User };
+    "study-group-accepted-invite": { studyGroup: StudyGroup; triggeringUser: User };
+    "study-group-rejected-invite": { studyGroup: StudyGroup; triggeringUser: User };
+    "study-group-invited": { studyGroup: StudyGroup; triggeringUser: User; targetUser: User };
+    "study-group-accepted-join-request": { studyGroup: StudyGroup; triggeringUser: User; targetUser: User };
+    "study-group-rejected-join-request": { studyGroup: StudyGroup; triggeringUser: User; targetUser: User };
+    "study-group-removed-member": { studyGroup: StudyGroup; triggeringUser: User; targetUser: User };
+    //"study-group-chat-message": { studyGroup: StudyGroup; triggeringUser: User }; // Currently not implemented in the backend
+    "study-session-reminder": { studySession: StudySession };
+};
+
+type NotificationDto = {
+    [K in keyof NotificationPayloadMap]: BaseNotificationDto & {
+      type: K;
+      payload: NotificationPayloadMap[K];
+    };
+}[keyof NotificationPayloadMap];
+
+export type Notification = NotificationDto & {
+    content: string;
+};
 
 
 export async function getNotifications(token: string | null, userId: string): Promise<Notification[]> {
@@ -56,59 +66,74 @@ function augmentNotification(notification: NotificationDto, userId: string): Not
 
     switch (notification.type) {
         case "study-group-joined":
-            content = (userId === notification.triggeringUser.id) ? 
-                        `You have joined the study group "${notification.studyGroup.name}".` : 
-                        `${notification.triggeringUser.name} has joined the study group "${notification.studyGroup.name}".`;
+            content = (userId === notification.payload.triggeringUser.id) ? 
+                        `You have joined the study group "${notification.payload.studyGroup.name}".` : 
+                        `${notification.payload.triggeringUser.name} has joined the study group "${notification.payload.studyGroup.name}".`;
             break;
         case "study-group-requested-to-join":
-            content = (userId === notification.triggeringUser.id) ? 
-                        `You have requested to join the study group "${notification.studyGroup.name}".` : 
-                        `${notification.triggeringUser.name} has requested to join the study group "${notification.studyGroup.name}".`;
+            content = (userId === notification.payload.triggeringUser.id) ? 
+                        `You have requested to join the study group "${notification.payload.studyGroup.name}".` : 
+                        `${notification.payload.triggeringUser.name} has requested to join the study group "${notification.payload.studyGroup.name}".`;
             break;
         case "study-group-left":
-            content = (userId === notification.triggeringUser.id) ? 
-                        `You have left the study group "${notification.studyGroup.name}".` : 
-                        `${notification.triggeringUser.name} has left the study group "${notification.studyGroup.name}".`;
+            content = (userId === notification.payload.triggeringUser.id) ? 
+                        `You have left the study group "${notification.payload.studyGroup.name}".` : 
+                        `${notification.payload.triggeringUser.name} has left the study group "${notification.payload.studyGroup.name}".`;
             break;
         case "study-group-accepted-invite":
-            content = (userId === notification.triggeringUser.id) ? 
-                        `You have accepted the invitation to join the study group "${notification.studyGroup.name}".` : 
-                        `${notification.triggeringUser.name} has accepted the invitation to join the study group "${notification.studyGroup.name}".`;
+            content = (userId === notification.payload.triggeringUser.id) ? 
+                        `You have accepted the invitation to join the study group "${notification.payload.studyGroup.name}".` : 
+                        `${notification.payload.triggeringUser.name} has accepted the invitation to join the study group "${notification.payload.studyGroup.name}".`;
             break;
         case "study-group-rejected-invite":
-            content = (userId === notification.triggeringUser.id) ? 
-                        `You have rejected the invitation to join the study group "${notification.studyGroup.name}".` : 
-                        `${notification.triggeringUser.name} has rejected the invitation to join the study group "${notification.studyGroup.name}".`;
+            content = (userId === notification.payload.triggeringUser.id) ? 
+                        `You have rejected the invitation to join the study group "${notification.payload.studyGroup.name}".` : 
+                        `${notification.payload.triggeringUser.name} has rejected the invitation to join the study group "${notification.payload.studyGroup.name}".`;
             break;
         case "study-group-invited":
-            content = (userId === notification.triggeringUser.id) ? 
-                        `You have invited ${notification.targetUser?.name} to join the study group "${notification.studyGroup.name}".` : 
-                        `${notification.triggeringUser.name} has invited ${notification.targetUser?.name} to join the study group "${notification.studyGroup.name}".`;
+            content = (userId === notification.payload.triggeringUser.id) ? 
+                        `You have invited ${notification.payload.targetUser?.name} to join the study group "${notification.payload.studyGroup.name}".` : 
+                        `${notification.payload.triggeringUser.name} has invited ${notification.payload.targetUser?.name} to join the study group "${notification.payload.studyGroup.name}".`;
             break;
         case "study-group-accepted-join-request":
-            content = (userId === notification.triggeringUser.id) ? 
-                        `You have accepted ${notification.targetUser?.name}'s request to join the study group "${notification.studyGroup.name}".` : 
-                        `${notification.triggeringUser.name} has accepted ${notification.targetUser?.name}'s request to join the study group "${notification.studyGroup.name}".`;
+            content = (userId === notification.payload.triggeringUser.id) ? 
+                        `You have accepted ${notification.payload.targetUser?.name}'s request to join the study group "${notification.payload.studyGroup.name}".` : 
+                        `${notification.payload.triggeringUser.name} has accepted ${notification.payload.targetUser?.name}'s request to join the study group "${notification.payload.studyGroup.name}".`;
             break;
         case "study-group-rejected-join-request":
-            content = (userId === notification.triggeringUser.id) ? 
-                        `You have rejected ${notification.targetUser?.name}'s request to join the study group "${notification.studyGroup.name}".` : 
-                        `${notification.triggeringUser.name} has rejected ${notification.targetUser?.name}'s request to join the study group "${notification.studyGroup.name}".`;
+            content = (userId === notification.payload.triggeringUser.id) ? 
+                        `You have rejected ${notification.payload.targetUser?.name}'s request to join the study group "${notification.payload.studyGroup.name}".` : 
+                        `${notification.payload.triggeringUser.name} has rejected ${notification.payload.targetUser?.name}'s request to join the study group "${notification.payload.studyGroup.name}".`;
             break;
         case "study-group-removed-member":
-            content = (userId === notification.triggeringUser.id) ? 
-                        `You have removed ${notification.targetUser?.name} from the study group "${notification.studyGroup.name}".` : 
-                        `${notification.triggeringUser.name} has removed ${notification.targetUser?.name} from the study group "${notification.studyGroup.name}".`;
+            content = (userId === notification.payload.triggeringUser.id) ? 
+                        `You have removed ${notification.payload.targetUser?.name} from the study group "${notification.payload.studyGroup.name}".` : 
+                        `${notification.payload.triggeringUser.name} has removed ${notification.payload.targetUser?.name} from the study group "${notification.payload.studyGroup.name}".`;
             break;
-        case "study-group-chat-message":
-            content = `You have a new message in the study group "${notification.studyGroup.name}" from ${notification.triggeringUser.name}.`;
-            break;
+        // case "study-group-chat-message":
+        //     content = `You have a new message in the study group "${notification.payload.studyGroup.name}" from ${notification.payload.triggeringUser.name}.`;
+        //     break;
         case "study-session-reminder":
-            content = `Reminder: Your study session for "${notification.studyGroup.name}" is starting soon.`;
+            content = `Reminder: Your study session for "${notification.payload.studySession.title}" is coming up 
+            (${formatTimestamp(notification.payload.studySession.startTime)} - ${formatTimestamp(notification.payload.studySession.endTime)}).`;
             break;
         default:
             content = "You have a new notification.";
     }
 
     return { ...notification, content };
+}
+
+function formatTimestamp(timestamp: string) {
+    const date = new Date(timestamp);
+
+    const pad = (n: number) => n.toString().padStart(2, '0');
+
+    const hours = pad(date.getHours());
+    const minutes = pad(date.getMinutes());
+    const day = pad(date.getDate());
+    const month = pad(date.getMonth() + 1); // Months are 0-based
+    const year = date.getFullYear();
+
+    return `${hours}:${minutes} ${day}/${month}/${year}`;
 }
