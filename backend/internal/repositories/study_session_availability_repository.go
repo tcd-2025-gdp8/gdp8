@@ -21,8 +21,12 @@ type StudySessionAvailabilityRepository interface {
 	) (*models.StudySessionAvailabilityRequest, error)
 	DeleteStudySessionAvailabilityRequest(tx *sql.Tx,
 		availabilityRequestID models.StudySessionAvailabilityRequestID) error
-	UpsertUserAvailabilityEntries(tx *sql.Tx, availabilityRequestID models.StudySessionAvailabilityRequestID,
-		userID models.UserID, availabilityEntries []models.AvailabilityEntry) error
+	UpsertUserAvailabilityEntries(
+		tx *sql.Tx,
+		availabilityRequestID models.StudySessionAvailabilityRequestID,
+		userID models.UserID,
+		availabilityEntries []models.AvailabilityEntry,
+	) (*models.StudySessionAvailabilityRequest, error)
 }
 
 type SQLStudySessionAvailabilityRepository struct {
