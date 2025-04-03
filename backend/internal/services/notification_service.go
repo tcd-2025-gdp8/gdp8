@@ -28,7 +28,7 @@ type NotificationService interface {
 	AddStudySessionNotification(notificationType models.NotificationType, session *models.StudySession) error
 	AddStudySessionReminderNotification(session *models.StudySession, studyGroupMembers []models.StudyGroupMemberView) error
 
-	AddStudySessionAvailabilityRequestCreatedNotification(studyGroupID models.StudyGroupID) error
+	AddStudySessionAvailabilityRequestCreatedNotification(availabilityRequest *models.StudySessionAvailabilityRequest) error
 	AddStudySessionAvailabilityUpdatedNotification(availabilityRequest *models.StudySessionAvailabilityRequest,
 		userID models.UserID) error
 }
@@ -138,9 +138,9 @@ func (s *notificationServiceImpl) AddStudySessionReminderNotification(
 }
 
 func (s *notificationServiceImpl) AddStudySessionAvailabilityRequestCreatedNotification(
-	studyGroupID models.StudyGroupID) error {
+	availabilityRequest *models.StudySessionAvailabilityRequest) error {
 
-	studyGroup, err := s.studyGroupService.GetStudyGroupByID(studyGroupID)
+	studyGroup, err := s.studyGroupService.GetStudyGroupByID(availabilityRequest.StudyGroupID)
 	if err != nil {
 		return fmt.Errorf("failed to get study group: %w", err)
 	}
@@ -149,11 +149,15 @@ func (s *notificationServiceImpl) AddStudySessionAvailabilityRequestCreatedNotif
 	}
 
 	payload, err := json.Marshal(struct {
-		StudyGroup studyGroupPayload `json:"studyGroup"`
+		StudySessionAvailabilityRequest studySessionAvailabilityRequestPayload `json:"studySessionAvailabilityRequest"`
 	}{
-		StudyGroup: studyGroupPayload{
-			ID:   studyGroupID,
-			Name: studyGroup.Name,
+		StudySessionAvailabilityRequest: studySessionAvailabilityRequestPayload{
+			ID: availabilityRequest.ID,
+			StudyGroup: studyGroupPayload{
+				ID:   studyGroup.ID,
+				Name: studyGroup.Name,
+			},
+			Title: availabilityRequest.Title,
 		},
 	})
 	if err != nil {
