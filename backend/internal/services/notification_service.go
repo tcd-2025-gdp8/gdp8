@@ -186,6 +186,7 @@ func (s *notificationServiceImpl) AddStudySessionAvailabilityUpdatedNotification
 
 	payload, err := json.Marshal(struct {
 		StudySessionAvailabilityRequest studySessionAvailabilityRequestPayload `json:"studySessionAvailabilityRequest"`
+		TriggeringUser                  userPayload                            `json:"triggeringUser"`
 	}{
 		StudySessionAvailabilityRequest: studySessionAvailabilityRequestPayload{
 			ID: availabilityRequest.ID,
@@ -194,6 +195,10 @@ func (s *notificationServiceImpl) AddStudySessionAvailabilityUpdatedNotification
 				Name: studyGroup.Name,
 			},
 			Title: availabilityRequest.Title,
+		},
+		TriggeringUser: userPayload{
+			ID:   userID,
+			Name: triggeringUser.Name,
 		},
 	})
 	if err != nil {
