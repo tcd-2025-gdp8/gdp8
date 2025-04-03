@@ -227,7 +227,7 @@ func (s *studyGroupServiceImpl) HandleAdminMemberOperation(command AdminMemberOp
 		}
 		go func() {
 			notificationErr := s.notificationService.AddStudyGroupEventNotification(
-				notificationType, adminID, &targetUserID, studyGroupID, studyGroup.Members)
+				notificationType, adminID, &targetUserID, studyGroupID, studyGroup.Name, studyGroup.Members)
 			if notificationErr != nil {
 				log.Printf("Error sending notification: %v\n", notificationErr)
 			}
@@ -286,7 +286,7 @@ func (s *studyGroupServiceImpl) HandleSelfMemberOperation(command SelfMemberOper
 		}
 		go func() {
 			notificationErr := s.notificationService.AddStudyGroupEventNotification(
-				notificationType, memberID, nil, studyGroupID, studyGroup.Members)
+				notificationType, memberID, nil, studyGroupID, studyGroup.Name, studyGroup.Members)
 			if notificationErr != nil {
 				log.Printf("Error sending notification: %v\n", notificationErr)
 			}
