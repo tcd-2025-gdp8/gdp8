@@ -73,8 +73,14 @@ export default function FilesPage() {
             await fetchFiles();
         } catch (error) {
             console.error("Error uploading file(s):", error);
+        } finally {
+            setUploading(false);
+            const length = Array.from(selectedFiles).length;
+            const popupMessage = length == 1 ?
+                                "Your file has been uploaded successfully!" :
+                                "Your files have been uploaded successfully!";
+            alert(popupMessage);
         }
-        setUploading(false);
     };
 
 
