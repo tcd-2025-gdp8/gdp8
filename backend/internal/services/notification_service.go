@@ -65,16 +65,22 @@ func (s *notificationServiceImpl) AddStudySessionReminderNotification(
 	studyGroupMembers []models.StudyGroupMemberView,
 ) error {
 
+	type studySessionPayload struct {
+		ID        models.StudySessionID `json:"id"`
+		Title     string                `json:"title"`
+		StartTime time.Time             `json:"startTime"`
+		EndTime   time.Time             `json:"endTime"`
+	}
+
 	payload, err := json.Marshal(struct {
-		StudySessionID        models.StudySessionID `json:"studySessionId"`
-		StudySessionTitle     string                `json:"studySessionTitle"`
-		StudySessionStartTime time.Time             `json:"studySessionStartTime"`
-		StudySessionEndTime   time.Time             `json:"studySessionEndTime"`
+		StudySession studySessionPayload `json:"studySession"`
 	}{
-		StudySessionID:        session.ID,
-		StudySessionTitle:     session.Title,
-		StudySessionStartTime: session.StartTime,
-		StudySessionEndTime:   session.EndTime,
+		StudySession: studySessionPayload{
+			ID:        session.ID,
+			Title:     session.Title,
+			StartTime: session.StartTime,
+			EndTime:   session.EndTime,
+		},
 	})
 	if err != nil {
 		return fmt.Errorf("failed to marshal notification payload: %w", err)
@@ -105,7 +111,16 @@ func (s *notificationServiceImpl) AddStudyGroupEventNotification(
 		return fmt.Errorf("failed to get triggering user: user not found")
 	}
 
-	var targetUserName *string
+	type userPayload struct {
+		ID   models.UserID `json:"id"`
+		Name string        `json:"name"`
+	}
+	type studyGroupPayload struct {
+		ID   models.StudyGroupID `json:"id"`
+		Name string              `json:"name"`
+	}
+
+	var targetUserPayload *userPayload
 	if targetUserID != nil {
 		targetUser, err := s.userService.GetUser(*targetUserID)
 		if err != nil {
@@ -114,24 +129,28 @@ func (s *notificationServiceImpl) AddStudyGroupEventNotification(
 		if targetUser == nil {
 			return fmt.Errorf("failed to get target user: user not found")
 		}
-		targetUserName = &targetUser.Name
+		targetUserPayload = &userPayload{
+			ID:   *targetUserID,
+			Name: targetUser.Name,
+		}
 	}
 
 	payload, err := json.Marshal(struct {
-		TriggeringUserID   models.UserID       `json:"triggeringUserId"`
-		TriggeringUserName string              `json:"triggeringUserName"`
-		TargetUserID       *models.UserID      `json:"targetUserId,omitempty"`
-		TargetUserName     *string             `json:"targetUserName,omitempty"`
-		StudyGroupID       models.StudyGroupID `json:"studyGroupId"`
-		StudyGroupName     string              `json:"studyGroupName"`
+		TriggeringUser userPayload       `json:"triggeringUser"`
+		TargetUser     *userPayload      `json:"targetUser,omitempty"`
+		StudyGroup     studyGroupPayload `json:"studyGroup"`
 	}{
-		TriggeringUserID:   triggeringUserID,
-		TriggeringUserName: triggeringUser.Name,
-		TargetUserID:       targetUserID,
-		TargetUserName:     targetUserName,
-		StudyGroupID:       studyGroupID,
-		StudyGroupName:     studyGroupName,
+		TriggeringUser: userPayload{
+			ID:   triggeringUserID,
+			Name: triggeringUser.Name,
+		},
+		TargetUser: targetUserPayload,
+		StudyGroup: studyGroupPayload{
+			ID:   studyGroupID,
+			Name: studyGroupName,
+		},
 	})
+
 	if err != nil {
 		return fmt.Errorf("failed to marshal notification payload: %w", err)
 	}
