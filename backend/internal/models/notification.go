@@ -27,8 +27,10 @@ const (
 	NotificationTypeStudySessionCancelled NotificationType = "study-session-cancelled"
 	NotificationTypeStudySessionReminder  NotificationType = "study-session-reminder"
 
-	NotificationTypeStudySessionAvailabilityRequestCreated NotificationType = "study-session-availability-request-created"
-	NotificationTypeStudySessionAvailabilityEntriesUpdated NotificationType = "study-session-availability-request-updated-entries"
+	NotificationTypeStudySessionAvailabilityRequestCreated NotificationType = "" +
+		"study-session-availability-request-created"
+	NotificationTypeStudySessionAvailabilityEntriesUpdated NotificationType = "" +
+		"study-session-availability-request-updated-entries"
 )
 
 type NotificationDetails struct {

@@ -27,7 +27,8 @@ type NotificationService interface {
 
 	AddStudySessionNotification(notificationType models.NotificationType,
 		session *models.StudySession, requesterID models.UserID) error
-	AddStudySessionReminderNotification(session *models.StudySession, studyGroupMembers []models.StudyGroupMemberView) error
+	AddStudySessionReminderNotification(session *models.StudySession,
+		studyGroupMembers []models.StudyGroupMemberView) error
 
 	AddStudySessionAvailabilityRequestCreatedNotification(availabilityRequest *models.StudySessionAvailabilityRequest,
 		requesterID models.UserID) error
@@ -113,7 +114,7 @@ func (s *notificationServiceImpl) AddStudySessionNotification(notificationType m
 		return fmt.Errorf("failed to get study group: %w", err)
 	}
 	if studyGroup == nil {
-		return fmt.Errorf("failed to get study group: study group not found")
+		return errors.New("failed to get study group: study group not found")
 	}
 	usersToBeNotified := getActualStudyGroupMembers(studyGroup.Members, &requesterID)
 
@@ -147,7 +148,7 @@ func (s *notificationServiceImpl) AddStudySessionAvailabilityRequestCreatedNotif
 		return fmt.Errorf("failed to get study group: %w", err)
 	}
 	if studyGroup == nil {
-		return fmt.Errorf("failed to get study group: study group not found")
+		return errors.New("failed to get study group: study group not found")
 	}
 
 	payload, err := json.Marshal(struct {
@@ -179,7 +180,7 @@ func (s *notificationServiceImpl) AddStudySessionAvailabilityUpdatedNotification
 		return fmt.Errorf("failed to get triggering user: %w", err)
 	}
 	if triggeringUser == nil {
-		return fmt.Errorf("failed to get triggering user: user not found")
+		return errors.New("failed to get triggering user: user not found")
 	}
 
 	studyGroup, err := s.studyGroupService.GetStudyGroupByID(availabilityRequest.StudyGroupID)
@@ -187,7 +188,7 @@ func (s *notificationServiceImpl) AddStudySessionAvailabilityUpdatedNotification
 		return fmt.Errorf("failed to get study group: %w", err)
 	}
 	if studyGroup == nil {
-		return fmt.Errorf("failed to get study group: study group not found")
+		return errors.New("failed to get study group: study group not found")
 	}
 
 	payload, err := json.Marshal(struct {
@@ -226,7 +227,7 @@ func (s *notificationServiceImpl) AddStudyGroupEventNotification(
 		return fmt.Errorf("failed to get triggering user: %w", err)
 	}
 	if triggeringUser == nil {
-		return fmt.Errorf("failed to get triggering user: user not found")
+		return errors.New("failed to get triggering user: user not found")
 	}
 
 	var targetUserPayload *userPayload
@@ -236,7 +237,7 @@ func (s *notificationServiceImpl) AddStudyGroupEventNotification(
 			return fmt.Errorf("failed to get target user: %w", err)
 		}
 		if targetUser == nil {
-			return fmt.Errorf("failed to get target user: user not found")
+			return errors.New("failed to get target user: user not found")
 		}
 		targetUserPayload = &userPayload{
 			ID:   *targetUserID,
@@ -295,6 +296,16 @@ func (s *notificationServiceImpl) AddStudyGroupEventNotification(
 	case models.NotificationTypeStudySessionReminder:
 		// This type is handled separately via AddStudySessionReminderNotification.
 		return ErrInvalidNotificationType
+	case models.NotificationTypeStudySessionScheduled:
+		return ErrInvalidNotificationType
+	case models.NotificationTypeStudySessionUpdated:
+		return ErrInvalidNotificationType
+	case models.NotificationTypeStudySessionCancelled:
+		return ErrInvalidNotificationType
+	case models.NotificationTypeStudySessionAvailabilityRequestCreated:
+		return ErrInvalidNotificationType
+	case models.NotificationTypeStudySessionAvailabilityEntriesUpdated:
+		return ErrInvalidNotificationType
 	default:
 		return ErrInvalidNotificationType
 	}
@@ -316,7 +327,9 @@ func (s *notificationServiceImpl) saveNotification(notificationType models.Notif
 }
 
 // getActualStudyGroupMembers filters members of a study group, excluding a specific user and non-member/admin roles.
-func getActualStudyGroupMembers(members []models.StudyGroupMemberView, userToBeExcluded *models.UserID) []models.UserID {
+func getActualStudyGroupMembers(members []models.StudyGroupMemberView,
+	userToBeExcluded *models.UserID) []models.UserID {
+
 	filteredMembers := make([]models.UserID, 0, len(members))
 	for _, member := range members {
 		if userToBeExcluded != nil && member.UserID == *userToBeExcluded {

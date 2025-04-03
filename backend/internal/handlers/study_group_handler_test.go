@@ -70,7 +70,7 @@ func (m *MockStudyGroupService) IsGroupMember(studyGroupID models.StudyGroupID, 
 	return args.Get(0).(bool), args.Error(1)
 }
 
-func (m *MockStudyGroupService) SetNotificationService(notificationService services.NotificationService) {
+func (m *MockStudyGroupService) SetNotificationService(_ services.NotificationService) {
 }
 
 func TestStudyGroupHandler_GetStudyGroup(t *testing.T) {

@@ -205,7 +205,7 @@ func (s *studySessionServiceImpl) CreateStudySessionAvailabilityRequest(studyGro
 		return ErrUnauthorizedStudySessionOperation
 	}
 
-	request, err := persistence.WithTransaction(s.txMgr, func(tx *sql.Tx) (*models.StudySessionAvailabilityRequest, error) {
+	req, err := persistence.WithTransaction(s.txMgr, func(tx *sql.Tx) (*models.StudySessionAvailabilityRequest, error) {
 		return s.studySessionAvailabilityRepo.CreateStudySessionAvailabilityRequest(tx,
 			studyGroupID, creatorID, availabilityRequestDetails)
 	})
@@ -215,7 +215,7 @@ func (s *studySessionServiceImpl) CreateStudySessionAvailabilityRequest(studyGro
 	}
 
 	go func() {
-		notificationErr := s.notificationService.AddStudySessionAvailabilityRequestCreatedNotification(request, creatorID)
+		notificationErr := s.notificationService.AddStudySessionAvailabilityRequestCreatedNotification(req, creatorID)
 		if notificationErr != nil {
 			log.Printf("Error sending notification: %v\n", notificationErr)
 		}
@@ -238,7 +238,7 @@ func (s *studySessionServiceImpl) UpsertUserAvailabilityEntries(
 	availabilityRequestID models.StudySessionAvailabilityRequestID, userID models.UserID,
 	availabilityEntries []models.AvailabilityEntry) error {
 
-	request, err := persistence.WithTransaction(s.txMgr, func(tx *sql.Tx) (*models.StudySessionAvailabilityRequest, error) {
+	req, err := persistence.WithTransaction(s.txMgr, func(tx *sql.Tx) (*models.StudySessionAvailabilityRequest, error) {
 		availReq, err := s.studySessionAvailabilityRepo.GetStudySessionAvailabilityRequest(tx, availabilityRequestID)
 		if err != nil {
 			return nil, err
@@ -270,7 +270,7 @@ func (s *studySessionServiceImpl) UpsertUserAvailabilityEntries(
 	}
 
 	go func() {
-		notificationErr := s.notificationService.AddStudySessionAvailabilityUpdatedNotification(request, userID)
+		notificationErr := s.notificationService.AddStudySessionAvailabilityUpdatedNotification(req, userID)
 		if notificationErr != nil {
 			log.Printf("Error sending notification: %v\n", notificationErr)
 		}
