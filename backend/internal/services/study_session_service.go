@@ -193,12 +193,17 @@ func (s *studySessionServiceImpl) CreateStudySessionAvailabilityRequest(studyGro
 		return ErrUnauthorizedStudySessionOperation
 	}
 
-	err = persistence.WithTransactionNoReturnVal(s.txMgr, func(tx *sql.Tx) error {
+	request, err := persistence.WithTransaction(s.txMgr, func(tx *sql.Tx) (*models.StudySessionAvailabilityRequest, error) {
 		return s.studySessionAvailabilityRepo.CreateStudySessionAvailabilityRequest(tx,
 			studyGroupID, creatorID, availabilityRequestDetails)
 	})
 
-	// TODO send a notification
+	go func() {
+		notificationErr := s.notificationService.AddStudySessionAvailabilityRequestCreatedNotification(request)
+		if notificationErr != nil {
+			log.Printf("Error sending notification: %v\n", notificationErr)
+		}
+	}()
 
 	return err
 }
@@ -217,26 +222,26 @@ func (s *studySessionServiceImpl) UpsertUserAvailabilityEntries(
 	availabilityRequestID models.StudySessionAvailabilityRequestID, userID models.UserID,
 	availabilityEntries []models.AvailabilityEntry) error {
 
-	err := persistence.WithTransactionNoReturnVal(s.txMgr, func(tx *sql.Tx) error {
+	request, err := persistence.WithTransaction(s.txMgr, func(tx *sql.Tx) (*models.StudySessionAvailabilityRequest, error) {
 		availReq, err := s.studySessionAvailabilityRepo.GetStudySessionAvailabilityRequest(tx, availabilityRequestID)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		isMember, err := s.studyGroupService.IsGroupMember(availReq.StudyGroupID, userID)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		if !isMember {
-			return ErrUnauthorizedStudySessionOperation
+			return nil, ErrUnauthorizedStudySessionOperation
 		}
 
 		for _, entry := range availabilityEntries {
 			if entry.AvailabilityEntryStart.Before(availReq.AvailabilityPeriodStart) ||
 				entry.AvailabilityEntryEnd.After(availReq.AvailabilityPeriodEnd) {
 
-				return ErrInvalidStudySessionAvailabilityEntry
+				return nil, ErrInvalidStudySessionAvailabilityEntry
 			}
 		}
 
@@ -244,7 +249,12 @@ func (s *studySessionServiceImpl) UpsertUserAvailabilityEntries(
 			availabilityRequestID, userID, availabilityEntries)
 	})
 
-	// TODO send a notification
+	go func() {
+		notificationErr := s.notificationService.AddStudySessionAvailabilityUpdatedNotification(request, userID)
+		if notificationErr != nil {
+			log.Printf("Error sending notification: %v\n", notificationErr)
+		}
+	}()
 
 	return err
 }
