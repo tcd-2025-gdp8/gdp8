@@ -25,24 +25,35 @@ type NotificationService interface {
 		studyGroupMembers []models.StudyGroupMemberView,
 	) error
 
+	AddStudySessionNotification(notificationType models.NotificationType, session *models.StudySession) error
 	AddStudySessionReminderNotification(session *models.StudySession, studyGroupMembers []models.StudyGroupMemberView) error
 }
 
 var ErrInvalidNotificationType = errors.New("invalid notification type")
 
+type studySessionPayload struct {
+	ID        models.StudySessionID `json:"id"`
+	Title     string                `json:"title"`
+	StartTime time.Time             `json:"startTime"`
+	EndTime   time.Time             `json:"endTime"`
+}
+
 type notificationServiceImpl struct {
-	txMgr            persistence.TransactionManager
-	notificationRepo repositories.NotificationRepository
-	userService      UserService
+	txMgr             persistence.TransactionManager
+	notificationRepo  repositories.NotificationRepository
+	userService       UserService
+	studyGroupService StudyGroupService
 }
 
 func NewNotificationService(txMgr persistence.TransactionManager,
-	notificationRepo repositories.NotificationRepository, userService UserService) NotificationService {
+	notificationRepo repositories.NotificationRepository, userService UserService,
+	studyGroupService StudyGroupService) NotificationService {
 
 	return &notificationServiceImpl{
-		txMgr:            txMgr,
-		notificationRepo: notificationRepo,
-		userService:      userService,
+		txMgr:             txMgr,
+		notificationRepo:  notificationRepo,
+		userService:       userService,
+		studyGroupService: studyGroupService,
 	}
 }
 
@@ -60,27 +71,52 @@ func (s *notificationServiceImpl) MarkNotificationAsRead(userID models.UserID,
 	})
 }
 
-func (s *notificationServiceImpl) AddStudySessionReminderNotification(
-	session *models.StudySession,
-	studyGroupMembers []models.StudyGroupMemberView,
-) error {
+func (s *notificationServiceImpl) AddStudySessionNotification(notificationType models.NotificationType,
+	session *models.StudySession) error {
 
-	type studySessionPayload struct {
-		ID        models.StudySessionID `json:"id"`
-		Title     string                `json:"title"`
-		StartTime time.Time             `json:"startTime"`
-		EndTime   time.Time             `json:"endTime"`
+	if notificationType != models.NotificationTypeStudySessionScheduled &&
+		notificationType != models.NotificationTypeStudySessionUpdated &&
+		notificationType != models.NotificationTypeStudySessionCancelled {
+		return ErrInvalidNotificationType
 	}
 
 	payload, err := json.Marshal(struct {
 		StudySession studySessionPayload `json:"studySession"`
 	}{
-		StudySession: studySessionPayload{
-			ID:        session.ID,
-			Title:     session.Title,
-			StartTime: session.StartTime,
-			EndTime:   session.EndTime,
-		},
+		StudySession: getStudySessionPayloadObject(session),
+	})
+	if err != nil {
+		return fmt.Errorf("failed to marshal notification payload: %w", err)
+	}
+
+	notification := models.NotificationDetails{
+		Type:    notificationType,
+		Payload: payload,
+	}
+
+	studyGroup, err := s.studyGroupService.GetStudyGroupByID(session.StudyGroupID)
+	if err != nil {
+		return fmt.Errorf("failed to get study group: %w", err)
+	}
+	if studyGroup == nil {
+		return fmt.Errorf("failed to get study group: study group not found")
+	}
+	usersToBeNotified := getActualStudyGroupMembers(studyGroup.Members)
+
+	return persistence.WithTransactionNoReturnVal(s.txMgr, func(tx *sql.Tx) error {
+		return s.notificationRepo.AddNotification(tx, notification, usersToBeNotified)
+	})
+}
+
+func (s *notificationServiceImpl) AddStudySessionReminderNotification(
+	session *models.StudySession,
+	studyGroupMembers []models.StudyGroupMemberView,
+) error {
+
+	payload, err := json.Marshal(struct {
+		StudySession studySessionPayload `json:"studySession"`
+	}{
+		StudySession: getStudySessionPayloadObject(session),
 	})
 	if err != nil {
 		return fmt.Errorf("failed to marshal notification payload: %w", err)
@@ -205,4 +241,13 @@ func getActualStudyGroupMembers(members []models.StudyGroupMemberView) []models.
 		}
 	}
 	return filteredMembers
+}
+
+func getStudySessionPayloadObject(session *models.StudySession) studySessionPayload {
+	return studySessionPayload{
+		ID:        session.ID,
+		Title:     session.Title,
+		StartTime: session.StartTime,
+		EndTime:   session.EndTime,
+	}
 }
