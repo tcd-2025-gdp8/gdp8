@@ -79,7 +79,7 @@ const handleSave = async () => {
         if (!userID) return;
         await updateUserModules(token, userID, { selectedModules });
         alert("Your module preferences have been saved to the backend!");
-        navigate("/landing");
+        void navigate("/landing");
     } catch (error) {
         console.error("Error:", error);
         alert("Failed to save modules.");
