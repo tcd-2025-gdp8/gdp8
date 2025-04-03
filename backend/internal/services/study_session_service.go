@@ -94,6 +94,10 @@ func (s *studySessionServiceImpl) CreateStudySession(studyGroupID models.StudyGr
 		return s.studySessionRepository.CreateStudySession(tx, studyGroupID, creatorID, studySessionDetails)
 	})
 
+	if err != nil {
+		return nil, err
+	}
+
 	go func() {
 		notificationErr := s.notificationService.AddStudySessionNotification(
 			models.NotificationTypeStudySessionScheduled, studySession)
@@ -120,6 +124,10 @@ func (s *studySessionServiceImpl) UpdateStudySession(studySessionID models.Study
 
 		return s.studySessionRepository.UpdateStudySession(tx, studySessionID, studySessionDetails)
 	})
+
+	if err != nil {
+		return nil, err
+	}
 
 	go func() {
 		notificationErr := s.notificationService.AddStudySessionNotification(
@@ -151,6 +159,10 @@ func (s *studySessionServiceImpl) DeleteStudySession(studySessionID models.Study
 		}
 		return studySession, nil
 	})
+
+	if err != nil {
+		return err
+	}
 
 	go func() {
 		notificationErr := s.notificationService.AddStudySessionNotification(
@@ -197,6 +209,10 @@ func (s *studySessionServiceImpl) CreateStudySessionAvailabilityRequest(studyGro
 		return s.studySessionAvailabilityRepo.CreateStudySessionAvailabilityRequest(tx,
 			studyGroupID, creatorID, availabilityRequestDetails)
 	})
+
+	if err != nil {
+		return err
+	}
 
 	go func() {
 		notificationErr := s.notificationService.AddStudySessionAvailabilityRequestCreatedNotification(request)
@@ -248,6 +264,10 @@ func (s *studySessionServiceImpl) UpsertUserAvailabilityEntries(
 		return s.studySessionAvailabilityRepo.UpsertUserAvailabilityEntries(tx,
 			availabilityRequestID, userID, availabilityEntries)
 	})
+
+	if err != nil {
+		return err
+	}
 
 	go func() {
 		notificationErr := s.notificationService.AddStudySessionAvailabilityUpdatedNotification(request, userID)
