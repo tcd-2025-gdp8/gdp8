@@ -118,21 +118,6 @@ export default function StudyGroupsPage() {
         Create a Study Group
       </Button>
 
-      <Button
-  variant="outlined"
-  color="secondary"
-  onClick={async () => {
-    if (!user) return alert("No user signed in.");
-    const idToken = await user.getIdToken(true); // force refresh
-    await navigator.clipboard.writeText(idToken);
-    alert("✅ Token copied to clipboard! Paste it in Postman or curl.");
-  }}
-  sx={{ marginBottom: "2rem" }}
->
-  Copy Firebase ID Token
-</Button>
-
-
       <DialogCreateStudyGroup
         modules={modulesList.filter((module) => module.id !== -1)}
         ref={createStudyGroupDialogRef}
