@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"log"
 	"net/http"
 
 	"firebase.google.com/go/v4/auth"
@@ -40,6 +41,33 @@ func RegisterAllRoutes(firebaseAuth *auth.Client, txManager persistence.Transact
 		&chatbotRepo,
 	)
 
+	calendarService, err := services.NewCalendarService("credentials/serviceAccountKey.json")
+	if err != nil {
+		log.Fatalf("Failed to initialize calendar service: %v", err)
+	}
+	// Test Google Calendar Invite at startup
+	go func() {
+		testInput := services.CalendarInviteInput{
+			Summary:     "Startup Test Event",
+			Description: "This event was sent from routes.go during backend boot",
+			Location:    "Zoom",
+			StartTime:   "2025-04-10T12:00:00Z",
+			EndTime:     "2025-04-10T13:00:00Z",
+			Attendees:   []string{"anandsainbileg@gmail.com"},
+			Organizer:   "anandsainbileg@gmail.com",
+		}
+
+		log.Println("📨 Sending test calendar invite...")
+		err := calendarService.SendInvite(testInput)
+		if err != nil {
+			log.Printf("❌ Calendar invite test failed: %v", err)
+		} else {
+			log.Println("✅ Test invite sent successfully")
+		}
+	}()
+
+	RegisterCalendarRoutes(firebaseAuth, calendarService) // ✅ This must be called!
+
 	RegisterStudyGroupRoutes(firebaseAuth, studyGroupService)
 	RegisterStudySessionRoutes(firebaseAuth, studySessionService)
 	RegisterModuleRoutes(firebaseAuth, moduleService)
@@ -51,4 +79,5 @@ func RegisterAllRoutes(firebaseAuth *auth.Client, txManager persistence.Transact
 
 	authHandler := handlers.NewAuthHandler(firebaseAuth)
 	http.HandleFunc("/api/auth/verify", authHandler.VerifyHandler)
+
 }
