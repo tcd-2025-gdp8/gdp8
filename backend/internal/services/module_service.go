@@ -11,6 +11,7 @@ import (
 type ModuleService interface {
 	GetAllModules() ([]models.Module, error)
 	CreateModule(moduleDetails models.ModuleDetails) (*models.Module, error)
+	GetModuleStudyGroupStats() (models.StudyGroupsMap, error)
 }
 
 type moduleServiceImpl struct {
@@ -32,5 +33,11 @@ func (s *moduleServiceImpl) GetAllModules() ([]models.Module, error) {
 func (s *moduleServiceImpl) CreateModule(moduleDetails models.ModuleDetails) (*models.Module, error) {
 	return persistence.WithTransaction(s.txManager, func(tx *sql.Tx) (*models.Module, error) {
 		return s.moduleRepo.CreateModule(tx, moduleDetails)
+	})
+}
+
+func (s *moduleServiceImpl) GetModuleStudyGroupStats() (models.StudyGroupsMap, error) {
+	return persistence.WithTransaction(s.txManager, func(tx *sql.Tx) (models.StudyGroupsMap, error) {
+		return s.moduleRepo.GetModuleStudyGroupStats(tx)
 	})
 }
