@@ -36,6 +36,6 @@ export async function createModule(token: string | null, module: ModuleCreationD
 }
 
 export async function fetchStudyGroupStats(token: string | null): Promise<StudyGroupStatsMap> {
-    const stats = await fetchApiToJson<StudyGroupStatsMap>("/api/study-group-stats", token);
+    const stats = await fetchApiToJson<StudyGroupStatsMap>("/study-group-stats", token);
     return stats;
 }
