@@ -45,3 +45,13 @@ func (h *ModuleHandler) CreateModule(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusCreated)
 }
+
+func (h *ModuleHandler) GetModuleStudyGroupStats(w http.ResponseWriter, _ *http.Request) {
+	stats, err := h.moduleService.GetModuleStudyGroupStats()
+	if err != nil {
+		log.Printf("Error fetching study group stats: %v\n", err)
+		http.Error(w, "Failed to fetch study group stats", http.StatusInternalServerError)
+		return
+	}
+	sendJSONResponse(w, stats)
+}
