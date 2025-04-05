@@ -43,7 +43,8 @@ func (s *SQLModuleRepository) FetchModules(tx *sql.Tx) ([]models.Module, error) 
 	return modules, nil
 }
 
-func (s *SQLModuleRepository) FetchStudyGroupsForModule(tx *sql.Tx, moduleID models.ModuleID) ([]models.StudyGroup, error) {
+func (s *SQLModuleRepository) FetchStudyGroupsForModule(tx *sql.Tx,
+	moduleID models.ModuleID) ([]models.StudyGroup, error) {
 	groupRows, err := tx.Query(`
 		SELECT id, name FROM study_groups WHERE module_id = ?
 	`, moduleID)
@@ -97,7 +98,7 @@ func (s *SQLModuleRepository) FetchTotalStudyTimeForGroup(tx *sql.Tx, group mode
 
 func (s *SQLModuleRepository) FetchWeeklyStudyTimeForGroup(tx *sql.Tx, group models.StudyGroup) ([]int64, error) {
 	weekly := make([]int64, 4)
-	for i := 0; i < 4; i++ {
+	for i := range 4 {
 		err := tx.QueryRow(`
 			SELECT COALESCE(SUM(duration_minutes), 0)
 			FROM study_sessions

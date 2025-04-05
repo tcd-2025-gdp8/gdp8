@@ -15,5 +15,5 @@ func RegisterModuleRoutes(firebaseAuth *auth.Client, moduleService services.Modu
 
 	http.HandleFunc("GET /api/modules", middleware.WithFirebaseAuth(firebaseAuth, handler.GetAllModules))
 	http.HandleFunc("POST /api/modules", middleware.WithFirebaseAuth(firebaseAuth, handler.CreateModule))
-	http.HandleFunc("GET /api/modules/study-group-stats", middleware.WithFirebaseAuth(firebaseAuth, handler.GetModuleStudyGroupStats))
+	http.HandleFunc("GET /api/study-group-stats", middleware.WithFirebaseAuth(firebaseAuth, handler.GetModuleStudyGroupStats))
 }
