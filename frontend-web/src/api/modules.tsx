@@ -19,10 +19,6 @@ export interface StudyGroupStatsDTO {
     weeklyHours: number[];
 }
 
-export interface StudyGroupStatsMap {
-    [moduleCode: string]: StudyGroupStatsDTO[] | null;
-}
-
 export async function fetchAllModules(token: string | null): Promise<Module[]> {
     const modules = await fetchApiToJson<Module[]>("/modules", token);
     return modules;
@@ -35,7 +31,7 @@ export async function createModule(token: string | null, module: ModuleCreationD
     });
 }
 
-export async function fetchStudyGroupStats(token: string | null): Promise<StudyGroupStatsMap> {
-    const stats = await fetchApiToJson<StudyGroupStatsMap>("/study-group-stats", token);
+export async function fetchStudyGroupStats(token: string | null): Promise<Record<string, StudyGroupStatsDTO[] | null>> {
+    const stats = await fetchApiToJson<Record<string, StudyGroupStatsDTO[] | null>>("/study-group-stats", token);
     return stats;
 }

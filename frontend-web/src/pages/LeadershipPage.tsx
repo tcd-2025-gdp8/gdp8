@@ -56,21 +56,26 @@ const LeadershipPage: React.FC = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const fetchedModules = await fetchAllModules(token);
-      const fetchedStudyGroupStats = await fetchStudyGroupStats(token);
-
-      setModules(fetchedModules);
-      setStudyGroupStats(fetchedStudyGroupStats as StudyGroupStatsMap);
-
-      if (fetchedModules.length > 0) {
-        setSelectedModule(fetchedModules[0].code);
+      try {
+        const fetchedModules = await fetchAllModules(token);
+        const fetchedStudyGroupStats = await fetchStudyGroupStats(token);
+  
+        setModules(fetchedModules);
+        setStudyGroupStats(fetchedStudyGroupStats as StudyGroupStatsMap);
+  
+        if (fetchedModules.length > 0) {
+          setSelectedModule(fetchedModules[0].code);
+        }
+  
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        setLoading(false);
       }
-
-      setLoading(false); // Set loading to false after data is fetched
     };
-
-    fetchData();
-  }, []);
+  
+    void fetchData();
+  }, [token]);  
 
   // Ensure currentGroups is populated before using it
   const currentGroups: StudyGroupStatsDTO[] = studyGroupStats[selectedModule] || [];
