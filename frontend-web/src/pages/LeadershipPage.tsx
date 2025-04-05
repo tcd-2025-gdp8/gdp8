@@ -138,20 +138,23 @@ const LeadershipPage: React.FC = () => {
           <Box sx={{ width: '100%' }}>
             {/* Module Selection Dropdown */}
             <Box sx={{ mb: 3, maxWidth: 400 }}>
-              <FormControl fullWidth>
-                <InputLabel id="module-select-label">Select Module</InputLabel>
-                <Select
-                  labelId="module-select-label"
-                  id="module-select"
-                  value={selectedModule}
-                  label="Select Module"
-                  onChange={handleModuleChange}
-                >
-                  {modules.map(module => (
-                    <MenuItem key={module.id} value={module.code}>{module.name}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+            <FormControl fullWidth>
+  <InputLabel id="module-select-label">Select Module</InputLabel>
+  <Select
+    labelId="module-select-label"
+    id="module-select"
+    value={selectedModule}
+    label="Select Module"
+    onChange={handleModuleChange}
+  >
+    {modules.map(module => (
+      <MenuItem key={module.id} value={module.code}>
+        {module.code}: {module.name}
+      </MenuItem>
+    ))}
+  </Select>
+</FormControl>
+
             </Box>
             
             <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1fr 2fr' }, gap: 3 }}>
