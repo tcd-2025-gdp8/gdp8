@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Trophy, Clock, Users, Award } from 'lucide-react';
 import Sidebar from './../components/Sidebar'; // Import the Sidebar component
@@ -21,14 +21,16 @@ import {
   MenuItem,
   SelectChangeEvent
 } from '@mui/material';
+import { fetchAllModules, fetchStudyGroupStats } from '../api/modules';
+import { useAuth } from '../auth/useAuth';
 
-// Define interfaces for type safety
 interface Module {
-  id: string;
+  id: number;
+  code: string;
   name: string;
 }
 
-interface StudyGroup {
+interface StudyGroupStatsDTO {
   id: number;
   name: string;
   members: number;
@@ -36,48 +38,48 @@ interface StudyGroup {
   weeklyHours: number[];
 }
 
-type StudyGroupsMap = Record<string, StudyGroup[]>;
+type StudyGroupStatsMap = Record<string, StudyGroupStatsDTO[]>;
 
 interface WeekData {
   name: string;
   [groupName: string]: string | number;
 }
 
-// Mock data
-const mockModules: Module[] = [
-  { id: 'cs101', name: 'Computer Science 101' },
-  { id: 'math201', name: 'Mathematics 201' },
-  { id: 'phys301', name: 'Physics 301' }
-];
-
-const mockStudyGroups: StudyGroupsMap = {
-  'cs101': [
-    { id: 1, name: 'Algorithm Aces', members: 8, totalHours: 78, weeklyHours: [12, 18, 22, 26]},
-    { id: 2, name: 'Code Crafters', members: 6, totalHours: 65, weeklyHours: [10, 15, 18, 22]},
-    { id: 3, name: 'Binary Brains', members: 7, totalHours: 52, weeklyHours: [8, 12, 15, 17]},
-    { id: 4, name: 'Data Dynamos', members: 5, totalHours: 48, weeklyHours: [8, 10, 14, 16]},
-    { id: 5, name: 'Syntax Squad', members: 6, totalHours: 42, weeklyHours: [7, 10, 12, 13]}
-  ],
-  'math201': [
-    { id: 1, name: 'Matrix Masters', members: 7, totalHours: 72, weeklyHours: [10, 16, 20, 26]},
-    { id: 2, name: 'Calculus Crew', members: 8, totalHours: 65, weeklyHours: [12, 15, 18, 20] },
-    { id: 3, name: 'Equation Elite', members: 6, totalHours: 58, weeklyHours: [10, 14, 16, 18]}
-  ],
-  'phys301': [
-    { id: 1, name: 'Quantum Quest', members: 5, totalHours: 64, weeklyHours: [12, 14, 18, 20]},
-    { id: 2, name: 'Momentum Makers', members: 6, totalHours: 56, weeklyHours: [10, 12, 16, 18]},
-    { id: 3, name: 'Force Field', members: 7, totalHours: 50, weeklyHours: [8, 12, 14, 16]}
-  ]
-};
-
 const weekLabels: string[] = ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
 
 const LeadershipPage: React.FC = () => {
-  const [selectedModule, setSelectedModule] = useState<string>(mockModules[0].id);
+  const { token } = useAuth();
+  const [selectedModule, setSelectedModule] = useState<string>('');
+  const [modules, setModules] = useState<Module[]>([]);
+  const [studyGroupStats, setStudyGroupStats] = useState<StudyGroupStatsMap>({});
+  const [loading, setLoading] = useState<boolean>(true); // Added loading state
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const fetchedModules = await fetchAllModules(token);
+        const fetchedStudyGroupStats = await fetchStudyGroupStats(token);
   
-  // Get current module's study groups and sort by total hours
-  const currentGroups: StudyGroup[] = [...mockStudyGroups[selectedModule]].sort((a, b) => b.totalHours - a.totalHours);
+        setModules(fetchedModules);
+        setStudyGroupStats(fetchedStudyGroupStats as StudyGroupStatsMap);
   
+        if (fetchedModules.length > 0) {
+          setSelectedModule(fetchedModules[0].code);
+        }
+  
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        setLoading(false);
+      }
+    };
+  
+    void fetchData();
+  }, [token]);  
+
+  // Ensure currentGroups is populated before using it
+  const currentGroups: StudyGroupStatsDTO[] = studyGroupStats[selectedModule] || [];
+
   // Format data for the chart
   const chartData: WeekData[] = weekLabels.map((week, index) => {
     const weekData: WeekData = { name: week };
@@ -86,7 +88,7 @@ const LeadershipPage: React.FC = () => {
     });
     return weekData;
   });
-  
+
   // Define medal colors
   const getMedalColor = (rank: number): string => {
     switch(rank) {
@@ -96,7 +98,7 @@ const LeadershipPage: React.FC = () => {
       default: return '#6B7280'; // gray
     }
   };
-  
+
   // Get medal icon
   const getMedalIcon = (rank: number): React.ReactNode => {
     if (rank === 0) return <Trophy color={getMedalColor(rank)} size={24} />;
@@ -108,6 +110,10 @@ const LeadershipPage: React.FC = () => {
   const handleModuleChange = (event: SelectChangeEvent) => {
     setSelectedModule(event.target.value);
   };
+
+  if (loading) {
+    return <div>Loading...</div>; // Loading message while fetching data
+  }
 
   return (
     <Box sx={{ display: 'flex' }}>
@@ -137,20 +143,23 @@ const LeadershipPage: React.FC = () => {
           <Box sx={{ width: '100%' }}>
             {/* Module Selection Dropdown */}
             <Box sx={{ mb: 3, maxWidth: 400 }}>
-              <FormControl fullWidth>
-                <InputLabel id="module-select-label">Select Module</InputLabel>
-                <Select
-                  labelId="module-select-label"
-                  id="module-select"
-                  value={selectedModule}
-                  label="Select Module"
-                  onChange={handleModuleChange}
-                >
-                  {mockModules.map(module => (
-                    <MenuItem key={module.id} value={module.id}>{module.name}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+            <FormControl fullWidth>
+  <InputLabel id="module-select-label">Select Module</InputLabel>
+  <Select
+    labelId="module-select-label"
+    id="module-select"
+    value={selectedModule}
+    label="Select Module"
+    onChange={handleModuleChange}
+  >
+    {modules.map(module => (
+      <MenuItem key={module.id} value={module.code}>
+        {module.code}: {module.name}
+      </MenuItem>
+    ))}
+  </Select>
+</FormControl>
+
             </Box>
             
             <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1fr 2fr' }, gap: 3 }}>
@@ -170,10 +179,10 @@ const LeadershipPage: React.FC = () => {
                             <Award color="#9CA3AF" size={32} />
                           </Box>
                           <Box sx={{ bgcolor: '#4B5563', width: '100%', py: 1, textAlign: 'center', color: 'white', fontWeight: 600, borderBottomLeftRadius: '8px', borderBottomRightRadius: '8px' }}>
-                            {currentGroups[1].totalHours}h
+                            {currentGroups[1]?.totalHours ?? 0}h
                           </Box>
                           <Typography variant="body2" sx={{ mt: 1, fontWeight: 500, textAlign: 'center' }}>
-                            {currentGroups[1].name}
+                            {currentGroups[1]?.name ?? 'N/A'}
                           </Typography>
                         </Box>
                       </Box>
@@ -186,10 +195,10 @@ const LeadershipPage: React.FC = () => {
                           <Trophy color="#F59E0B" size={40} />
                         </Box>
                         <Box sx={{ bgcolor: '#F59E0B', width: '100%', py: 1.5, textAlign: 'center', color: 'white', fontWeight: 700, borderBottomLeftRadius: '8px', borderBottomRightRadius: '8px', fontSize: '1.125rem' }}>
-                          {currentGroups[0].totalHours}h
+                          {currentGroups[0]?.totalHours ?? 0}h
                         </Box>
                         <Typography variant="body2" sx={{ mt: 1, fontWeight: 500, textAlign: 'center' }}>
-                          {currentGroups[0].name}
+                          {currentGroups[0]?.name ?? 'N/A'}
                         </Typography>
                       </Box>
                     </Box>
@@ -202,10 +211,10 @@ const LeadershipPage: React.FC = () => {
                             <Award color="#D97706" size={28} />
                           </Box>
                           <Box sx={{ bgcolor: '#D97706', width: '100%', py: 1, textAlign: 'center', color: 'white', fontWeight: 600, borderBottomLeftRadius: '8px', borderBottomRightRadius: '8px' }}>
-                            {currentGroups[2].totalHours}h
+                            {currentGroups[2]?.totalHours ?? 0}h
                           </Box>
                           <Typography variant="body2" sx={{ mt: 1, fontWeight: 500, textAlign: 'center' }}>
-                            {currentGroups[2].name}
+                            {currentGroups[2]?.name ?? 'N/A'}
                           </Typography>
                         </Box>
                       </Box>
@@ -232,13 +241,7 @@ const LeadershipPage: React.FC = () => {
                             key={group.id} 
                             dataKey={group.name} 
                             stackId="a"
-                            fill={[
-                              "#3B82F6", // Blue
-                              "#10B981", // Green
-                              "#F43F5E", // Rose
-                              "#8B5CF6", // Purple
-                              "#F59E0B"  // Amber
-                            ][index % 5]} 
+                            fill={[ "#3B82F6", "#10B981", "#F43F5E", "#8B5CF6", "#F59E0B" ][index % 5]} 
                           />
                         ))}
                       </BarChart>
@@ -266,7 +269,7 @@ const LeadershipPage: React.FC = () => {
                         </TableHead>
                         <TableBody>
                           {currentGroups.map((group, index) => (
-                            <TableRow key={group.id} sx={{ bgcolor: index < 3 ? '#F9FAFB' : 'inherit' }}>
+                            <TableRow key={group.id}>
                               <TableCell align="center">
                                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, mx: 'auto' }}>
                                   {getMedalIcon(index)}
@@ -278,15 +281,15 @@ const LeadershipPage: React.FC = () => {
                                 </Typography>
                               </TableCell>
                               <TableCell align="center">
-                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'text.secondary' }}>
-                                  <Users size={16} style={{ marginRight: 4 }} />
-                                  {group.members}
+                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                  <Users size={18} color="#6B7280" />
+                                  <Typography sx={{ ml: 1 }}>{group.members}</Typography>
                                 </Box>
                               </TableCell>
                               <TableCell align="center">
-                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>
-                                  <Clock size={16} style={{ marginRight: 8, color: '#6B7280' }} />
-                                  {group.totalHours}h
+                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                  <Clock size={18} color="#6B7280" />
+                                  <Typography sx={{ ml: 1 }}>{group.totalHours}h</Typography>
                                 </Box>
                               </TableCell>
                             </TableRow>
