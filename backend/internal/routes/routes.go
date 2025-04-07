@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"log"
 	"net/http"
 
 	"firebase.google.com/go/v4/auth"
@@ -51,4 +52,11 @@ func RegisterAllRoutes(firebaseAuth *auth.Client, txManager persistence.Transact
 
 	authHandler := handlers.NewAuthHandler(firebaseAuth)
 	http.HandleFunc("/api/auth/verify", authHandler.VerifyHandler)
+
+	calendarService, err := services.NewCalendarService("credentials/serviceAccountKey.json")
+	if err != nil {
+		log.Fatalf("❌ Failed to initialize calendar service: %v", err)
+	}
+	RegisterCalendarRoutes(firebaseAuth, calendarService)
+
 }
