@@ -38,6 +38,7 @@ const LoginPage: React.FC = () => {
                 await registerUser(newToken, {
                     id: firebaseUID,
                     name: firstName + " " + lastName,
+                    email: email
                 });
 
             } else {

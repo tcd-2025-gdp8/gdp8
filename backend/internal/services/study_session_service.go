@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"log"
+	"time"
 
 	"gdp8-backend/internal/models"
 	"gdp8-backend/internal/persistence"
@@ -39,13 +40,15 @@ type studySessionServiceImpl struct {
 	studySessionRepository       repositories.StudySessionRepository
 	studyGroupService            StudyGroupService
 	notificationService          NotificationService
+	eventInvitesService          EventInvitesService
 }
 
 func NewStudySessionService(txMgr persistence.TransactionManager,
 	studySessionAvailabilityRepo repositories.StudySessionAvailabilityRepository,
 	studySessionRepository repositories.StudySessionRepository,
 	studyGroupService StudyGroupService,
-	notificationService NotificationService) StudySessionService {
+	notificationService NotificationService,
+	eventInvitesService EventInvitesService) StudySessionService {
 
 	return &studySessionServiceImpl{
 		txMgr:                        txMgr,
@@ -53,6 +56,7 @@ func NewStudySessionService(txMgr persistence.TransactionManager,
 		studySessionRepository:       studySessionRepository,
 		studyGroupService:            studyGroupService,
 		notificationService:          notificationService,
+		eventInvitesService:          eventInvitesService,
 	}
 }
 
@@ -104,8 +108,24 @@ func (s *studySessionServiceImpl) CreateStudySession(studyGroupID models.StudyGr
 		if notificationErr != nil {
 			log.Printf("Error sending notification: %v\n", notificationErr)
 		}
+
+		studyGroup, err := s.studyGroupService.GetStudyGroupByID(studyGroupID)
+		if err != nil {
+			log.Printf("Error fetching study group: %v\n", err)
+		}
+		members := getActualStudyGroupMembers(studyGroup.Members, nil)
+
+		err = s.eventInvitesService.SendEventInvites(EventDetails{
+			Summary:     studySessionDetails.Title,
+			Description: "Study session for group \"" + studyGroup.Name + "\".",
+			StartTime:   studySessionDetails.StartTime,
+			EndTime: studySessionDetails.StartTime.Add(
+				time.Duration(studySessionDetails.DurationMinutes) * time.Minute),
+		}, members)
+		if err != nil {
+			log.Printf("Error sending google calendar invite: %v\n", err)
+		}
 	}()
-	// TODO send a calendar invite
 
 	return studySession, err
 }

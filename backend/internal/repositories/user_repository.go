@@ -20,10 +20,10 @@ type SQLUserRepository struct {
 
 func (s *SQLUserRepository) GetUserByID(tx *sql.Tx, id models.UserID) (*models.User, error) {
 
-	row := tx.QueryRow("SELECT id, name FROM users WHERE id = ?", id)
+	row := tx.QueryRow("SELECT id, name, email FROM users WHERE id = ?", id)
 
 	var user models.User
-	if err := row.Scan(&user.ID, &user.Name); err != nil {
+	if err := row.Scan(&user.ID, &user.Name, &user.Email); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrUserNotFound
 		}
@@ -61,7 +61,8 @@ func (s *SQLUserRepository) GetUserByID(tx *sql.Tx, id models.UserID) (*models.U
 
 func (s *SQLUserRepository) CreateUser(tx *sql.Tx,
 	id models.UserID, userDetails models.UserDetails) (*models.User, error) {
-	_, err := tx.Exec("INSERT INTO users (id, name) VALUES (?, ?)", id, userDetails.Name)
+	_, err := tx.Exec("INSERT INTO users (id, name, email) VALUES (?, ?, ?)",
+		id, userDetails.Name, userDetails.Email)
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +70,8 @@ func (s *SQLUserRepository) CreateUser(tx *sql.Tx,
 	user := &models.User{
 		ID: id,
 		UserDetails: models.UserDetails{
-			Name: userDetails.Name,
+			Name:  userDetails.Name,
+			Email: userDetails.Email,
 		},
 		Modules: []models.Module{},
 	}

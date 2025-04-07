@@ -11,9 +11,10 @@ import (
 	"gdp8-backend/internal/services"
 )
 
-func RegisterAllRoutes(firebaseAuth *auth.Client, txManager persistence.TransactionManager) {
+func RegisterAllRoutes(firebaseAuth *auth.Client, txManager persistence.TransactionManager,
+	userService services.UserService, eventInvitesService services.EventInvitesService) {
+
 	studyGroupRepo := repositories.SQLStudyGroupRepository{}
-	userRepo := repositories.SQLUserRepository{}
 	moduleRepo := repositories.SQLModuleRepository{}
 	notificationRepo := repositories.SQLNotificationRepository{}
 	studySessionRepo := repositories.SQLStudySessionRepository{}
@@ -22,13 +23,12 @@ func RegisterAllRoutes(firebaseAuth *auth.Client, txManager persistence.Transact
 	chatRepo := repositories.SQLChatMessagesRepository{}
 	chatbotRepo := repositories.SQLChatBotMemoryRepo{}
 
-	userService := services.NewUserService(txManager, &userRepo)
 	moduleService := services.NewModuleService(txManager, &moduleRepo)
 	studyGroupService := services.NewStudyGroupService(txManager, &studyGroupRepo, nil)
 	notificationService := services.NewNotificationService(txManager, &notificationRepo, userService, studyGroupService)
 	studyGroupService.SetNotificationService(notificationService)
 	studySessionService := services.NewStudySessionService(txManager,
-		&studySessionAvailabilityRepo, &studySessionRepo, studyGroupService, notificationService)
+		&studySessionAvailabilityRepo, &studySessionRepo, studyGroupService, notificationService, eventInvitesService)
 	fileService := services.NewFileService(txManager, &fileRepo, studyGroupService)
 	chatService := services.NewChatService(txManager, &chatRepo, studyGroupService)
 
