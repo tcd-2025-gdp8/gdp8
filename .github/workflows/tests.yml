@@ -50,6 +50,11 @@ jobs:
             firebase-emulator
             tests-integration
 
+      - name: Restore service account key
+        run: |
+          mkdir -p backend/credentials
+          echo "${{ secrets.GCLOUD_CREDENTIALS_BASE64 }}" | base64 -d > backend/credentials/serviceAccountKey.json
+
       - name: Set up Docker
         uses: docker/setup-buildx-action@v3
 
