@@ -117,7 +117,7 @@ func (s *studySessionServiceImpl) CreateStudySession(studyGroupID models.StudyGr
 
 		err = s.eventInvitesService.SendEventInvites(EventDetails{
 			Summary:     studySessionDetails.Title,
-			Description: "Study session for group " + studyGroup.Name + ".",
+			Description: "Study session for group \"" + studyGroup.Name + "\".",
 			StartTime:   studySessionDetails.StartTime,
 			EndTime: studySessionDetails.StartTime.Add(
 				time.Duration(studySessionDetails.DurationMinutes) * time.Minute),
