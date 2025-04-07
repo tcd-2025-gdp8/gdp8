@@ -55,8 +55,8 @@ func RegisterAllRoutes(firebaseAuth *auth.Client, txManager persistence.Transact
 
 	calendarService, err := services.NewCalendarService("credentials/serviceAccountKey.json")
 	if err != nil {
-		log.Fatalf("❌ Failed to initialize calendar service: %v", err)
+		log.Printf(" Calendar service not initialized: %v", err)
+	} else {
+		RegisterCalendarRoutes(firebaseAuth, calendarService)
 	}
-	RegisterCalendarRoutes(firebaseAuth, calendarService)
-
 }
