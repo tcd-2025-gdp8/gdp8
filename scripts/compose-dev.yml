@@ -8,14 +8,15 @@ services:
       - MYSQL_CONNECTION_STRING=user:password@tcp(mysql:3306)/gdp8?charset=utf8mb4&parseTime=True&loc=Local&multiStatements=True
       - GEMINI_API_KEY=${GEMINI_API_KEY}
     volumes:
-      - ./backend/credentials:/app/credentials:ro
+      - ./backend:/app/backend
+      - ./backend/credentials/serviceAccountKey.json:/app/backend/credentials/serviceAccountKey.json:ro
+
     ports:
       - 8080:8080
     depends_on:
       mysql:
         condition: service_healthy
         restart: true
-
 
   mysql:
     image: mysql
@@ -35,7 +36,6 @@ services:
       retries: 3
       start_period: 10s
       timeout: 10s
-
 
 volumes:
   mysql_data:
