@@ -33,7 +33,7 @@ func NewEventInvitesService(googleCalendarService *calendar.Service, userService
 }
 
 func (s *eventInvitesServiceImpl) SendEventInvites(eventDetails EventDetails, invitees []models.UserID) error {
-	var attendees []*calendar.EventAttendee
+	attendees := make([]*calendar.EventAttendee, 0, len(invitees))
 	for _, userID := range invitees {
 		user, err := s.userService.GetUser(userID)
 		if err != nil {
@@ -66,7 +66,7 @@ func (s *eventInvitesServiceImpl) SendEventInvites(eventDetails EventDetails, in
 		},
 	}
 
-	event, err := s.googleCalendarService.Events.Insert("primary", event).SendUpdates("all").Do()
+	_, err := s.googleCalendarService.Events.Insert("primary", event).SendUpdates("all").Do()
 	return err
 }
 

@@ -2,6 +2,7 @@ package integrations
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 
@@ -18,7 +19,7 @@ func GetCalendarService() (*calendar.Service, error) {
 	refreshToken := os.Getenv("GOOGLE_CALENDAR_HOST_REFRESH_TOKEN")
 
 	if clientID == "" || clientSecret == "" || refreshToken == "" {
-		return nil, fmt.Errorf("required environment variables are not set: GOOGLE_CALENDAR_HOST_CLIENT_ID, " +
+		return nil, errors.New("required environment variables are not set: GOOGLE_CALENDAR_HOST_CLIENT_ID, " +
 			"GOOGLE_CALENDAR_HOST_CLIENT_SECRET, GOOGLE_CALENDAR_HOST_REFRESH_TOKEN")
 	}
 
