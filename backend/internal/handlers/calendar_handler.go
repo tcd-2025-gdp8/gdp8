@@ -58,8 +58,10 @@ func (h *CalendarHandler) Invite(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{
+	if err := json.NewEncoder(w).Encode(map[string]string{
 		"message":   "Event created successfully",
 		"eventLink": createdEvent.HtmlLink,
-	})
+	}); err != nil {
+		log.Printf("❌ Failed to write JSON response: %v", err)
+	}
 }
