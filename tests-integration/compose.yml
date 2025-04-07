@@ -10,21 +10,24 @@ services:
     depends_on:
       - backend
       - firebase
+
   backend:
     build:
       context: backend
     ports:
-      - "8080:8080"  # <--- Add this line
+      - "8080:8080"
     environment:
       - FIREBASE_AUTH_EMULATOR_HOST=firebase:9099
       - MYSQL_CONNECTION_STRING=user:password@tcp(mysql:3306)/gdp8?charset=utf8mb4&parseTime=True&loc=Local&multiStatements=True
       - GEMINI_API_KEY=${GEMINI_API_KEY}
+    volumes:
+      - ./backend:/app/backend
+      - ./backend/credentials/serviceAccountKey.json:/app/backend/credentials/serviceAccountKey.json:ro
     depends_on:
       firebase:
         condition: service_started
       mysql:
         condition: service_healthy
-
 
   firebase:
     build:
