@@ -117,40 +117,12 @@ export default function StudyGroupsPage() {
       >
         Create a Study Group
       </Button>
-      
-      
+
       <DialogCreateStudyGroup
         modules={modulesList.filter((module) => module.id !== -1)}
         ref={createStudyGroupDialogRef}
         onUpdate={() => void fetchData()}
       />
-      <Button
-  variant="contained"
-  color="primary"
-  onClick={() => createStudyGroupDialogRef.current?.openDialog()}
-  sx={{ maxWidth: "600px", margin: "2rem auto", display: "block", width: "100%" }}
->
-  Create a Study Group
-</Button>
-
-<Button
-  variant="outlined"
-  color="secondary"
-  onClick={async () => {
-    if (!token) return;
-    try {
-      await navigator.clipboard.writeText(token);
-      alert("Firebase token copied to clipboard!");
-    } catch (err) {
-      console.error("Failed to copy token", err);
-    }
-  }}
-  sx={{ marginBottom: "1.5rem" }}
->
-  Copy Firebase Token
-</Button>
-
-
     </Container>
   );
 }
