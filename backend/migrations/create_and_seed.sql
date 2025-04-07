@@ -72,36 +72,16 @@ CREATE TABLE IF NOT EXISTS notifications (
         'study-group-accepted-join-request',
         'study-group-rejected-join-request',
         'study-group-removed-member',
-        'study-group-chat-message'
+        'study-group-chat-message',
+        'study-session-scheduled',
+        'study-session-updated',
+        'study-session-cancelled',
+        'study-session-reminder',
+        'study-session-availability-request-created',
+        'study-session-availability-request-updated-entries'
         ) NOT NULL,
-    triggering_user_id VARCHAR(255) NOT NULL,
-    target_user_id VARCHAR(255) NULL,
-    study_group_id INT NULL NOT NULL,
-    message_id INT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-    FOREIGN KEY (triggering_user_id) REFERENCES users(id) ON DELETE RESTRICT,
-    FOREIGN KEY (target_user_id) REFERENCES users(id) ON DELETE RESTRICT,
-    FOREIGN KEY (study_group_id) REFERENCES study_groups(id) ON DELETE CASCADE,
-
-    CHECK (
-        CASE
-            WHEN type = 'study-group-joined'                THEN (target_user_id IS NULL AND message_id IS NULL)
-            WHEN type = 'study-group-requested-to-join'     THEN (target_user_id IS NULL AND message_id IS NULL)
-            WHEN type = 'study-group-left'                  THEN (target_user_id IS NULL AND message_id IS NULL)
-            WHEN type = 'study-group-accepted-invite'       THEN (target_user_id IS NULL AND message_id IS NULL)
-            WHEN type = 'study-group-rejected-invite'       THEN (target_user_id IS NULL AND message_id IS NULL)
-
-            WHEN type = 'study-group-chat-message'          THEN (target_user_id IS NULL AND message_id IS NOT NULL)
-
-            WHEN type = 'study-group-invited'               THEN (target_user_id IS NOT NULL AND message_id IS NULL)
-            WHEN type = 'study-group-accepted-join-request' THEN (target_user_id IS NOT NULL AND message_id IS NULL)
-            WHEN type = 'study-group-rejected-join-request' THEN (target_user_id IS NOT NULL AND message_id IS NULL)
-            WHEN type = 'study-group-removed-member'        THEN (target_user_id IS NOT NULL AND message_id IS NULL)
-
-            ELSE FALSE
-        END = TRUE
-    )
+    payload JSON NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS user_notifications (
@@ -145,6 +125,7 @@ CREATE TABLE IF NOT EXISTS study_session_availability_requests (
     id INT AUTO_INCREMENT PRIMARY KEY,
     study_group_id INT NOT NULL,
     creator_id VARCHAR(255) NOT NULL,
+    title VARCHAR(255) NOT NULL,
     availability_period_start TIMESTAMP NOT NULL,
     availability_period_end TIMESTAMP NOT NULL,
 

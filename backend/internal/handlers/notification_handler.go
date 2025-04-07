@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
 	"time"
@@ -14,24 +15,11 @@ type NotificationHandler struct {
 	service services.NotificationService
 }
 
-type userIDWithName struct {
-	ID   models.UserID `json:"id"`
-	Name string        `json:"name"`
-}
-
-type studyGroupIDWithName struct {
-	ID   models.StudyGroupID `json:"id"`
-	Name string              `json:"name"`
-}
-
 type NotificationDTO struct {
-	ID             models.NotificationID   `json:"id"`
-	Type           models.NotificationType `json:"type"`
-	TriggeringUser userIDWithName          `json:"triggeringUser"`
-	TargetUser     *userIDWithName         `json:"targetUser,omitempty"`
-	StudyGroup     studyGroupIDWithName    `json:"studyGroup"`
-	MessageID      *int64                  `json:"messageId,omitempty"`
-	CreatedAt      time.Time               `json:"createdAt"`
+	ID        models.NotificationID   `json:"id"`
+	Type      models.NotificationType `json:"type"`
+	Payload   json.RawMessage         `json:"payload"`
+	CreatedAt time.Time               `json:"createdAt"`
 }
 
 func NewNotificationHandler(service services.NotificationService) *NotificationHandler {
@@ -82,28 +70,11 @@ func (h *NotificationHandler) MarkNotificationAsRead(w http.ResponseWriter, r *h
 	w.WriteHeader(http.StatusOK)
 }
 
-func mapNotificationToDTO(notification *models.NotificationView) NotificationDTO {
-	var targetUser *userIDWithName
-	if notification.TargetUserID != nil {
-		targetUser = &userIDWithName{
-			ID:   *notification.TargetUserID,
-			Name: *notification.TargetUserName,
-		}
-	}
-
+func mapNotificationToDTO(notification *models.Notification) NotificationDTO {
 	return NotificationDTO{
-		ID:   notification.ID,
-		Type: notification.Type,
-		TriggeringUser: userIDWithName{
-			ID:   notification.TriggeringUserID,
-			Name: notification.TriggeringUserName,
-		},
-		TargetUser: targetUser,
-		StudyGroup: studyGroupIDWithName{
-			ID:   notification.StudyGroupID,
-			Name: notification.StudyGroupName,
-		},
-		MessageID: notification.MessageID,
+		ID:        notification.ID,
+		Type:      notification.Type,
+		Payload:   json.RawMessage(notification.Payload),
 		CreatedAt: notification.CreatedAt,
 	}
 }

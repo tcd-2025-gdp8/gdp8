@@ -46,3 +46,13 @@ type StudyGroupView struct {
 	StudyGroupDetails
 	Members []StudyGroupMemberView
 }
+
+type StudyGroupStatsDTO struct {
+	ID          int64   `json:"id"`
+	Name        string  `json:"name"`
+	Members     int     `json:"members"`
+	TotalHours  int64   `json:"totalHours"`
+	WeeklyHours []int64 `json:"weeklyHours"`
+}
+
+type StudyGroupsMap map[string][]StudyGroupStatsDTO

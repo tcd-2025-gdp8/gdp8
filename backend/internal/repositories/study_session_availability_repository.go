@@ -13,12 +13,20 @@ type StudySessionAvailabilityRepository interface {
 		studyGroupID models.StudyGroupID) ([]models.StudySessionAvailabilityRequest, error)
 	GetStudySessionAvailabilityRequest(tx *sql.Tx,
 		id models.StudySessionAvailabilityRequestID) (*models.StudySessionAvailabilityRequest, error)
-	CreateStudySessionAvailabilityRequest(tx *sql.Tx, studyGroupID models.StudyGroupID,
-		creatorID models.UserID, availabilityRequestDetails *models.StudySessionAvailabilityRequestDetails) error
+	CreateStudySessionAvailabilityRequest(
+		tx *sql.Tx,
+		studyGroupID models.StudyGroupID,
+		creatorID models.UserID,
+		availabilityRequestDetails *models.StudySessionAvailabilityRequestDetails,
+	) (*models.StudySessionAvailabilityRequest, error)
 	DeleteStudySessionAvailabilityRequest(tx *sql.Tx,
 		availabilityRequestID models.StudySessionAvailabilityRequestID) error
-	UpsertUserAvailabilityEntries(tx *sql.Tx, availabilityRequestID models.StudySessionAvailabilityRequestID,
-		userID models.UserID, availabilityEntries []models.AvailabilityEntry) error
+	UpsertUserAvailabilityEntries(
+		tx *sql.Tx,
+		availabilityRequestID models.StudySessionAvailabilityRequestID,
+		userID models.UserID,
+		availabilityEntries []models.AvailabilityEntry,
+	) (*models.StudySessionAvailabilityRequest, error)
 }
 
 type SQLStudySessionAvailabilityRepository struct {
@@ -28,7 +36,7 @@ func (s *SQLStudySessionAvailabilityRepository) GetCurrentStudySessionAvailabili
 	studyGroupID models.StudyGroupID) ([]models.StudySessionAvailabilityRequest, error) {
 
 	query := `
-		SELECT id, study_group_id, creator_id, availability_period_start, availability_period_end
+		SELECT id, study_group_id, creator_id, title, availability_period_start, availability_period_end
 		FROM current_study_session_availability_requests
 		WHERE study_group_id = ?
 		ORDER BY availability_period_start`
@@ -48,6 +56,7 @@ func (s *SQLStudySessionAvailabilityRepository) GetCurrentStudySessionAvailabili
 			&request.ID,
 			&request.StudyGroupID,
 			&request.CreatorID,
+			&request.Title,
 			&request.AvailabilityPeriodStart,
 			&request.AvailabilityPeriodEnd,
 		)
@@ -77,7 +86,7 @@ func (s *SQLStudySessionAvailabilityRepository) GetStudySessionAvailabilityReque
 	id models.StudySessionAvailabilityRequestID) (*models.StudySessionAvailabilityRequest, error) {
 
 	query := `
-		SELECT id, study_group_id, creator_id, availability_period_start, availability_period_end
+		SELECT id, study_group_id, creator_id, title, availability_period_start, availability_period_end
 		FROM study_session_availability_requests
 		WHERE id = ?`
 
@@ -86,6 +95,7 @@ func (s *SQLStudySessionAvailabilityRepository) GetStudySessionAvailabilityReque
 		&request.ID,
 		&request.StudyGroupID,
 		&request.CreatorID,
+		&request.Title,
 		&request.AvailabilityPeriodStart,
 		&request.AvailabilityPeriodEnd,
 	)
@@ -105,26 +115,34 @@ func (s *SQLStudySessionAvailabilityRepository) GetStudySessionAvailabilityReque
 	return &request, nil
 }
 
-func (s *SQLStudySessionAvailabilityRepository) CreateStudySessionAvailabilityRequest(tx *sql.Tx,
+func (s *SQLStudySessionAvailabilityRepository) CreateStudySessionAvailabilityRequest(
+	tx *sql.Tx,
 	studyGroupID models.StudyGroupID, creatorID models.UserID,
-	availabilityRequestDetails *models.StudySessionAvailabilityRequestDetails) error {
+	availabilityRequestDetails *models.StudySessionAvailabilityRequestDetails,
+) (*models.StudySessionAvailabilityRequest, error) {
 
 	query := `
 		INSERT INTO study_session_availability_requests 
-		(study_group_id, creator_id, availability_period_start, availability_period_end)
-		VALUES (?, ?, ?, ?)`
+		(study_group_id, creator_id, title, availability_period_start, availability_period_end)
+		VALUES (?, ?, ?, ?, ?)`
 
-	_, err := tx.Exec(query,
+	result, err := tx.Exec(query,
 		studyGroupID,
 		creatorID,
+		availabilityRequestDetails.Title,
 		availabilityRequestDetails.AvailabilityPeriodStart,
 		availabilityRequestDetails.AvailabilityPeriodEnd,
 	)
 	if err != nil {
-		return fmt.Errorf("failed to create availability request: %w", err)
+		return nil, fmt.Errorf("failed to create availability request: %w", err)
 	}
 
-	return nil
+	availabilityRequestID, err := result.LastInsertId()
+	if err != nil {
+		return nil, fmt.Errorf("error creating availability request: %w", err)
+	}
+
+	return s.GetStudySessionAvailabilityRequest(tx, models.StudySessionAvailabilityRequestID(availabilityRequestID))
 }
 
 func (s *SQLStudySessionAvailabilityRepository) DeleteStudySessionAvailabilityRequest(tx *sql.Tx,
@@ -144,7 +162,7 @@ func (s *SQLStudySessionAvailabilityRepository) DeleteStudySessionAvailabilityRe
 
 func (s *SQLStudySessionAvailabilityRepository) UpsertUserAvailabilityEntries(tx *sql.Tx,
 	availabilityRequestID models.StudySessionAvailabilityRequestID, userID models.UserID,
-	availabilityEntries []models.AvailabilityEntry) error {
+	availabilityEntries []models.AvailabilityEntry) (*models.StudySessionAvailabilityRequest, error) {
 
 	deleteQuery := `
 		DELETE FROM study_session_availability_entries
@@ -152,11 +170,11 @@ func (s *SQLStudySessionAvailabilityRepository) UpsertUserAvailabilityEntries(tx
 
 	_, err := tx.Exec(deleteQuery, availabilityRequestID, userID)
 	if err != nil {
-		return fmt.Errorf("failed to delete existing availability entries: %w", err)
+		return nil, fmt.Errorf("failed to delete existing availability entries: %w", err)
 	}
 
 	if len(availabilityEntries) == 0 {
-		return nil
+		return s.GetStudySessionAvailabilityRequest(tx, availabilityRequestID)
 	}
 
 	insertQuery := `
@@ -166,7 +184,7 @@ func (s *SQLStudySessionAvailabilityRepository) UpsertUserAvailabilityEntries(tx
 
 	stmt, err := tx.Prepare(insertQuery)
 	if err != nil {
-		return fmt.Errorf("failed to prepare insert statement for availability entries: %w", err)
+		return nil, fmt.Errorf("failed to prepare insert statement for availability entries: %w", err)
 	}
 	defer func(stmt *sql.Stmt) {
 		_ = stmt.Close()
@@ -180,11 +198,11 @@ func (s *SQLStudySessionAvailabilityRepository) UpsertUserAvailabilityEntries(tx
 			entry.AvailabilityEntryEnd,
 		)
 		if err != nil {
-			return fmt.Errorf("failed to insert availability entry: %w", err)
+			return nil, fmt.Errorf("failed to insert availability entry: %w", err)
 		}
 	}
 
-	return nil
+	return s.GetStudySessionAvailabilityRequest(tx, availabilityRequestID)
 }
 
 func (s *SQLStudySessionAvailabilityRepository) getEntriesForRequest(tx *sql.Tx,
