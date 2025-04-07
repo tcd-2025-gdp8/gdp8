@@ -5,9 +5,9 @@ import (
 	"log"
 	"net/http"
 
-	"gdp8-backend/internal/services"
-
 	"firebase.google.com/go/v4/auth"
+
+	"gdp8-backend/internal/services"
 )
 
 type CalendarHandler struct {
