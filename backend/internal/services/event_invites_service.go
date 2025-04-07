@@ -1,6 +1,7 @@
 package services
 
 import (
+	"fmt"
 	"time"
 
 	"google.golang.org/api/calendar/v3"
@@ -21,18 +22,27 @@ type EventInvitesService interface {
 
 type eventInvitesServiceImpl struct {
 	googleCalendarService *calendar.Service
+	userService           UserService
 }
 
-func NewEventInvitesService(googleCalendarService *calendar.Service) EventInvitesService {
+func NewEventInvitesService(googleCalendarService *calendar.Service, userService UserService) EventInvitesService {
 	return &eventInvitesServiceImpl{
 		googleCalendarService: googleCalendarService,
+		userService:           userService,
 	}
 }
 
-func (s *eventInvitesServiceImpl) SendEventInvites(eventDetails EventDetails, _ []models.UserID) error {
-	// TODO get invitees emails
-
-	attendees := []*calendar.EventAttendee{{Email: "bronickm@tcd.ie"}}
+func (s *eventInvitesServiceImpl) SendEventInvites(eventDetails EventDetails, invitees []models.UserID) error {
+	var attendees []*calendar.EventAttendee
+	for _, userID := range invitees {
+		user, err := s.userService.GetUser(userID)
+		if err != nil {
+			return fmt.Errorf("failed to get user details for %s: %w", userID, err)
+		}
+		attendees = append(attendees, &calendar.EventAttendee{
+			Email: user.Email,
+		})
+	}
 
 	event := &calendar.Event{
 		Summary:     eventDetails.Summary,

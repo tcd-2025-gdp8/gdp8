@@ -8,9 +8,12 @@ import (
 	"time"
 
 	"gdp8-backend/internal/firebase"
+	"gdp8-backend/internal/integrations"
 	"gdp8-backend/internal/middleware"
 	"gdp8-backend/internal/persistence"
+	"gdp8-backend/internal/repositories"
 	"gdp8-backend/internal/routes"
+	"gdp8-backend/internal/services"
 )
 
 func main() {
@@ -42,7 +45,12 @@ func main() {
 
 	txManager := persistence.NewSQLTransactionManager(db)
 
-	routes.RegisterAllRoutes(firebaseAuth, txManager)
+	userRepo := repositories.SQLUserRepository{}
+	userService := services.NewUserService(txManager, &userRepo)
+
+	eventInvitesService := initializeEventInvitesService(userService)
+
+	routes.RegisterAllRoutes(firebaseAuth, txManager, userService, eventInvitesService)
 
 	corsHandler := middleware.SimpleCORS(http.DefaultServeMux)
 
@@ -59,4 +67,15 @@ func main() {
 		log.Fatal(err)
 	}
 
+}
+
+func initializeEventInvitesService(userService services.UserService) services.EventInvitesService {
+	googleCalendarService, err := integrations.GetCalendarService()
+	if err != nil {
+		log.Printf("Failed to initialize Google Calendar service: %v. "+
+			"Google Calendar features will not be available.", err)
+		return &services.NoOpEventInvitesService{}
+	}
+
+	return services.NewEventInvitesService(googleCalendarService, userService)
 }
