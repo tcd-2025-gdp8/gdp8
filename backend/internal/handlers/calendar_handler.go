@@ -6,52 +6,60 @@ import (
 	"net/http"
 
 	"firebase.google.com/go/v4/auth"
-
-	"gdp8-backend/internal/services"
+	"google.golang.org/api/calendar/v3"
 )
 
 type CalendarHandler struct {
-	Service      *services.CalendarService
-	FirebaseAuth *auth.Client
+	FirebaseAuth    *auth.Client
+	CalendarService *calendar.Service
 }
 
-func NewCalendarHandler(service *services.CalendarService, auth *auth.Client) *CalendarHandler {
-	return &CalendarHandler{Service: service, FirebaseAuth: auth}
+func NewCalendarHandler(calendarService *calendar.Service, firebaseAuth *auth.Client) *CalendarHandler {
+	return &CalendarHandler{
+		FirebaseAuth:    firebaseAuth,
+		CalendarService: calendarService,
+	}
 }
 
 func (h *CalendarHandler) Invite(w http.ResponseWriter, r *http.Request) {
-	// Extract and verify token
-	authHeader := r.Header.Get("Authorization")
-	if authHeader == "" {
-		http.Error(w, "Missing Authorization Header", http.StatusUnauthorized)
+	var req struct {
+		Summary     string `json:"summary"`
+		Location    string `json:"location"`
+		Description string `json:"description"`
+		StartTime   string `json:"startTime"`
+		EndTime     string `json:"endTime"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	tokenStr := authHeader[len("Bearer "):]
-	token, err := h.FirebaseAuth.VerifyIDToken(r.Context(), tokenStr)
+	event := &calendar.Event{
+		Summary:     req.Summary,
+		Location:    req.Location,
+		Description: req.Description,
+		Start: &calendar.EventDateTime{
+			DateTime: req.StartTime,
+			TimeZone: "UTC",
+		},
+		End: &calendar.EventDateTime{
+			DateTime: req.EndTime,
+			TimeZone: "UTC",
+		},
+	}
+
+	createdEvent, err := h.CalendarService.Events.Insert("primary", event).Do()
 	if err != nil {
-		http.Error(w, "Invalid Firebase Token", http.StatusUnauthorized)
-		return
-	}
-
-	log.Printf("🔐 Authenticated user: %s", token.UID)
-
-	// Decode invite
-	var input services.CalendarInviteInput
-	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		http.Error(w, "Invalid JSON body", http.StatusBadRequest)
-		return
-	}
-
-	// Send calendar invite
-	if err := h.Service.SendInvite(input); err != nil {
-		http.Error(w, "Failed to send invite: "+err.Error(), http.StatusInternalServerError)
+		log.Printf(" Failed to insert event: %v", err)
+		http.Error(w, "Failed to insert event: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	if _, err := w.Write([]byte(`{"message": "Invite sent successfully"}`)); err != nil {
-		log.Printf("❌ Failed to write response: %v", err)
-	}
+	json.NewEncoder(w).Encode(map[string]string{
+		"message":   "Event created successfully",
+		"eventLink": createdEvent.HtmlLink,
+	})
 }

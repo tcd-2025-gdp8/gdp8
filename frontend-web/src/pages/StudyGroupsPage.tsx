@@ -123,6 +123,22 @@ export default function StudyGroupsPage() {
         ref={createStudyGroupDialogRef}
         onUpdate={() => void fetchData()}
       />
+
+<Button
+  variant="outlined"
+  color="secondary"
+  onClick={() => {
+    if (token) {
+      navigator.clipboard.writeText(token)
+        .then(() => alert("Token copied to clipboard"))
+        .catch(() => alert("Failed to copy token"));
+    }
+  }}
+  sx={{ maxWidth: "600px", margin: "1rem auto", display: "block", width: "100%" }}
+>
+  Copy Firebase Token
+</Button>
+
     </Container>
   );
 }
