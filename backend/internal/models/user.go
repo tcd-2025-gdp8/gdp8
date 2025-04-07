@@ -3,7 +3,8 @@ package models
 type UserID string
 
 type UserDetails struct {
-	Name string `json:"name"`
+	Name  string `json:"name"`
+	Email string `json:"email"`
 }
 
 type User struct {
