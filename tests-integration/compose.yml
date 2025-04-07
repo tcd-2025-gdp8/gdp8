@@ -13,7 +13,7 @@ services:
 
   backend:
     build:
-      context: backend
+      context: ../backend
     ports:
       - "8080:8080"
     environment:
@@ -21,8 +21,8 @@ services:
       - MYSQL_CONNECTION_STRING=user:password@tcp(mysql:3306)/gdp8?charset=utf8mb4&parseTime=True&loc=Local&multiStatements=True
       - GEMINI_API_KEY=${GEMINI_API_KEY}
     volumes:
-      - ./backend:/app/backend
-      - ./backend/credentials/serviceAccountKey.json:/app/backend/credentials/serviceAccountKey.json:ro
+      - ../backend:/app/backend
+      - ../backend/credentials/serviceAccountKey.json:/app/backend/credentials/serviceAccountKey.json:ro
     depends_on:
       firebase:
         condition: service_started
@@ -40,7 +40,7 @@ services:
       MYSQL_DATABASE: gdp8
       MYSQL_USER: user
       MYSQL_PASSWORD: password
-    command: --log_bin_trust_function_creators=1 # needed to create triggers
+    command: --log_bin_trust_function_creators=1
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
