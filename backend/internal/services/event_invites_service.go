@@ -35,7 +35,10 @@ func NewEventInvitesService(googleCalendarService *calendar.Service, userService
 	}
 }
 
-func (s *eventInvitesServiceImpl) SendEventInvites(eventDetails EventDetails, invitees []models.UserID) (string, error) {
+func (s *eventInvitesServiceImpl) SendEventInvites(
+	eventDetails EventDetails,
+	invitees []models.UserID,
+) (string, error) {
 	attendees := make([]*calendar.EventAttendee, 0, len(invitees))
 	for _, userID := range invitees {
 		user, err := s.userService.GetUser(userID)
