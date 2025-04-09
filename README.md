@@ -6,36 +6,35 @@ PeerSphere is an intelligent academic collaboration platform that enables studen
 
 ## Key Features
 
-- **Module-Based Study Groups**  
-  Students can create, discover, and join study groups based on their enrolled academic modules.
+**Module-Based Study Groups**  
+Students can create, discover, and join study groups based on the available modules.
 
-- **Real-Time Communication**  
-  WebSocket-powered group chat with persistent history for seamless academic collaboration.
+**Real-Time Communication**  
+WebSockets allow for group chats with persistent history to encourage academic collaboration.
 
-- **Smart Scheduling with Google Calendar**  
-  Users can schedule study sessions that are automatically synced with Google Calendar, including support for meeting cancellations and reminders.
+**Smart Scheduling with Google Calendar**  
+Users can effortlessly schedule study sessions through the app, that are automatically synced with Google Calendar, including support for meeting cancellations and reminders.
 
-- **AI-Powered Chatbot (Gemini API)**  
-  Integrated chatbot enables users to ask contextual questions about uploaded PDF files and get relevant responses without leaving the app.
+**AI-Powered Chatbot (Gemini API)**  
+An integrated chatbot enables users to ask contextual questions about study group-specific uploaded PDF files and get relevant responses without leaving the app, or having to reupload the files each time they want to ask questions.
 
-- **File Upload & Management**  
-  Users can upload and remove PDF files within their study groups for collaborative use.
+**File Upload & Management**  
+Users can upload and remove .pdf, .doc, .docx, .odt documents, spreadsheets (.xls, .xlsx, .ods, and .csv) or even images (.png, .jpeg, .gif, and .svg+xml) within their study groups for collaborative use and enhanced learning.
 
-- **Study Group Leaderboard**  
-  A motivational leaderboard displays study groups ranked by cumulative study hours.
+**Study Group Leaderboard**  
+A motivational leaderboard displays study groups ranked by cumulative study hours against different study groups in the same modules.
 
-- **Secure Authentication**  
-  Firebase Authentication with OAuth2 ensures safe and seamless user login.
+**Secure Authentication**  
+Firebase Authentication ensures safe and seamless user login, with OAuth2 authentication implemented for Google Calendar integration.
 
-- **Robust Backend Architecture**  
-  Built in Go with MySQL and modular design patterns for performance and maintainability.
+**Robust Backend Architecture**  
+Built in Go with MySQL and modular design patterns for performance and maintainability.
 
-- **Containerized Deployment**  
-  Docker and Docker Compose ensure consistent local and production environments.
+**Containerized Deployment**  
+Docker and Docker Compose ensure consistent local and production environments.
 
-- **CI/CD Pipeline**  
-  GitHub Actions and custom scripts automate testing, code quality checks, and deployment.
-
+**CI Pipeline**  
+GitHub Actions and custom scripts automate testing, code quality checks, and deployment.
 
 ## Step by Step
 
