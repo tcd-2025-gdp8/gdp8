@@ -40,7 +40,7 @@ GitHub Actions and custom scripts automate testing, code quality checks, and dep
 
 TLDR: to run the app locally it is enough to run `./scripts/run-localprod` from the main project directory. Once the server has fully started, the app can then be accessed through the browser by navigating to `localhost`.
 
-Details about the provided run scripts are outlined [below](#detailed-description-of-the-run-scripts). Details regarding the integration with external services are provided in the ["Supplying credentials for external services" section](#supplying-credentials-for-external-services).
+Details about the provided run scripts are outlined [below](#detailed-description-of-the-run-scripts). Details regarding the integration with external services are provided in the [*Supplying credentials for external services* section](#supplying-credentials-for-external-services).
 
 ### Detailed description of the run scripts
 
@@ -64,6 +64,8 @@ The supported environmental variables are outlined below:
 - `GEMINI_API_KEY` - necessary for the Gemini API integration for the intelligent chatbot.
 - `GOOGLE_CALENDAR_HOST_CLIENT_ID` (OAuth 2.0 Client ID associated with a Google Cloud project), `GOOGLE_CALENDAR_HOST_CLIENT_SECRET` (OAuth 2.0 Client secret), `GOOGLE_CALENDAR_HOST_REFRESH_TOKEN` (a refresh token generated for the OAuth 2.0 Client) - necessary for the Google Calendar integration for study sessions.
 
+The OAuth 2.0 Client ID and secret can be obtained from the Google Cloud console under the *APIs and Services->Credentials* section within the project.
+
 ## Backends
 
 The application backend utilises a MySQL database and Firebase for authentication. If the app is run using the provided scripts, any ports for backend services used will also be exposed by default:
@@ -71,7 +73,7 @@ The application backend utilises a MySQL database and Firebase for authenticatio
 - the main backend server (REST and WebSocket API) can be accessed on port `8080`;
 - the Firebase emulator (if used) can be accessed on port `4000` (emulator UI) and `9099` (auth emulator).
 
-If external integrations are enabled by providing the necessary credentials as described in the ["Supplying credentials for external services" section](#supplying-credentials-for-external-services), the application backend also accesses the following external services:
+If external integrations are enabled by providing the necessary credentials as described in the [*Supplying credentials for external services* section](#supplying-credentials-for-external-services), the application backend also accesses the following external services:
 
 - Google Calendar API
 - Gemini API
