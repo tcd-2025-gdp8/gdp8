@@ -4,28 +4,28 @@
 
 PeerSphere is an intelligent academic collaboration platform that enables students to discover, join, and engage with study groups based on their academic modules. The platform supports real-time communication, smart scheduling, file-based collaboration, and even conversational AI for contextual document support.
 
-## Key Features
+### Key Features
 
 **Module-Based Study Groups**  
 Students can create, discover, and join study groups based on the available modules.
 
 **Real-Time Communication**  
-WebSockets allow for group chats with persistent history to encourage academic collaboration.
+WebSocket-based implementation allows for group chats with persistent history to encourage academic collaboration.
 
 **Smart Scheduling with Google Calendar**  
-Users can effortlessly schedule study sessions through the app, that are automatically synced with Google Calendar, including support for meeting cancellations and reminders.
+Users can effortlessly schedule study sessions through the app, with automatic Google Calendar synchronisation, and including support for meeting cancellations and reminders.
 
 **AI-Powered Chatbot (Gemini API)**  
-An integrated chatbot enables users to ask contextual questions about study group-specific uploaded PDF files and get relevant responses without leaving the app, or having to reupload the files each time they want to ask questions.
+An integrated chatbot enables users to ask contextual questions about group-specific uploaded PDF files and get relevant responses without leaving the app, or having to reupload the files each time they want to ask questions.
 
 **File Upload & Management**  
-Users can upload and remove .pdf, .doc, .docx, .odt documents, spreadsheets (.xls, .xlsx, .ods, and .csv) or even images (.png, .jpeg, .gif, and .svg+xml) within their study groups for collaborative use and enhanced learning.
+Users can safely upload and remove pdf files, other documents, spreadsheets, and images within their study groups for collaborative use and enhanced learning.
 
 **Study Group Leaderboard**  
 A motivational leaderboard displays study groups ranked by cumulative study hours against different study groups in the same modules.
 
 **Secure Authentication**  
-Firebase Authentication ensures safe and seamless user login, with OAuth2 authentication implemented for Google Calendar integration.
+Firebase Authentication ensures secure and seamless user login.
 
 **Robust Backend Architecture**  
 Built in Go with MySQL and modular design patterns for performance and maintainability.
@@ -38,9 +38,11 @@ GitHub Actions and custom scripts automate testing, code quality checks, and dep
 
 ## Step by Step
 
-TLDR: to run the app locally it is enough to run `./scripts/run-localprod` from the main project directory. Details are provided below.
+TLDR: to run the app locally it is enough to run `./scripts/run-localprod` from the main project directory. Details about the provided run scripts are outlined [below](#detailed-description-of-the-run-scripts). Details regarding the integration with external services are provided in the ["Supplying credentials for external services" section](#supplying-credentials-for-external-services).
 
-The app server can be easily run using the scripts provided in the `scripts` directory.
+### Detailed description of the run scripts
+
+The app server can be easily run using the scripts provided in the `scripts` directory. The `scripts` directory contains the necessary cross-platform implementations of the run scripts with support for Windows (PowerShell) and Unix-based systems (macOS/Linux via shell scripts). All the necessary Docker compose files are also located in the `scripts` directory.
 
 For authentication, the server relies on Firebase, which affects how it can be run locally and in production. To support both scenarios, two run scripts are provided: `run-localprod` and `run-prod`. The `localprod` script uses a Firebase emulator, allowing the server to run entirely locally without requiring real Firebase credentials. Conversely, the `prod` script connects to the actual Firebase services, requiring valid Firebase credentials to be configured.
 
@@ -52,9 +54,22 @@ Docker compose is needed to run the application using the provided scripts.
 
 Additional scripts are also provided for running the backend in `dev` mode (`./scripts/run-dev`), as well as for executing integration tests (`./scripts/run-tests-integration`).
 
+### Supplying credentials for external services
+
+In all cases, some features relying on external integrations (Gemini API, Google Calendar) require additional environmental variables to be set. This can be done by supplying the necessary values in a root directory `.env` file. In the absence of these environmental variables, the server will still run correctly, but with the particular features disabled.
+The supported environmental variables are outlined below:
+
+- `GEMINI_API_KEY` - necessary for the Gemini API integration for the intelligent chatbot.
+- `GOOGLE_CALENDAR_HOST_CLIENT_ID` (OAuth 2.0 Client ID associated with a Google Cloud project), `GOOGLE_CALENDAR_HOST_CLIENT_SECRET` (OAuth 2.0 Client secret), `GOOGLE_CALENDAR_HOST_REFRESH_TOKEN` (a refresh token generated for the OAuth 2.0 Client) - necessary for the Google Calendar integration for study sessions.
+
 ## Backends
 
 The application backend utilises a MySQL database and Firebase for authentication. If the app is run using the provided scripts, any ports for backend services used will also be exposed by default:
 
 - the main backend server (REST and WebSocket API) can be accessed on port `8080`;
 - the Firebase emulator (if used) can be accessed on port `4000` (emulator UI) and `9099` (auth emulator).
+
+If external integrations are enabled by providing the necessary credentials as described in the ["Supplying credentials for external services" section](#supplying-credentials-for-external-services), the application backend also accesses the following external services:
+
+- Google Calendar API
+- Gemini API
