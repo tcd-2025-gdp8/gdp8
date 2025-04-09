@@ -38,7 +38,9 @@ GitHub Actions and custom scripts automate testing, code quality checks, and dep
 
 ## Step by Step
 
-TLDR: to run the app locally it is enough to run `./scripts/run-localprod` from the main project directory. Details about the provided run scripts are outlined [below](#detailed-description-of-the-run-scripts). Details regarding the integration with external services are provided in the ["Supplying credentials for external services" section](#supplying-credentials-for-external-services).
+TLDR: to run the app locally it is enough to run `./scripts/run-localprod` from the main project directory. Once the server has fully started, the app can then be accessed through the browser by navigating to `localhost`.
+
+Details about the provided run scripts are outlined [below](#detailed-description-of-the-run-scripts). Details regarding the integration with external services are provided in the ["Supplying credentials for external services" section](#supplying-credentials-for-external-services).
 
 ### Detailed description of the run scripts
 
