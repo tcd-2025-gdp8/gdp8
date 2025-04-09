@@ -97,7 +97,6 @@ func (s *studySessionServiceImpl) CreateStudySession(studyGroupID models.StudyGr
 	studySession, err := persistence.WithTransaction(s.txMgr, func(tx *sql.Tx) (*models.StudySession, error) {
 		return s.studySessionRepository.CreateStudySession(tx, studyGroupID, creatorID, studySessionDetails)
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -112,18 +111,26 @@ func (s *studySessionServiceImpl) CreateStudySession(studyGroupID models.StudyGr
 		studyGroup, err := s.studyGroupService.GetStudyGroupByID(studyGroupID)
 		if err != nil {
 			log.Printf("Error fetching study group: %v\n", err)
+			return
 		}
 		members := getActualStudyGroupMembers(studyGroup.Members, nil)
 
-		err = s.eventInvitesService.SendEventInvites(EventDetails{
+		eventID, err := s.eventInvitesService.SendEventInvites(EventDetails{
 			Summary:     studySessionDetails.Title,
 			Description: "Study session for group \"" + studyGroup.Name + "\".",
 			StartTime:   studySessionDetails.StartTime,
-			EndTime: studySessionDetails.StartTime.Add(
-				time.Duration(studySessionDetails.DurationMinutes) * time.Minute),
+			EndTime:     studySessionDetails.StartTime.Add(time.Duration(studySessionDetails.DurationMinutes) * time.Minute),
 		}, members)
 		if err != nil {
-			log.Printf("Error sending google calendar invite: %v\n", err)
+			log.Printf("Error sending calendar invite: %v\n", err)
+			return
+		}
+
+		err = persistence.WithTransactionNoReturnVal(s.txMgr, func(tx *sql.Tx) error {
+			return s.studySessionRepository.SetCalendarEventID(tx, studySession.ID, eventID)
+		})
+		if err != nil {
+			log.Printf("Error saving calendar event ID to database: %v\n", err)
 		}
 	}()
 
@@ -134,31 +141,62 @@ func (s *studySessionServiceImpl) UpdateStudySession(studySessionID models.Study
 	studySessionDetails *models.StudySessionDetails, requesterID models.UserID) (*models.StudySession, error) {
 
 	studySession, err := persistence.WithTransaction(s.txMgr, func(tx *sql.Tx) (*models.StudySession, error) {
-		studySession, err := s.studySessionRepository.GetStudySession(tx, studySessionID)
+		ss, err := s.studySessionRepository.GetStudySession(tx, studySessionID)
 		if err != nil {
 			return nil, err
 		}
-		if studySession.CreatorID != requesterID {
+		if ss.CreatorID != requesterID {
 			return nil, ErrUnauthorizedStudySessionOperation
 		}
 
 		return s.studySessionRepository.UpdateStudySession(tx, studySessionID, studySessionDetails)
 	})
-
 	if err != nil {
 		return nil, err
 	}
 
 	go func() {
+		// Notification
 		notificationErr := s.notificationService.AddStudySessionNotification(
 			models.NotificationTypeStudySessionUpdated, studySession, requesterID)
 		if notificationErr != nil {
-			log.Printf("Error sending notification: %v\n", notificationErr)
+			log.Printf("Error sending update notification: %v\n", notificationErr)
+		}
+
+		studyGroup, err := s.studyGroupService.GetStudyGroupByID(studySession.StudyGroupID)
+		if err != nil {
+			log.Printf("Error fetching study group for calendar update: %v\n", err)
+			return
+		}
+		members := getActualStudyGroupMembers(studyGroup.Members, nil)
+
+		if studySession.CalendarEventID.Valid {
+			err := s.eventInvitesService.CancelEvent(studySession.CalendarEventID.String)
+			if err != nil {
+				log.Printf(" Failed to cancel old calendar event: %v", err)
+			}
+		}
+
+		newEventID, err := s.eventInvitesService.SendEventInvites(EventDetails{
+			Summary:     studySessionDetails.Title,
+			Description: "Updated study session for group \"" + studyGroup.Name + "\".",
+			StartTime:   studySessionDetails.StartTime,
+			EndTime:     studySessionDetails.StartTime.Add(time.Duration(studySessionDetails.DurationMinutes) * time.Minute),
+		}, members)
+		if err != nil {
+			log.Printf(" Failed to send updated Google Calendar invite: %v", err)
+			return
+		}
+
+		err = persistence.WithTransactionNoReturnVal(s.txMgr, func(tx *sql.Tx) error {
+			return s.studySessionRepository.SetCalendarEventID(tx, studySession.ID, newEventID)
+		})
+		if err != nil {
+			log.Printf("Error updating calendar event ID in DB: %v", err)
 		}
 	}()
-	// TODO update the calendar invite
 
-	return studySession, err
+	return studySession, nil
 }
 
 func (s *studySessionServiceImpl) DeleteStudySession(studySessionID models.StudySessionID,
@@ -185,15 +223,27 @@ func (s *studySessionServiceImpl) DeleteStudySession(studySessionID models.Study
 	}
 
 	go func() {
+		// Internal notification
 		notificationErr := s.notificationService.AddStudySessionNotification(
 			models.NotificationTypeStudySessionCancelled, deletedStudySession, requesterID)
 		if notificationErr != nil {
-			log.Printf("Error sending notification: %v\n", notificationErr)
+			log.Printf("Error sending cancellation notification: %v\n", notificationErr)
 		}
-	}()
-	// TODO update the calendar invite
 
-	return err
+		if deletedStudySession.CalendarEventID.Valid {
+			err := s.eventInvitesService.CancelEvent(deletedStudySession.CalendarEventID.String)
+			if err != nil {
+				log.Printf(" Failed to cancel Google Calendar event (ID: %s): %v", deletedStudySession.CalendarEventID.String, err)
+			} else {
+				log.Printf(" Successfully cancelled Google Calendar event (ID: %s)", deletedStudySession.CalendarEventID.String)
+			}
+		} else {
+			log.Printf(" No calendar event ID to cancel for study session ID %v", deletedStudySession.ID)
+		}
+
+	}()
+
+	return nil
 }
 
 func (s *studySessionServiceImpl) GetCurrentStudySessionAvailabilityRequests(

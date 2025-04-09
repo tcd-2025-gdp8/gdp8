@@ -18,23 +18,21 @@ type StudySessionRepository interface {
 	UpdateStudySession(tx *sql.Tx, studySessionID models.StudySessionID,
 		studySessionDetails *models.StudySessionDetails) (*models.StudySession, error)
 	DeleteStudySession(tx *sql.Tx, studySessionID models.StudySessionID) error
-	GetUpcomingSessions(
-		tx *sql.Tx,
-		windowStart time.Time,
-		windowEnd time.Time,
-	) ([]models.StudySession, error)
+	GetUpcomingSessions(tx *sql.Tx, windowStart time.Time, windowEnd time.Time) ([]models.StudySession, error)
+
+	// 🆕 Add this line
+	SetCalendarEventID(tx *sql.Tx, sessionID models.StudySessionID, calendarEventID string) error
 }
 
 var ErrStudySessionNotFound = errors.New("study session not found")
 
-type SQLStudySessionRepository struct {
-}
+type SQLStudySessionRepository struct{}
 
 func (s *SQLStudySessionRepository) GetAllStudySessionsByStudyGroup(tx *sql.Tx,
 	studyGroupID models.StudyGroupID) ([]models.StudySession, error) {
 
 	query := `
-        SELECT id, study_group_id, creator_id, title, start_time, duration_minutes, end_time
+        SELECT id, study_group_id, creator_id, title, start_time, duration_minutes, end_time, calendar_event_id
         FROM study_sessions
         WHERE study_group_id = ?
         ORDER BY start_time DESC`
@@ -43,9 +41,7 @@ func (s *SQLStudySessionRepository) GetAllStudySessionsByStudyGroup(tx *sql.Tx,
 	if err != nil {
 		return nil, fmt.Errorf("error retrieving study sessions: %w", err)
 	}
-	defer func(rows *sql.Rows) {
-		_ = rows.Close()
-	}(rows)
+	defer rows.Close()
 
 	var sessions []models.StudySession
 	for rows.Next() {
@@ -58,6 +54,7 @@ func (s *SQLStudySessionRepository) GetAllStudySessionsByStudyGroup(tx *sql.Tx,
 			&session.StartTime,
 			&session.DurationMinutes,
 			&session.EndTime,
+			&session.CalendarEventID, // 🆕
 		)
 		if err != nil {
 			return nil, fmt.Errorf("error retrieving study session: %w", err)
@@ -65,11 +62,7 @@ func (s *SQLStudySessionRepository) GetAllStudySessionsByStudyGroup(tx *sql.Tx,
 		sessions = append(sessions, session)
 	}
 
-	if err = rows.Err(); err != nil {
-		return nil, fmt.Errorf("error retrieving study sessions: %w", err)
-	}
-
-	return sessions, nil
+	return sessions, rows.Err()
 }
 
 func (s *SQLStudySessionRepository) GetAllStudySessionsByUser(_ *sql.Tx,
@@ -83,7 +76,7 @@ func (s *SQLStudySessionRepository) GetStudySession(tx *sql.Tx,
 	studySessionID models.StudySessionID) (*models.StudySession, error) {
 
 	query := `
-        SELECT id, study_group_id, creator_id, title, start_time, duration_minutes, end_time
+        SELECT id, study_group_id, creator_id, title, start_time, duration_minutes, end_time, calendar_event_id
         FROM study_sessions
         WHERE id = ?`
 
@@ -96,6 +89,7 @@ func (s *SQLStudySessionRepository) GetStudySession(tx *sql.Tx,
 		&session.StartTime,
 		&session.DurationMinutes,
 		&session.EndTime,
+		&session.CalendarEventID, // 🆕
 	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -110,6 +104,7 @@ func (s *SQLStudySessionRepository) GetStudySession(tx *sql.Tx,
 func (s *SQLStudySessionRepository) CreateStudySession(tx *sql.Tx, studyGroupID models.StudyGroupID,
 	creatorID models.UserID, studySessionDetails *models.StudySessionDetails) (*models.StudySession, error) {
 
+	// We assume EndTime and CalendarEventID will be set manually after creation
 	query := `
         INSERT INTO study_sessions (study_group_id, creator_id, title, start_time, duration_minutes)
         VALUES (?, ?, ?, ?, ?)`
@@ -119,19 +114,27 @@ func (s *SQLStudySessionRepository) CreateStudySession(tx *sql.Tx, studyGroupID 
 		creatorID,
 		studySessionDetails.Title,
 		studySessionDetails.StartTime,
-		studySessionDetails.DurationMinutes)
+		studySessionDetails.DurationMinutes,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("error creating study session: %w", err)
 	}
 
 	studySessionID, err := result.LastInsertId()
 	if err != nil {
-		return nil, fmt.Errorf("error creating study session: %w", err)
+		return nil, fmt.Errorf("error fetching created study session ID: %w", err)
 	}
 
 	return s.GetStudySession(tx, models.StudySessionID(studySessionID))
 }
-
+func (s *SQLStudySessionRepository) SetCalendarEventID(tx *sql.Tx, sessionID models.StudySessionID, calendarEventID string) error {
+	query := `UPDATE study_sessions SET calendar_event_id = ? WHERE id = ?`
+	_, err := tx.Exec(query, calendarEventID, sessionID)
+	if err != nil {
+		return fmt.Errorf("error updating calendar_event_id: %w", err)
+	}
+	return nil
+}
 func (s *SQLStudySessionRepository) UpdateStudySession(tx *sql.Tx, studySessionID models.StudySessionID,
 	studySessionDetails *models.StudySessionDetails) (*models.StudySession, error) {
 
@@ -144,7 +147,8 @@ func (s *SQLStudySessionRepository) UpdateStudySession(tx *sql.Tx, studySessionI
 		studySessionDetails.Title,
 		studySessionDetails.StartTime,
 		studySessionDetails.DurationMinutes,
-		studySessionID)
+		studySessionID,
+	)
 
 	if err != nil {
 		return nil, fmt.Errorf("error updating study session: %w", err)
@@ -173,7 +177,7 @@ func (s *SQLStudySessionRepository) GetUpcomingSessions(
 	windowEnd time.Time,
 ) ([]models.StudySession, error) {
 	query := `
-        SELECT id, study_group_id, creator_id, title, start_time, duration_minutes, end_time
+        SELECT id, study_group_id, creator_id, title, start_time, duration_minutes, end_time, calendar_event_id
         FROM study_sessions
         WHERE start_time >= ? AND start_time < ?`
 	rows, err := tx.Query(query, windowStart, windowEnd)
@@ -193,6 +197,7 @@ func (s *SQLStudySessionRepository) GetUpcomingSessions(
 			&session.StartTime,
 			&session.DurationMinutes,
 			&session.EndTime,
+			&session.CalendarEventID, // 🆕
 		)
 		if err != nil {
 			return nil, fmt.Errorf("error scanning session: %w", err)
@@ -200,9 +205,5 @@ func (s *SQLStudySessionRepository) GetUpcomingSessions(
 		sessions = append(sessions, session)
 	}
 
-	if err = rows.Err(); err != nil {
-		return nil, fmt.Errorf("error iterating sessions: %w", err)
-	}
-
-	return sessions, nil
+	return sessions, rows.Err()
 }

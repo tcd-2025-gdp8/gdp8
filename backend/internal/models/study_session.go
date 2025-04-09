@@ -1,6 +1,9 @@
 package models
 
-import "time"
+import (
+	"database/sql"
+	"time"
+)
 
 type StudySessionID int64
 
@@ -9,7 +12,8 @@ type StudySession struct {
 	StudyGroupID StudyGroupID
 	CreatorID    UserID
 	StudySessionDetails
-	EndTime time.Time
+	EndTime         time.Time
+	CalendarEventID sql.NullString
 }
 
 type StudySessionDetails struct {
