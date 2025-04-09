@@ -12,12 +12,12 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/h2non/filetype"
+	"github.com/h2non/filetype/types"
+
 	"gdp8-backend/internal/chatbot"
 	"gdp8-backend/internal/models"
 	"gdp8-backend/internal/services"
-
-	"github.com/h2non/filetype"
-	"github.com/h2non/filetype/types"
 )
 
 const fileSizeLimitMb = 20
@@ -196,6 +196,9 @@ func (h *FileHandler) saveFile(file io.Reader, filename string, chatID models.St
 	}
 
 	kind, err := filetype.Match(data)
+	if err != nil {
+		return errors.New("failed to detect filetype")
+	}
 	if !isFiletypeAllowed(kind) {
 		return ErrFiletypeNotAllowed
 	}
