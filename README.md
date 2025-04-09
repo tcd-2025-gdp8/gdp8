@@ -2,19 +2,39 @@
 
 ## Overview
 
-PeerSphere is an online platform designed to help students find study groups based on their academic modules. This enables users to connect with peers, collaborate on academic projects, and improve their learning experience.
+PeerSphere is an intelligent academic collaboration platform that enables students to discover, join, and engage with study groups based on their academic modules. The platform supports real-time communication, smart scheduling, file-based collaboration, and even conversational AI for contextual document support.
 
-### Key Features
+## Key Features
 
-- **Module-Based Study Groups:** Enables students to find and join study groups based on their save module prefernces.
-- **Real-time Communication:** Users can chat instantly with study group members via an online chat (implemented using WebSockets to facilitate low-latency, bidirectional messaging).
-- **Secure Authentication:** Leverages Firebase Authentication for OAuth-based user identity management, ensuring seamless and secure user login.
-- **Robust Backend:** Developed in Go, utilising a MySQL database for structured and efficient data management, with Docker containerisation ensuring consistent and scalable deployment.
-- **Modular Architecture:** The backend implementation follows scalable design patterns with well-defined module boundaries to enhance efficiency and maintainability.
-- **Continuous Integration:** A CI Pipeline automates testing and static code analysis, ensuring high code quality and streamlined releases.
+**Module-Based Study Groups**  
+Students can create, discover, and join study groups based on the available modules.
 
-![Screenshot of PeerSphere’s study groups page](docs/images/study_groups.png)
-![Screenshot of chat functionality on the study group](docs/images/chats.png)
+**Real-Time Communication**  
+WebSockets allow for group chats with persistent history to encourage academic collaboration.
+
+**Smart Scheduling with Google Calendar**  
+Users can effortlessly schedule study sessions through the app, that are automatically synced with Google Calendar, including support for meeting cancellations and reminders.
+
+**AI-Powered Chatbot (Gemini API)**  
+An integrated chatbot enables users to ask contextual questions about study group-specific uploaded PDF files and get relevant responses without leaving the app, or having to reupload the files each time they want to ask questions.
+
+**File Upload & Management**  
+Users can upload and remove .pdf, .doc, .docx, .odt documents, spreadsheets (.xls, .xlsx, .ods, and .csv) or even images (.png, .jpeg, .gif, and .svg+xml) within their study groups for collaborative use and enhanced learning.
+
+**Study Group Leaderboard**  
+A motivational leaderboard displays study groups ranked by cumulative study hours against different study groups in the same modules.
+
+**Secure Authentication**  
+Firebase Authentication ensures safe and seamless user login, with OAuth2 authentication implemented for Google Calendar integration.
+
+**Robust Backend Architecture**  
+Built in Go with MySQL and modular design patterns for performance and maintainability.
+
+**Containerized Deployment**  
+Docker and Docker Compose ensure consistent local and production environments.
+
+**CI Pipeline**  
+GitHub Actions and custom scripts automate testing, code quality checks, and deployment.
 
 ## Step by Step
 
