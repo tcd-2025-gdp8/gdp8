@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -14,6 +15,9 @@ import (
 	"gdp8-backend/internal/chatbot"
 	"gdp8-backend/internal/models"
 	"gdp8-backend/internal/services"
+
+	"github.com/h2non/filetype"
+	"github.com/h2non/filetype/types"
 )
 
 const fileSizeLimitMb = 20
@@ -28,6 +32,8 @@ type FileHandler struct {
 	fileService       services.FileService
 	chatbotService    services.ChatBotService
 }
+
+var ErrFiletypeNotAllowed = errors.New("filetype not allowed")
 
 func NewFileHandler(studyGroupService services.StudyGroupService,
 	fileService services.FileService,
@@ -104,11 +110,17 @@ func (h *FileHandler) UploadFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err = h.saveFile(file, header.Filename, chatID); err != nil {
+		if errors.Is(err, ErrFiletypeNotAllowed) {
+			http.Error(w, "File type not allowed", http.StatusBadRequest)
+			return
+		}
 		http.Error(w, "Error saving file", http.StatusInternalServerError)
+		log.Printf("Error saving the file: %s", err)
 		return
 	}
 	if err = h.createFile(header.Filename, chatID, userID); err != nil {
 		http.Error(w, "Error storing the file", http.StatusInternalServerError)
+		log.Printf("Error storing the file: %s", err)
 		return
 	}
 	if strings.HasSuffix(strings.ToLower(header.Filename), ".pdf") {
@@ -177,17 +189,30 @@ func (h *FileHandler) saveFile(file io.Reader, filename string, chatID models.St
 	if filename == "." || filename == "" {
 		return errors.New("invalid filename")
 	}
+
+	data, err := io.ReadAll(file)
+	if err != nil {
+		return err
+	}
+
+	kind, err := filetype.Match(data)
+	if !isFiletypeAllowed(kind) {
+		return ErrFiletypeNotAllowed
+	}
+
 	dirPath := fmt.Sprintf("uploads/%d", chatID)
 	if err := os.MkdirAll(dirPath, os.ModePerm); err != nil {
 		return err
 	}
 	dstPath := filepath.Join(dirPath, filename)
+
 	dst, err := os.Create(dstPath)
 	if err != nil {
 		return err
 	}
 	defer dst.Close()
-	_, err = io.Copy(dst, file)
+
+	_, err = dst.Write(data)
 	return err
 }
 
@@ -251,4 +276,41 @@ func parseGroupID(chatID string) (models.StudyGroupID, error) {
 		return models.StudyGroupID(0), err
 	}
 	return models.StudyGroupID(id), nil
+}
+
+func isFiletypeAllowed(kind types.Type) bool {
+	if kind == filetype.Unknown {
+		return false
+	}
+
+	allowed := map[string]bool{
+		// Documents
+		"application/pdf":    true,
+		"application/msword": true, // .doc
+		"application/vnd.openxmlformats-officedocument.wordprocessingml.document": true, // .docx
+		"application/vnd.oasis.opendocument.text":                                 true, // .odt
+
+		// Spreadsheets
+		"application/vnd.ms-excel": true, // .xls
+		"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": true, // .xlsx
+		"application/vnd.oasis.opendocument.spreadsheet":                    true, // .ods
+		"text/csv": true, // .csv
+
+		// Presentations
+		"application/vnd.ms-powerpoint":                                             true, // .ppt
+		"application/vnd.openxmlformats-officedocument.presentationml.presentation": true, // .pptx
+		"application/vnd.oasis.opendocument.presentation":                           true, // .odp
+
+		// Images
+		"image/png":     true,
+		"image/jpeg":    true,
+		"image/gif":     true,
+		"image/svg+xml": true,
+
+		// Plain Text & Markdown
+		"text/plain":    true, // .txt
+		"text/markdown": true, // .md
+	}
+
+	return allowed[kind.MIME.Value]
 }
