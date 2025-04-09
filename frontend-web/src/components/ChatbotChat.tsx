@@ -27,42 +27,42 @@ export default function ChatbotChat({ onClose }: ChatbotChatProps) {
     const botChatRef = useRef<HTMLDivElement>(null);
 
     const sendBotMessage = async () => {
-        if (botInput.trim()) {
-            const userMessage: Message = {
-                text: botInput,
-                sender: "You",
+        const input = botInput.trim();
+        if (!input) return;
+
+        setBotInput("");
+
+        const userMessage: Message = {
+            text: input,
+            sender: "You",
+            timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        };
+        setBotMessages((prev) => [...prev, userMessage]);
+
+        try {
+            const response = await prompt({
+                token,
+                chatID,
+                message: input,
+                memory: "file"
+            });
+
+            const botReply: Message = {
+                text: response.message,
+                sender: "Chatbot",
                 timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
             };
-            setBotMessages((prev) => [...prev, userMessage]);
-
-            try {
-                const response = await prompt({
-                    token: token,
-                    chatID: chatID,
-                    message: botInput,
-                    memory: "file"
-                });
-                const botReply: Message = {
-                    text: response.message,
-                    sender: "Chatbot",
-                    timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-                };
-                setBotMessages((prev) => [...prev, botReply]);
-            } catch {
-                const errorReply: Message = {
-                    text: "Error fetching response.",
-                    sender: "Chatbot",
-                    timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-                };
-                setBotMessages((prev) => [...prev, errorReply]);
-            }
-
-            setBotInput("");
+            setBotMessages((prev) => [...prev, botReply]);
+        } catch {
+            const errorReply: Message = {
+                text: "Error fetching response.",
+                sender: "Chatbot",
+                timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+            };
+            setBotMessages((prev) => [...prev, errorReply]);
         }
     };
 
-
-    // Scroll to the bottom whenever botMessages change
     useEffect(() => {
         if (botChatRef.current) {
             botChatRef.current.scrollTop = botChatRef.current.scrollHeight;
@@ -74,7 +74,10 @@ export default function ChatbotChat({ onClose }: ChatbotChatProps) {
             position: "fixed", 
             bottom: "80px", 
             right: "20px", 
-            width: "300px", 
+            width: "400px", 
+            height: "500px",
+            resize: "both",
+            overflow: "auto",
             backgroundColor: "#fff", 
             borderRadius: "12px",
             boxShadow: "0px 4px 12px rgba(0,0,0,0.2)", 
@@ -130,7 +133,12 @@ export default function ChatbotChat({ onClose }: ChatbotChatProps) {
                     variant="outlined"
                     size="small"
                     fullWidth
-                    onKeyDown={(e) => { if (e.key === "Enter") void sendBotMessage(); }} 
+                    onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                            e.preventDefault();
+                            void sendBotMessage();
+                        }
+                    }}
                 />
                 <Button onClick={() => void sendBotMessage()} style={{ marginLeft: "8px", backgroundColor: "#3b5998", color: "#fff" }}>
                     <Send />
