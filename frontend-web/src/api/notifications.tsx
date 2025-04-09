@@ -133,7 +133,7 @@ function augmentNotification(notification: NotificationDto, userId: string): Not
         //     break;
 
         case "study-session-reminder":
-            content = `Reminder: Your study session for "${notification.payload.studySession.title}" is coming up (${formatTimestamp(notification.payload.studySession.startTime)} - ${formatTimestamp(notification.payload.studySession.endTime)}).`;
+            content = `Reminder: Your study session "${notification.payload.studySession.title}" is coming up (${formatTimestamp(notification.payload.studySession.startTime)} - ${formatTimestamp(notification.payload.studySession.endTime)}).`;
             break;
         
         case "study-session-scheduled":
