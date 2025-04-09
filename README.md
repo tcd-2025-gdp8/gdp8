@@ -64,7 +64,7 @@ The supported environmental variables are outlined below:
 - `GEMINI_API_KEY` - necessary for the Gemini API integration for the intelligent chatbot.
 - `GOOGLE_CALENDAR_HOST_CLIENT_ID` (OAuth 2.0 Client ID associated with a Google Cloud project), `GOOGLE_CALENDAR_HOST_CLIENT_SECRET` (OAuth 2.0 Client secret), `GOOGLE_CALENDAR_HOST_REFRESH_TOKEN` (a refresh token generated for the OAuth 2.0 Client) - necessary for the Google Calendar integration for study sessions.
 
-The OAuth 2.0 Client ID and secret can be obtained from the Google Cloud console under the *APIs and Services->Credentials* section within the project.
+The OAuth 2.0 Client ID and secret can be obtained from the Google Cloud console under the *APIs and Services > Credentials* section within the project.
 
 ## Backends
 
@@ -75,5 +75,5 @@ The application backend utilises a MySQL database and Firebase for authenticatio
 
 If external integrations are enabled by providing the necessary credentials as described in the [*Supplying credentials for external services* section](#supplying-credentials-for-external-services), the application backend also accesses the following external services:
 
-- Google Calendar API
-- Gemini API
+- Google Calendar API (calendar invites are sent to users enrolled in a study group via email)
+- Gemini API (chatbot responses are generated using a Gemini LLM)
