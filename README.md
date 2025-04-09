@@ -25,10 +25,10 @@ Users can safely upload and remove pdf files, other documents, spreadsheets, and
 A motivational leaderboard displays study groups ranked by cumulative study hours against different study groups in the same modules.
 
 **Secure Authentication**  
-Firebase Authentication ensures secure and seamless user login.
+Firebase Authentication is used for OAuth-based user identity management, ensuring seamless and secure user login.
 
 **Robust Backend Architecture**  
-Built in Go with MySQL and modular design patterns for performance and maintainability.
+Built in Go, utilising a MySQL database for efficient data storage, and following scalable and modular design patterns for performance and maintainability.
 
 **Containerized Deployment**  
 Docker and Docker Compose ensure consistent local and production environments.
