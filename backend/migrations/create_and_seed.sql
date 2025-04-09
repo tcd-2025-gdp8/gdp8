@@ -175,6 +175,7 @@ CREATE TABLE IF NOT EXISTS study_sessions (
     duration_minutes INT NOT NULL,
 
     end_time TIMESTAMP GENERATED ALWAYS AS (start_time + INTERVAL duration_minutes MINUTE) STORED,
+    calendar_event_id VARCHAR(255) DEFAULT NULL,  
 
     FOREIGN KEY (study_group_id) REFERENCES study_groups(id) ON DELETE CASCADE,
     FOREIGN KEY (creator_id) REFERENCES users(id) ON DELETE RESTRICT,
@@ -182,6 +183,7 @@ CREATE TABLE IF NOT EXISTS study_sessions (
     INDEX idx_study_sessions_study_group_id (study_group_id),
     INDEX idx_study_sessions_group_id_and_end_time (study_group_id, end_time)
 );
+
 
 CREATE TABLE IF NOT EXISTS files (
     name VARCHAR(255) NOT NULL,

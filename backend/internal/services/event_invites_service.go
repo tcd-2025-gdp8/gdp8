@@ -1,7 +1,9 @@
 package services
 
 import (
+	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"google.golang.org/api/calendar/v3"
@@ -17,7 +19,8 @@ type EventDetails struct {
 }
 
 type EventInvitesService interface {
-	SendEventInvites(eventDetails EventDetails, invitees []models.UserID) error
+	SendEventInvites(eventDetails EventDetails, invitees []models.UserID) (string, error)
+	CancelEvent(eventID string) error
 }
 
 type eventInvitesServiceImpl struct {
@@ -32,16 +35,17 @@ func NewEventInvitesService(googleCalendarService *calendar.Service, userService
 	}
 }
 
-func (s *eventInvitesServiceImpl) SendEventInvites(eventDetails EventDetails, invitees []models.UserID) error {
+func (s *eventInvitesServiceImpl) SendEventInvites(
+	eventDetails EventDetails,
+	invitees []models.UserID,
+) (string, error) {
 	attendees := make([]*calendar.EventAttendee, 0, len(invitees))
 	for _, userID := range invitees {
 		user, err := s.userService.GetUser(userID)
 		if err != nil {
-			return fmt.Errorf("failed to get user details for %s: %w", userID, err)
+			return "", fmt.Errorf("failed to get user details for %s: %w", userID, err)
 		}
-		attendees = append(attendees, &calendar.EventAttendee{
-			Email: user.Email,
-		})
+		attendees = append(attendees, &calendar.EventAttendee{Email: user.Email})
 	}
 
 	event := &calendar.Event{
@@ -57,21 +61,43 @@ func (s *eventInvitesServiceImpl) SendEventInvites(eventDetails EventDetails, in
 		},
 		Attendees: attendees,
 		Reminders: &calendar.EventReminders{
+			UseDefault: false,
 			Overrides: []*calendar.EventReminder{
 				{Method: "email", Minutes: 24 * 60},
 				{Method: "popup", Minutes: 10},
 			},
-			UseDefault:      false,
 			ForceSendFields: []string{"UseDefault"},
 		},
 	}
 
-	_, err := s.googleCalendarService.Events.Insert("primary", event).SendUpdates("all").Do()
-	return err
+	ctx := context.Background()
+	createdEvent, err := s.googleCalendarService.Events.Insert("primary", event).SendUpdates("all").Context(ctx).Do()
+	if err != nil {
+		return "", fmt.Errorf("failed to insert calendar event: %w", err)
+	}
+
+	log.Printf("Google Calendar event created with ID: %s", createdEvent.Id)
+	return createdEvent.Id, nil
+}
+
+func (s *eventInvitesServiceImpl) CancelEvent(eventID string) error {
+	ctx := context.Background()
+	err := s.googleCalendarService.Events.Delete("primary", eventID).SendUpdates("all").Context(ctx).Do()
+	if err != nil {
+		return fmt.Errorf("failed to cancel Google Calendar event with ID %s: %w", eventID, err)
+	}
+	log.Printf(" Successfully cancelled Google Calendar event ID: %s", eventID)
+	return nil
 }
 
 type NoOpEventInvitesService struct{}
 
-func (s *NoOpEventInvitesService) SendEventInvites(_ EventDetails, _ []models.UserID) error {
+func (s *NoOpEventInvitesService) SendEventInvites(_ EventDetails, _ []models.UserID) (string, error) {
+	log.Println("📭 NoOpEventInvitesService: Pretending to send invite.")
+	return "no-op-event-id", nil
+}
+
+func (s *NoOpEventInvitesService) CancelEvent(_ string) error {
+	log.Println(" NoOpEventInvitesService: Pretending to cancel event.")
 	return nil
 }
