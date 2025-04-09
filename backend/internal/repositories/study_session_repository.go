@@ -19,8 +19,6 @@ type StudySessionRepository interface {
 		studySessionDetails *models.StudySessionDetails) (*models.StudySession, error)
 	DeleteStudySession(tx *sql.Tx, studySessionID models.StudySessionID) error
 	GetUpcomingSessions(tx *sql.Tx, windowStart time.Time, windowEnd time.Time) ([]models.StudySession, error)
-
-	// 🆕 Add this line
 	SetCalendarEventID(tx *sql.Tx, sessionID models.StudySessionID, calendarEventID string) error
 }
 
@@ -89,7 +87,7 @@ func (s *SQLStudySessionRepository) GetStudySession(tx *sql.Tx,
 		&session.StartTime,
 		&session.DurationMinutes,
 		&session.EndTime,
-		&session.CalendarEventID, // 🆕
+		&session.CalendarEventID,
 	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -104,7 +102,6 @@ func (s *SQLStudySessionRepository) GetStudySession(tx *sql.Tx,
 func (s *SQLStudySessionRepository) CreateStudySession(tx *sql.Tx, studyGroupID models.StudyGroupID,
 	creatorID models.UserID, studySessionDetails *models.StudySessionDetails) (*models.StudySession, error) {
 
-	// We assume EndTime and CalendarEventID will be set manually after creation
 	query := `
         INSERT INTO study_sessions (study_group_id, creator_id, title, start_time, duration_minutes)
         VALUES (?, ?, ?, ?, ?)`
@@ -127,7 +124,11 @@ func (s *SQLStudySessionRepository) CreateStudySession(tx *sql.Tx, studyGroupID 
 
 	return s.GetStudySession(tx, models.StudySessionID(studySessionID))
 }
-func (s *SQLStudySessionRepository) SetCalendarEventID(tx *sql.Tx, sessionID models.StudySessionID, calendarEventID string) error {
+func (s *SQLStudySessionRepository) SetCalendarEventID(
+	tx *sql.Tx,
+	sessionID models.StudySessionID,
+	calendarEventID string,
+) error {
 	query := `UPDATE study_sessions SET calendar_event_id = ? WHERE id = ?`
 	_, err := tx.Exec(query, calendarEventID, sessionID)
 	if err != nil {
@@ -197,7 +198,7 @@ func (s *SQLStudySessionRepository) GetUpcomingSessions(
 			&session.StartTime,
 			&session.DurationMinutes,
 			&session.EndTime,
-			&session.CalendarEventID, // 🆕
+			&session.CalendarEventID,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("error scanning session: %w", err)
