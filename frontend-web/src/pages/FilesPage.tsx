@@ -71,15 +71,20 @@ export default function FilesPage() {
                 await apiUploadFiles(file, chatID, token);
             }
             await fetchFiles();
-        } catch (error) {
-            console.error("Error uploading file(s):", error);
-        } finally {
-            setUploading(false);
+
             const length = Array.from(selectedFiles).length;
             const popupMessage = length == 1 ?
                                 "Your file has been uploaded successfully!" :
                                 "Your files have been uploaded successfully!";
             alert(popupMessage);
+        } catch (error) {
+            const errorMessage = (error as Error)?.message;
+            if (errorMessage.includes("File type not allowed")) {
+                alert("File type not allowed.")
+            }
+            console.error("Error uploading file(s):", error);
+        } finally {
+            setUploading(false);
         }
     };
 
