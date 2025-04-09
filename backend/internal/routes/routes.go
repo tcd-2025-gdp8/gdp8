@@ -6,6 +6,7 @@ import (
 	"firebase.google.com/go/v4/auth"
 
 	"gdp8-backend/internal/handlers"
+	"gdp8-backend/internal/jobs"
 	"gdp8-backend/internal/persistence"
 	"gdp8-backend/internal/repositories"
 	"gdp8-backend/internal/services"
@@ -51,4 +52,6 @@ func RegisterAllRoutes(firebaseAuth *auth.Client, txManager persistence.Transact
 
 	authHandler := handlers.NewAuthHandler(firebaseAuth)
 	http.HandleFunc("/api/auth/verify", authHandler.VerifyHandler)
+
+	jobs.StartStudySessionReminderScheduler(&studySessionRepo, &studyGroupRepo, notificationService, txManager)
 }
