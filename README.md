@@ -75,5 +75,5 @@ The application backend utilises a MySQL database and Firebase for authenticatio
 
 If external integrations are enabled by providing the necessary credentials as described in the [*Supplying credentials for external services* section](#supplying-credentials-for-external-services), the application backend also accesses the following external services:
 
-- Google Calendar API (calendar invites for study sessions are sent to users enrolled in a study group via email)
+- Google Calendar API (calendar invites for study sessions are sent via email to users enrolled in the study group)
 - Gemini API (chatbot responses are generated using a Gemini LLM)
