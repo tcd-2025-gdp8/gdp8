@@ -27,6 +27,7 @@ export default function CustomAppBar() {
             if(!user) return;
             try {
                 const fetchedNotifications = await getNotifications(token, user.uid);
+                fetchedNotifications.reverse();
                 setNotifications(fetchedNotifications);
             } catch (error) {
                 console.error("Error fetching notifications:", error);

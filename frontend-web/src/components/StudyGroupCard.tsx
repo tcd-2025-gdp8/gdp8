@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import {
   Card,
   CardContent,
@@ -62,8 +62,18 @@ export default function StudyGroupCard({ group, module, currentUserId, onUpdate 
         flexDirection: 'column',
         gap: 2
       }}>
+        {/* Study group name wrapped in a Link */}
         <Typography variant="h6" sx={{ fontWeight: 600 }}>
-          {group.name}
+          {isMember ? (
+            <Link
+              to={`/study-groups/${group.id}/details`}
+              style={{ textDecoration: "none", color: "inherit" }}
+            >
+              {group.name}
+            </Link>
+          ) : (
+            <span>{group.name}</span>
+          )}
         </Typography>
 
         <Divider />

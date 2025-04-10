@@ -49,3 +49,36 @@ export async function removeMemberFromStudyGroup(token: string | null, studyGrou
         body: JSON.stringify({ targetUserId: memberId }),
     });
 }
+
+export async function fetchStudyGroupById(token: string | null, studyGroupId: number): Promise<StudyGroup> {
+    return await fetchApiToJson<StudyGroup>(`/study-groups/${studyGroupId}`, token);
+}
+
+export async function updateStudyGroup(
+    token: string | null,
+    studyGroupId: number,
+    studyGroupDetails: StudyGroupCreationDetails
+): Promise<StudyGroup> {
+    return await fetchApiToJson<StudyGroup>(`/study-groups/${studyGroupId}`, token, {
+        method: "PUT",
+        body: JSON.stringify(studyGroupDetails),
+    });
+}
+
+export async function deleteStudyGroup(token: string | null, studyGroupId: number): Promise<void> {
+    await fetchApi(`/study-groups/${studyGroupId}`, token, {
+        method: "DELETE",
+    });
+}
+
+export async function fetchUserStudyGroups(token: string | null, userId: string | null): Promise<StudyGroup[]> {
+    if (!token || !userId) return [];
+
+    try {
+        const allGroups = await fetchStudyGroups(token);
+        return allGroups.filter(group => group.members.some(member => member.id === userId));
+    } catch (error) {
+        console.error("Error fetching user study groups:", error);
+        throw error;
+    }
+}

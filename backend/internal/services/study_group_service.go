@@ -53,6 +53,11 @@ type StudyGroupService interface {
 		command SelfMemberOperationCommand,
 		studyGroupID models.StudyGroupID,
 		memberID models.UserID) error
+
+	RetrieveGroupRole(studyGroupID models.StudyGroupID, userID models.UserID) (*models.StudyGroupRole, error)
+	IsGroupMember(studyGroupID models.StudyGroupID, userID models.UserID) (bool, error)
+
+	SetNotificationService(notificationService NotificationService)
 }
 
 var ErrStudyGroupNotFound = errors.New("study group not found")
@@ -76,6 +81,10 @@ func NewStudyGroupService(
 		studyGroupRepo:      studyGroupRepo,
 		notificationService: notificationService,
 	}
+}
+
+func (s *studyGroupServiceImpl) SetNotificationService(notificationService NotificationService) {
+	s.notificationService = notificationService
 }
 
 func (s *studyGroupServiceImpl) GetStudyGroupByID(id models.StudyGroupID) (*models.StudyGroupView, error) {
@@ -224,7 +233,7 @@ func (s *studyGroupServiceImpl) HandleAdminMemberOperation(command AdminMemberOp
 		}
 		go func() {
 			notificationErr := s.notificationService.AddStudyGroupEventNotification(
-				notificationType, adminID, &targetUserID, studyGroupID, studyGroup.Members)
+				notificationType, adminID, &targetUserID, studyGroupID, studyGroup.Name, studyGroup.Members)
 			if notificationErr != nil {
 				log.Printf("Error sending notification: %v\n", notificationErr)
 			}
@@ -283,7 +292,7 @@ func (s *studyGroupServiceImpl) HandleSelfMemberOperation(command SelfMemberOper
 		}
 		go func() {
 			notificationErr := s.notificationService.AddStudyGroupEventNotification(
-				notificationType, memberID, nil, studyGroupID, studyGroup.Members)
+				notificationType, memberID, nil, studyGroupID, studyGroup.Name, studyGroup.Members)
 			if notificationErr != nil {
 				log.Printf("Error sending notification: %v\n", notificationErr)
 			}
@@ -291,6 +300,32 @@ func (s *studyGroupServiceImpl) HandleSelfMemberOperation(command SelfMemberOper
 	}
 
 	return err
+}
+
+func (s *studyGroupServiceImpl) RetrieveGroupRole(studyGroupID models.StudyGroupID,
+	userID models.UserID) (*models.StudyGroupRole, error) {
+
+	return persistence.WithTransaction(s.txMgr, func(tx *sql.Tx) (*models.StudyGroupRole, error) {
+		return s.studyGroupRepo.RetrieveGroupRole(tx, studyGroupID, userID)
+	})
+}
+
+func (s *studyGroupServiceImpl) IsGroupMember(studyGroupID models.StudyGroupID, userID models.UserID) (bool, error) {
+	role, err := s.RetrieveGroupRole(studyGroupID, userID)
+
+	if err != nil {
+		return false, err
+	}
+
+	if role == nil {
+		return false, nil
+	}
+
+	if *role == models.RoleAdmin || *role == models.RoleMember {
+		return true, nil
+	}
+
+	return false, nil
 }
 
 func resolveError(err error, operation string) error {

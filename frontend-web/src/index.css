@@ -35,3 +35,6 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #555;
 }
+* {
+  user-select: none;
+}

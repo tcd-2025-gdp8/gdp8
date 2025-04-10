@@ -2,7 +2,10 @@ package services
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"time"
 
 	"gdp8-backend/internal/models"
 	"gdp8-backend/internal/persistence"
@@ -10,33 +13,72 @@ import (
 )
 
 type NotificationService interface {
-	GetUserNotifications(userID models.UserID) ([]models.NotificationView, error)
-
+	GetUserNotifications(userID models.UserID) ([]models.Notification, error)
 	MarkNotificationAsRead(userID models.UserID, notificationID models.NotificationID) error
 
-	AddStudyGroupEventNotification(notificationType models.NotificationType,
-		triggeringUserID models.UserID, targetUserID *models.UserID,
-		studyGroupID models.StudyGroupID, studyGroupMembers []models.StudyGroupMemberView) error
+	AddStudyGroupEventNotification(
+		notificationType models.NotificationType,
+		triggeringUserID models.UserID,
+		targetUserID *models.UserID,
+		studyGroupID models.StudyGroupID,
+		studyGroupName string,
+		studyGroupMembers []models.StudyGroupMemberView,
+	) error
+
+	AddStudySessionNotification(notificationType models.NotificationType,
+		session *models.StudySession, requesterID models.UserID) error
+	AddStudySessionReminderNotification(session *models.StudySession,
+		studyGroupMembers []models.StudyGroupMemberView) error
+
+	AddStudySessionAvailabilityRequestCreatedNotification(availabilityRequest *models.StudySessionAvailabilityRequest,
+		requesterID models.UserID) error
+	AddStudySessionAvailabilityUpdatedNotification(availabilityRequest *models.StudySessionAvailabilityRequest,
+		userID models.UserID) error
 }
 
 var ErrInvalidNotificationType = errors.New("invalid notification type")
 
+type studySessionPayload struct {
+	ID        models.StudySessionID `json:"id"`
+	Title     string                `json:"title"`
+	StartTime time.Time             `json:"startTime"`
+	EndTime   time.Time             `json:"endTime"`
+}
+type studySessionAvailabilityRequestPayload struct {
+	ID         models.StudySessionAvailabilityRequestID `json:"id"`
+	StudyGroup studyGroupPayload                        `json:"studyGroup"`
+	Title      string                                   `json:"title"`
+}
+type studyGroupPayload struct {
+	ID   models.StudyGroupID `json:"id"`
+	Name string              `json:"name"`
+}
+type userPayload struct {
+	ID   models.UserID `json:"id"`
+	Name string        `json:"name"`
+}
+
 type notificationServiceImpl struct {
-	txMgr            persistence.TransactionManager
-	notificationRepo repositories.NotificationRepository
+	txMgr             persistence.TransactionManager
+	notificationRepo  repositories.NotificationRepository
+	userService       UserService
+	studyGroupService StudyGroupService
 }
 
 func NewNotificationService(txMgr persistence.TransactionManager,
-	notificationRepo repositories.NotificationRepository) NotificationService {
+	notificationRepo repositories.NotificationRepository, userService UserService,
+	studyGroupService StudyGroupService) NotificationService {
 
 	return &notificationServiceImpl{
-		txMgr:            txMgr,
-		notificationRepo: notificationRepo,
+		txMgr:             txMgr,
+		notificationRepo:  notificationRepo,
+		userService:       userService,
+		studyGroupService: studyGroupService,
 	}
 }
 
-func (s *notificationServiceImpl) GetUserNotifications(userID models.UserID) ([]models.NotificationView, error) {
-	return persistence.WithTransaction(s.txMgr, func(tx *sql.Tx) ([]models.NotificationView, error) {
+func (s *notificationServiceImpl) GetUserNotifications(userID models.UserID) ([]models.Notification, error) {
+	return persistence.WithTransaction(s.txMgr, func(tx *sql.Tx) ([]models.Notification, error) {
 		return s.notificationRepo.GetUserNotifications(tx, userID)
 	})
 }
@@ -49,28 +91,187 @@ func (s *notificationServiceImpl) MarkNotificationAsRead(userID models.UserID,
 	})
 }
 
+func (s *notificationServiceImpl) AddStudySessionNotification(notificationType models.NotificationType,
+	session *models.StudySession, requesterID models.UserID) error {
+
+	if notificationType != models.NotificationTypeStudySessionScheduled &&
+		notificationType != models.NotificationTypeStudySessionUpdated &&
+		notificationType != models.NotificationTypeStudySessionCancelled {
+		return ErrInvalidNotificationType
+	}
+
+	payload, err := json.Marshal(struct {
+		StudySession studySessionPayload `json:"studySession"`
+	}{
+		StudySession: getStudySessionPayloadObject(session),
+	})
+	if err != nil {
+		return fmt.Errorf("failed to marshal notification payload: %w", err)
+	}
+
+	studyGroup, err := s.studyGroupService.GetStudyGroupByID(session.StudyGroupID)
+	if err != nil {
+		return fmt.Errorf("failed to get study group: %w", err)
+	}
+	if studyGroup == nil {
+		return errors.New("failed to get study group: study group not found")
+	}
+	usersToBeNotified := getActualStudyGroupMembers(studyGroup.Members, &requesterID)
+
+	return s.saveNotification(notificationType, payload, usersToBeNotified)
+}
+
+func (s *notificationServiceImpl) AddStudySessionReminderNotification(
+	session *models.StudySession,
+	studyGroupMembers []models.StudyGroupMemberView,
+) error {
+
+	payload, err := json.Marshal(struct {
+		StudySession studySessionPayload `json:"studySession"`
+	}{
+		StudySession: getStudySessionPayloadObject(session),
+	})
+	if err != nil {
+		return fmt.Errorf("failed to marshal notification payload: %w", err)
+	}
+
+	usersToBeNotified := getActualStudyGroupMembers(studyGroupMembers, nil)
+
+	return s.saveNotification(models.NotificationTypeStudySessionReminder, payload, usersToBeNotified)
+}
+
+func (s *notificationServiceImpl) AddStudySessionAvailabilityRequestCreatedNotification(
+	availabilityRequest *models.StudySessionAvailabilityRequest, requesterID models.UserID) error {
+
+	studyGroup, err := s.studyGroupService.GetStudyGroupByID(availabilityRequest.StudyGroupID)
+	if err != nil {
+		return fmt.Errorf("failed to get study group: %w", err)
+	}
+	if studyGroup == nil {
+		return errors.New("failed to get study group: study group not found")
+	}
+
+	payload, err := json.Marshal(struct {
+		StudySessionAvailabilityRequest studySessionAvailabilityRequestPayload `json:"studySessionAvailabilityRequest"`
+	}{
+		StudySessionAvailabilityRequest: studySessionAvailabilityRequestPayload{
+			ID: availabilityRequest.ID,
+			StudyGroup: studyGroupPayload{
+				ID:   studyGroup.ID,
+				Name: studyGroup.Name,
+			},
+			Title: availabilityRequest.Title,
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to marshal notification payload: %w", err)
+	}
+
+	usersToBeNotified := getActualStudyGroupMembers(studyGroup.Members, &requesterID)
+
+	return s.saveNotification(models.NotificationTypeStudySessionAvailabilityRequestCreated, payload, usersToBeNotified)
+}
+
+func (s *notificationServiceImpl) AddStudySessionAvailabilityUpdatedNotification(
+	availabilityRequest *models.StudySessionAvailabilityRequest, userID models.UserID) error {
+
+	triggeringUser, err := s.userService.GetUser(userID)
+	if err != nil {
+		return fmt.Errorf("failed to get triggering user: %w", err)
+	}
+	if triggeringUser == nil {
+		return errors.New("failed to get triggering user: user not found")
+	}
+
+	studyGroup, err := s.studyGroupService.GetStudyGroupByID(availabilityRequest.StudyGroupID)
+	if err != nil {
+		return fmt.Errorf("failed to get study group: %w", err)
+	}
+	if studyGroup == nil {
+		return errors.New("failed to get study group: study group not found")
+	}
+
+	payload, err := json.Marshal(struct {
+		StudySessionAvailabilityRequest studySessionAvailabilityRequestPayload `json:"studySessionAvailabilityRequest"`
+		TriggeringUser                  userPayload                            `json:"triggeringUser"`
+	}{
+		StudySessionAvailabilityRequest: studySessionAvailabilityRequestPayload{
+			ID: availabilityRequest.ID,
+			StudyGroup: studyGroupPayload{
+				ID:   studyGroup.ID,
+				Name: studyGroup.Name,
+			},
+			Title: availabilityRequest.Title,
+		},
+		TriggeringUser: userPayload{
+			ID:   userID,
+			Name: triggeringUser.Name,
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to marshal notification payload: %w", err)
+	}
+
+	usersToBeNotified := getActualStudyGroupMembers(studyGroup.Members, &userID)
+
+	return s.saveNotification(models.NotificationTypeStudySessionAvailabilityEntriesUpdated, payload, usersToBeNotified)
+}
+
 func (s *notificationServiceImpl) AddStudyGroupEventNotification(
 	notificationType models.NotificationType,
 	triggeringUserID models.UserID, targetUserID *models.UserID,
-	studyGroupID models.StudyGroupID, studyGroupMembers []models.StudyGroupMemberView) error {
+	studyGroupID models.StudyGroupID, studyGroupName string, studyGroupMembers []models.StudyGroupMemberView) error {
 
-	notification := models.NotificationDetails{
-		Type:             notificationType,
-		TriggeringUserID: triggeringUserID,
-		TargetUserID:     targetUserID,
-		StudyGroupID:     studyGroupID,
-		MessageID:        nil,
+	triggeringUser, err := s.userService.GetUser(triggeringUserID)
+	if err != nil {
+		return fmt.Errorf("failed to get triggering user: %w", err)
+	}
+	if triggeringUser == nil {
+		return errors.New("failed to get triggering user: user not found")
 	}
 
-	actualStudyGroupMembers := make([]models.UserID, 0, len(studyGroupMembers))
-	for _, member := range studyGroupMembers {
-		if member.Role == models.RoleMember || member.Role == models.RoleAdmin {
-			actualStudyGroupMembers = append(actualStudyGroupMembers, member.UserID)
+	var targetUserPayload *userPayload
+	if targetUserID != nil {
+		targetUser, err := s.userService.GetUser(*targetUserID)
+		if err != nil {
+			return fmt.Errorf("failed to get target user: %w", err)
+		}
+		if targetUser == nil {
+			return errors.New("failed to get target user: user not found")
+		}
+		targetUserPayload = &userPayload{
+			ID:   *targetUserID,
+			Name: targetUser.Name,
 		}
 	}
 
-	var usersToBeNotified []models.UserID
+	payload, err := json.Marshal(struct {
+		TriggeringUser userPayload       `json:"triggeringUser"`
+		TargetUser     *userPayload      `json:"targetUser,omitempty"`
+		StudyGroup     studyGroupPayload `json:"studyGroup"`
+	}{
+		TriggeringUser: userPayload{
+			ID:   triggeringUserID,
+			Name: triggeringUser.Name,
+		},
+		TargetUser: targetUserPayload,
+		StudyGroup: studyGroupPayload{
+			ID:   studyGroupID,
+			Name: studyGroupName,
+		},
+	})
 
+	if err != nil {
+		return fmt.Errorf("failed to marshal notification payload: %w", err)
+	}
+
+	actualStudyGroupMembers := getActualStudyGroupMembers(studyGroupMembers, &triggeringUserID)
+	membersAndTargetUser := actualStudyGroupMembers
+	if targetUserID != nil {
+		membersAndTargetUser = append(membersAndTargetUser, *targetUserID)
+	}
+
+	var usersToBeNotified []models.UserID
 	switch notificationType {
 	case models.NotificationTypeStudyGroupJoined:
 		usersToBeNotified = actualStudyGroupMembers
@@ -83,20 +284,69 @@ func (s *notificationServiceImpl) AddStudyGroupEventNotification(
 	case models.NotificationTypeStudyGroupRejectedInvite:
 		usersToBeNotified = actualStudyGroupMembers
 	case models.NotificationTypeStudyGroupInvited:
-		usersToBeNotified = append([]models.UserID{triggeringUserID}, actualStudyGroupMembers...)
+		usersToBeNotified = membersAndTargetUser
 	case models.NotificationTypeStudyGroupAcceptedJoinRequest:
-		usersToBeNotified = append([]models.UserID{triggeringUserID}, actualStudyGroupMembers...)
+		usersToBeNotified = actualStudyGroupMembers
 	case models.NotificationTypeStudyGroupRejectedJoinRequest:
-		usersToBeNotified = append([]models.UserID{triggeringUserID}, actualStudyGroupMembers...)
+		usersToBeNotified = membersAndTargetUser
 	case models.NotificationTypeStudyGroupRemovedMember:
-		usersToBeNotified = append([]models.UserID{triggeringUserID}, actualStudyGroupMembers...)
+		usersToBeNotified = membersAndTargetUser
 	case models.NotificationTypeStudyGroupChatMessage:
+		return ErrInvalidNotificationType
+	case models.NotificationTypeStudySessionReminder:
+		// This type is handled separately via AddStudySessionReminderNotification.
+		return ErrInvalidNotificationType
+	case models.NotificationTypeStudySessionScheduled:
+		return ErrInvalidNotificationType
+	case models.NotificationTypeStudySessionUpdated:
+		return ErrInvalidNotificationType
+	case models.NotificationTypeStudySessionCancelled:
+		return ErrInvalidNotificationType
+	case models.NotificationTypeStudySessionAvailabilityRequestCreated:
+		return ErrInvalidNotificationType
+	case models.NotificationTypeStudySessionAvailabilityEntriesUpdated:
 		return ErrInvalidNotificationType
 	default:
 		return ErrInvalidNotificationType
 	}
 
+	return s.saveNotification(notificationType, payload, usersToBeNotified)
+}
+
+func (s *notificationServiceImpl) saveNotification(notificationType models.NotificationType,
+	payload models.NotificationPayloadType, usersToBeNotified []models.UserID) error {
+
+	notification := models.NotificationDetails{
+		Type:    notificationType,
+		Payload: payload,
+	}
+
 	return persistence.WithTransactionNoReturnVal(s.txMgr, func(tx *sql.Tx) error {
 		return s.notificationRepo.AddNotification(tx, notification, usersToBeNotified)
 	})
+}
+
+// getActualStudyGroupMembers filters members of a study group, excluding a specific user and non-member/admin roles.
+func getActualStudyGroupMembers(members []models.StudyGroupMemberView,
+	userToBeExcluded *models.UserID) []models.UserID {
+
+	filteredMembers := make([]models.UserID, 0, len(members))
+	for _, member := range members {
+		if userToBeExcluded != nil && member.UserID == *userToBeExcluded {
+			continue
+		}
+		if member.Role == models.RoleMember || member.Role == models.RoleAdmin {
+			filteredMembers = append(filteredMembers, member.UserID)
+		}
+	}
+	return filteredMembers
+}
+
+func getStudySessionPayloadObject(session *models.StudySession) studySessionPayload {
+	return studySessionPayload{
+		ID:        session.ID,
+		Title:     session.Title,
+		StartTime: session.StartTime,
+		EndTime:   session.EndTime,
+	}
 }

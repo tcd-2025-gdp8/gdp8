@@ -1,11 +1,17 @@
 package handlers
 
 import (
+	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
-	"strings"
+	"time"
 
 	"github.com/gorilla/websocket"
+
+	"gdp8-backend/internal/models"
+	"gdp8-backend/internal/services"
+	"gdp8-backend/internal/utils"
 )
 
 type RoomRegistration struct {
@@ -75,21 +81,30 @@ var upgrader = websocket.Upgrader{
 }
 
 type ChatHandler struct {
-	hub *ChatHub
+	hub         *ChatHub
+	chatService services.ChatService
 }
 
-func NewChatHandler(hub *ChatHub) *ChatHandler {
-	return &ChatHandler{hub: hub}
+func NewChatHandler(hub *ChatHub, chatService services.ChatService) *ChatHandler {
+	return &ChatHandler{
+		hub:         hub,
+		chatService: chatService,
+	}
 }
 
 func (h *ChatHandler) ServeWs(w http.ResponseWriter, r *http.Request) {
-	parts := strings.Split(r.URL.Path, "/")
-	if len(parts) < 4 {
-		http.Error(w, "Chat ID missing in URL", http.StatusBadRequest)
+	chatID := r.PathValue("chatID")
+	studyGroupID, err := utils.ConvertToType[models.StudyGroupID](chatID)
+	if chatID == "" || err != nil {
+		http.Error(w, "Invalid chatID", http.StatusBadRequest)
 		return
 	}
-	chatID := parts[3]
-	log.Printf("DEBUG: Received chatID: %s", chatID)
+
+	userID, err := getUserID(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
 
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -110,8 +125,74 @@ func (h *ChatHandler) ServeWs(w http.ResponseWriter, r *http.Request) {
 		}
 		log.Printf("DEBUG: ChatID %s received message: %s", chatID, message)
 		h.hub.broadcast <- RoomMessage{room: chatID, message: message, messageType: messageType}
+
+		go func() {
+			var parsedMessage struct {
+				Text      string `json:"text"`
+				Sender    string `json:"sender"`
+				Timestamp string `json:"timestamp"`
+			}
+			if err := json.Unmarshal(message, &parsedMessage); err != nil {
+				log.Printf("Error parsing message JSON: %v", err)
+			}
+
+			err := h.chatService.InsertMessage(studyGroupID, &models.ChatMessageDetails{
+				UserID:    userID,
+				Text:      parsedMessage.Text,
+				Timestamp: time.Now(),
+			})
+			if err != nil {
+				log.Printf("Error inserting message: %v", err)
+			}
+		}()
 	}
 
 	h.hub.unregister <- RoomRegistration{room: chatID, conn: conn}
 	log.Printf("DEBUG: Unregistered connection for chatID: %s", chatID)
+}
+
+func (h *ChatHandler) GetStudyGroup(w http.ResponseWriter, r *http.Request) {
+	chatID := r.PathValue("chatID")
+	studyGroupID, err := utils.ConvertToType[models.StudyGroupID](chatID)
+	if chatID == "" || err != nil {
+		http.Error(w, "Invalid chatID", http.StatusBadRequest)
+		return
+	}
+
+	userID, err := getUserID(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	messages, err := h.chatService.GetChatMessagesByGroupID(studyGroupID, userID)
+	switch {
+	case errors.Is(err, services.ErrUnauthorizedChatOperation):
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	case err != nil:
+		http.Error(w, "Failed to fetch chat messages", http.StatusInternalServerError)
+		return
+	}
+
+	type MessageDTO struct {
+		ID        int64     `json:"id"`
+		UserID    string    `json:"userId"`
+		UserName  string    `json:"userName"`
+		Text      string    `json:"text"`
+		Timestamp time.Time `json:"timestamp"`
+	}
+
+	mappedMessages := make([]MessageDTO, len(messages))
+	for i, message := range messages {
+		mappedMessages[i] = MessageDTO{
+			ID:        int64(message.ID),
+			UserID:    string(message.UserID),
+			UserName:  message.UserName,
+			Text:      message.Text,
+			Timestamp: message.Timestamp,
+		}
+	}
+
+	sendJSONResponse(w, mappedMessages)
 }

@@ -4,6 +4,7 @@ import { fetchApi, fetchApiToJson } from "../utils/apiFetch";
 export interface UserRegisterDetails {
     id: string;
     name: string;
+    email: string;
 }
 
 export interface UserModulesSelection {

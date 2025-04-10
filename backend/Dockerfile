@@ -12,6 +12,8 @@ RUN go build -o backend-server ./cmd/server/main.go
 
 FROM alpine:latest  
 
+RUN apk add --no-cache poppler-utils
+
 WORKDIR /app
 
 COPY credentials/mockServiceAccountKey.json credentials/mockServiceAccountKey.json

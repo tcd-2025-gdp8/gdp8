@@ -17,7 +17,7 @@ export async function fetchApi(
     await makeRequest(url, token, options);
 }
 
-async function makeRequest(
+export async function makeRequest(
     url: string,
     token: string | null,
     options: RequestInit = {}
@@ -33,7 +33,14 @@ async function makeRequest(
     });
 
     if (!response.ok) {
-        throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
+        let serverMsg = "";
+        try {
+            serverMsg = await response.text();
+        } catch {
+            // fallback if reading the text body fails
+            serverMsg = response.statusText;
+        }
+        throw new Error(`HTTP error ${response.status}: ${serverMsg}`);
     }
 
     return response;
